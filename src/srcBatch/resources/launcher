@@ -1,0 +1,18 @@
+#!/bin/bash
+
+. /usr/lib/openfoam/openfoam2306/etc/bashrc
+# launcherの存在するmodel_idフォルダを取得
+MODEL_ID_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# model_idフォルダへ移動
+cd $MODEL_ID_DIR
+# 自身のプロセスIDをpidファイルに出力
+echo $$ > pid
+
+# Allcleanを実行し、エラーが発生したらerrorという空のファイルを出力する
+chmod 764 template/Allclean
+template/Allclean > /dev/null || touch error
+
+# Allrunを実行し、エラーが発生したらerrorという空のファイルを出力する
+chmod 764 template/Allrun
+template/Allrun > /dev/null || touch error
+

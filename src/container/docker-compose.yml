@@ -1,0 +1,45 @@
+﻿version: "3.8"
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "3000:3000"
+      - "4200:4200" # angular app run
+      - "443:443"
+    links:
+      - db
+    volumes:
+      - ./src:/var/www/html
+      - /mnt:
+
+  db:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_USER: 
+      POSTGRES_PASSWORD: 
+      POSTGRES_DB: 
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      TZ: "Asia/Tokyo"
+    # restart: always
+    # tty: true
+
+    mem_limit: 1000000000
+    volumes:
+      - ./db/init.d:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+
+  wrapper:
+    build:
+      context: ./wrapper
+      dockerfile: Dockerfile
+    links:
+      - db
+    volumes:
+      - ./wrapper/var/:/var/
+      - /mnt:/mnt
