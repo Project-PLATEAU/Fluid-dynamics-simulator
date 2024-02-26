@@ -230,6 +230,12 @@
             viewer.scene.globe.lightingFixedFrame = true;
             // viewer.scene.globe.lightingDirection = lightDirection;
 
+            // 日陰の有効化
+            viewer.scene.shadowMap.enabled = true;
+            viewer.scene.shadowMap.size = 4096;
+            viewer.scene.shadowMap.softShadows = true;
+            viewer.scene.shadowMap.darkness = 0.3;
+
             // 「シミュレーションモデルテーブル.日付」、「シミュレーションモデルテーブル.時間帯」から取得した日付時刻で3D地図を表示するようにする
             let solarAltitudeDatetime = new Date($("#solarAltitudeDatetime").val());
             viewer.clock.currentTime = Cesium.JulianDate.fromDate(solarAltitudeDatetime);

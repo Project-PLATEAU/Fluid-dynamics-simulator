@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Collection;
  * @property string|null $stl_type_name
  * @property bool|null $required_flag
  * @property bool|null $ground_flag
+ * @property float|null $solar_absorptivity
+ * @property float|null $heat_removal
  *
  * @property Collection|SolarAbsorptivity[] $solar_absorptivities
  * @property Collection|StlModel[] $stl_models
@@ -39,8 +41,15 @@ class StlType extends DbModel
         'stl_type_id',
 		'stl_type_name',
 		'required_flag',
-        'ground_flag'
+        'ground_flag',
+        'solar_absorptivity',
+        'heat_removal'
 	];
+
+    public function simulation_model_policies()
+    {
+        return $this->hasMany(SimulationModelPolicy::class, 'stl_type_id');
+    }
 
     public function solar_absorptivities()
     {

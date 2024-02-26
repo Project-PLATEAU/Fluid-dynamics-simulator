@@ -15,6 +15,7 @@ use App\Utils\LogUtil;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\View;
 
 /**
  * シミュレーションモデル関連画面用のコントロール
@@ -192,6 +193,10 @@ class SimulationModelController extends BaseController
     public function edit(Request $request, string $id)
     {
         try {
+
+            // 実施施策一覧に行を追加や削除の際に一時的に設定したセッションデータを削除
+            $request->session()->forget(Constants::SM_POLICY_SESSION_KEY);
+
             $errorMessage = [];
 
             // 登録ユーザ
@@ -215,6 +220,9 @@ class SimulationModelController extends BaseController
 
                 $solverList = SolverService::getAllSolver($registeredUserId);
 
+                // 熱対策施策の各レコード
+                $policyList = SimulationModelService::getAllPolicy();
+
                 // 更新処理に失敗時のエラー
                 $message = session('message');
                 if (!$message) {
@@ -226,7 +234,7 @@ class SimulationModelController extends BaseController
                     }
                 }
 
-                return view('simulation_model.edit', compact('simulationModel', 'solverList', 'registeredUserId', 'message'));
+                return view('simulation_model.edit', compact('simulationModel', 'solverList', 'registeredUserId', 'message', 'policyList'));
             }
         } catch (Exception $e) {
             $error = $e->getMessage();
@@ -265,6 +273,10 @@ class SimulationModelController extends BaseController
                     foreach ($updateResult['log_infos'] as $key => $log) {
                         LogUtil::i($log);
                     }
+
+                    // 実施施策一覧に行を追加や削除の際に一時的に設定したセッションデータを削除
+                    $request->session()->forget(Constants::SM_POLICY_SESSION_KEY);
+
                     return redirect()->route('simulation_model.index');
                 } else {
                     throw new Exception("シミュレーションモデルの更新に失敗しました。シミュレーションモデルID: {$id}");
@@ -761,6 +773,123 @@ class SimulationModelController extends BaseController
             $error = $e->getMessage();
             LogUtil::e($error);
             return view('layouts.error', compact('e'));
+        }
+    }
+
+    /**
+     * 実施施策一覧に実施施策を新規追加
+     * @param Request $request リクエスト
+     *
+     * @return
+     */
+    public function createSmPolicy(Request $request)
+    {
+        try {
+
+            // 編集対象のシミュレーションモデルID
+            $simulationModelId = $request->simulation_model_id;
+            // 追加しようとする対象
+            $stlTypeId = $request->stl_type_id;
+            // 追加しようとする施設
+            $policyId = $request->policy_id;
+
+            $smPoliciesInfos = [];
+
+            // 施設または対象が未選択の場合、エラーを表示
+            if (!$policyId || !$stlTypeId) {
+                $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
+                return response()->json($errorMessage);
+            } else {
+
+                if ($simulationModelId) {
+
+                    // シミュレーションモデルのレコードを取得
+                    $simulationModel = SimulationModelService::getSimulationModelById($simulationModelId);
+
+                    if (!$simulationModel) {
+                        throw new Exception("実施施策一覧に新規追加に失敗しました。シミュレーションモデルID 「{$simulationModelId}」のレコードが存在していません。");
+                    }
+
+                    // 最新の実施施策一覧
+                    $smPolicies = SimulationModelService::addNewSmPolicy($request, $simulationModel, $stlTypeId, $policyId);
+
+                    // STLファイル一覧のhtmlデータ
+                    $paritalViewSmPolicy = View::make('simulation_model.partial_sm_policy.partial_sm_policy_list', [
+                        'smPolicies' => $smPolicies,
+                        'simulationModelId' => $simulationModelId
+                    ])->render();
+
+                    $smPoliciesInfos = ['paritalViewSmPolicy' => $paritalViewSmPolicy];
+
+                    return response()->json($smPoliciesInfos);
+                } else {
+                    throw new Exception("実施施策一覧に新規追加に失敗しました。シミュレーションモデルID: {$simulationModelId}が不正です。");
+                }
+            }
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            LogUtil::e($error);
+            header('HTTP/1.1 500 Internal Server');
+            header('Content-Type: application/json; charset=UTF-8');
+            die(json_encode(array('message' => 'error', 'code' => 500)));
+        }
+    }
+    /**
+     * 実施施策一覧より実施施策を削除
+     * @param Request $request リクエスト
+     *
+     * @return
+     */
+    public function deleteSmPolicy(Request $request)
+    {
+        try {
+
+            // 編集対象のシミュレーションモデルID
+            $simulationModelId = $request->simulation_model_id;
+            // 追加しようとする対象
+            $stlTypeId = $request->stl_type_id;
+            // 追加しようとする施設
+            $policyId = $request->policy_id;
+
+            $smPoliciesInfos = [];
+
+            // 施設または対象が未選択の場合、エラーを表示
+            if (!$policyId || !$stlTypeId) {
+                $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
+                return response()->json($errorMessage);
+            } else {
+
+                if ($simulationModelId) {
+
+                    // シミュレーションモデルのレコードを取得
+                    $simulationModel = SimulationModelService::getSimulationModelById($simulationModelId);
+
+                    if (!$simulationModel) {
+                        throw new Exception("実施施策一覧より行削除に失敗しました。シミュレーションモデルID 「{$simulationModelId}」のレコードが存在していません。");
+                    }
+
+                    // 最新の実施施策一覧
+                    $smPolicies = SimulationModelService::deleteSmPolicy($request, $simulationModel, $stlTypeId, $policyId);
+
+                    // STLファイル一覧のhtmlデータ
+                    $paritalViewSmPolicy = View::make('simulation_model.partial_sm_policy.partial_sm_policy_list', [
+                        'smPolicies' => $smPolicies,
+                        'simulationModelId' => $simulationModelId
+                    ])->render();
+
+                    $smPoliciesInfos = ['paritalViewSmPolicy' => $paritalViewSmPolicy];
+
+                    return response()->json($smPoliciesInfos);
+                } else {
+                    throw new Exception("実施施策一覧より行削除に失敗しました。シミュレーションモデルID: {$simulationModelId}が不正です。");
+                }
+            }
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            LogUtil::e($error);
+            header('HTTP/1.1 500 Internal Server');
+            header('Content-Type: application/json; charset=UTF-8');
+            die(json_encode(array('message' => 'error', 'code' => 500)));
         }
     }
 }

@@ -92,7 +92,7 @@
 
             <div>
                 <hr class="line">
-                <p>{{ config('const.ver_app') }}</p>
+                <p>Version {{ $version }}</p>
             </div>
         </div>
 

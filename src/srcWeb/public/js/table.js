@@ -24,3 +24,11 @@ function setBgTr(tr)
 {
     $(tr).addClass(TR_BACKGROUD_COLOR);
 }
+
+/**
+ * テーブルのレコード行が既に選択されている場合は背景色を解除
+ * @param {*} tr レコード行
+ */
+function removeBgTr(tr) {
+    $(tr).removeClass(TR_BACKGROUD_COLOR);
+}

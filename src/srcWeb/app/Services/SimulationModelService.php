@@ -5,15 +5,19 @@ namespace App\Services;
 
 use App\Commons\Constants;
 use App\Commons\Message;
+use App\Models\Db\Policy;
 use App\Models\Db\SimulationModel;
+use App\Models\Db\SimulationModelPolicy;
 use App\Models\Db\SimulationModelReferenceAuthority;
 use App\Models\Db\SolarAbsorptivity;
 use App\Models\Db\Solver;
+use App\Models\Db\StlModel;
 use App\Models\Db\Visualization;
 use App\Utils\DatetimeUtil;
 use App\Utils\FileUtil;
 use App\Utils\LogUtil;
 use App\Utils\StringUtil;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 
 /**
@@ -99,9 +103,9 @@ class SimulationModelService extends BaseService
             $logInfo = "[simulation_model] [insert] [ identification_name: {$identification_name}, city_model_id: {$city_model_id}, region_id: {$region->region_id}, registered_user_id: {$registeredUserId}]";
             array_push($logInfos, $logInfo);
 
-            // 日射吸収率テーブルにレコードを新規追加
-            if (self::addNewSolarAbsorptivity($simulationModel->simulation_model_id)) {
-                $logInfo = "[solar_absorptivity] [insert] [ simulation_model_id: {$simulationModel->simulation_model_id}]";
+            // シミュレーションモデル熱効率テーブルにレコードを新規追加
+            if (self::addNewSolarAbsorptivity($simulationModel->simulation_model_id, $region->region_id)) {
+                $logInfo = "[solar_absorptivity] [insert] [simulation_model_id: {$simulationModel->simulation_model_id}]";
                 array_push($logInfos, $logInfo);
             } else {
                 $result = false;
@@ -163,16 +167,6 @@ class SimulationModelService extends BaseService
                     } else if (!is_numeric($request->wind_speed)) {
                         $isNumber = false;
                         $item = "風速";
-                    } else {
-                        // 日射吸収率(建物(1) ~ 地面(3))
-                        $solarAbsorptivitys = $request->solar_absorptivity;
-                        foreach ($solarAbsorptivitys as $solarAbsorptivity) {
-                            if (!is_numeric($solarAbsorptivity)) {
-                                $isNumber = false;
-                                $item = "日射吸収率";
-                                break;
-                            }
-                        }
                     }
                     // === E19のチェック //====
                     if (!$isNumber) {
@@ -240,10 +234,10 @@ class SimulationModelService extends BaseService
                 $logInfo = "[simulation_model] [update] [simulation_model_id: {$id}]";
                 array_push($logInfos, $logInfo);
 
-                // 日射吸収率テーブルにレコードを更新
-                $solar_absorptivity_infos = $request->solar_absorptivity;
-                if (self::updateSolarAbsorptivity($simulationModel->simulation_model_id, $solar_absorptivity_infos)) {
-                    $logInfo = "[solar_absorptivity] [update] [ simulation_model_id: {$simulationModel->simulation_model_id}]";
+                // シミュレーションモデル実施施策にレコード更新
+                $smPolicies = $request->simulationModelPolicy;
+                if (self::updateSimulationModelPolicy($simulationModel->simulation_model_id, $smPolicies)) {
+                    $logInfo = "[simulation_model_policy] [update] [ simulation_model_id: {$simulationModel->simulation_model_id}]";
                     array_push($logInfos, $logInfo);
                 } else {
                     $result = false;
@@ -306,11 +300,11 @@ class SimulationModelService extends BaseService
             $logInfo = "[simulation_model] [insert] [copy from simulation: {$srcId}]";
             array_push($logInfos, $logInfo);
 
-            // == 日射吸収率のレコードを複製 ==
+            // == シミュレーションモデル熱効率のレコードを複製 ==
             $result = self::copySolarAbsorptivity($srcId, $simulationModel->simulation_model_id);
             $logInfo = "[solar_absorptivity] [insert] [copy from simulation: {$srcId}]";
             array_push($logInfos, $logInfo);
-            // == 日射吸収率のレコードを複製 //==
+            // == シミュレーションモデル熱効率のレコードを複製 //==
         } else {
             $result = false;
         }
@@ -329,7 +323,7 @@ class SimulationModelService extends BaseService
         $logInfos = [];
         $logInfo = "";
 
-        // 日射吸収率テーブルから削除
+        // シミュレーションモデル熱効率から削除
         $solarAbsorptivitys = SolarAbsorptivity::where(['simulation_model_id' => $id])->count();
         if ($solarAbsorptivitys > 0) {
             if (SolarAbsorptivity::where(['simulation_model_id' => $id])->delete() > 0) {
@@ -475,51 +469,28 @@ class SimulationModelService extends BaseService
     }
 
     /**
-     * 日射吸収率テーブルにレコード新規追加
+     * シミュレーションモデル熱効率テーブルにレコード新規追加
      * @param mixed $simulation_model_id シミュレーションモデルID
+     * @param mixed $region_id 解析対象地域ID
      *
      * @return bool
      *  新規追加に成功した場合、true
      *  新規追加に失敗した場合、false
      */
-    public static function addNewSolarAbsorptivity($simulation_model_id)
+    public static function addNewSolarAbsorptivity($simulation_model_id, $region_id)
     {
-        $stlTypeIds = [1, 2, 3, 4, 5, 6];
+        $stlModels = StlModel::where('region_id', $region_id)->orderBy('stl_type_id', 'asc')->get();
+
         $result = true;
-        foreach ($stlTypeIds as $stlTypeId) {
+        foreach ($stlModels as $stlModel) {
             $solarAbsorptivity = new SolarAbsorptivity();
             $solarAbsorptivity->simulation_model_id = $simulation_model_id;
-            $solarAbsorptivity->stl_type_id = $stlTypeId;
-            $solarAbsorptivity->solar_absorptivity = 0.7;
-            if(!$solarAbsorptivity->save()) {
-                $result = false;
-                break;
-            }
-        }
-        return $result;
-    }
+            $solarAbsorptivity->stl_type_id = $stlModel->stl_type_id;
+            // 日射吸収率の初期値はSTLファイルの日射吸収率とする。
+            $solarAbsorptivity->solar_absorptivity = $stlModel->solar_absorptivity;
+            // 排熱量の初期値はSTLファイルの排熱量とする。
+            $solarAbsorptivity->heat_removal = $stlModel->heat_removal;
 
-
-    /**
-     * 日射吸収率テーブル更新
-     * @param string $simulation_model_id シミュレーションモデルID
-     * @param mixed $solar_absorptivity_infos STLファイル種別ごとの日射吸収率
-     *
-     * @return bool
-     *  更新に成功した場合、true
-     *  更新に失敗した場合、false
-     */
-    public static function updateSolarAbsorptivity($simulation_model_id, $solar_absorptivity_infos)
-    {
-        $stlTypeIds = [1, 2, 3, 4, 5, 6];
-        $result = true;
-        foreach ($stlTypeIds as $index => $stlTypeId) {
-            $solarAbsorptivity = SolarAbsorptivity::getBySimulationIdAndStlTypeId($simulation_model_id, $stlTypeId);
-            if(!$solarAbsorptivity) {
-                $result = false;
-                break;
-            }
-            $solarAbsorptivity->solar_absorptivity = number_format($solar_absorptivity_infos[$index], 15);
             if (!$solarAbsorptivity->save()) {
                 $result = false;
                 break;
@@ -528,9 +499,8 @@ class SimulationModelService extends BaseService
         return $result;
     }
 
-
     /**
-     * 日射吸収率テーブルのレコードを複製
+     * シミュレーションモデル熱効率のレコードを複製
      * @param string $src_simulation_model_id コピー元のシミュレーションモデル
      * @param string $des_simulation_model_id コピー先のシミュレーションモデル
      *
@@ -542,16 +512,117 @@ class SimulationModelService extends BaseService
     {
         $result = true;
 
-        // コピー元の日射吸収率のレコードを取得
+        // コピー元のシミュレーションモデル熱効率のレコードを取得
         $solarAbsorptivitys = SolarAbsorptivity::getBySimulationId($src_simulation_model_id);
         foreach ($solarAbsorptivitys as $srcSolarAbsorptivity) {
             $newSolarAbsorptivity = new SolarAbsorptivity();
             $newSolarAbsorptivity->simulation_model_id = $des_simulation_model_id;
             $newSolarAbsorptivity->stl_type_id = $srcSolarAbsorptivity->stl_type_id;
             $newSolarAbsorptivity->solar_absorptivity = $srcSolarAbsorptivity->solar_absorptivity;
+            $newSolarAbsorptivity->heat_removal = $srcSolarAbsorptivity->heat_removal;
             if (!$newSolarAbsorptivity->save()) {
                 $result = false;
                 break;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * 熱対策施策テーブルの各レコードを取得
+     * @return Collection Policy
+     */
+    public static function getAllPolicy()
+    {
+        // 施策IDの昇順でレコードを取得する。
+        return Policy::all()->sortBy('policy_id');
+    }
+
+
+    /**
+     * 実施施策一覧に実施施策を新規追加
+     * @param Request $request リクエスト
+     * @param SimulationModel $simulation_model 編集対象のシミュレーション
+     * @param integer $stl_type_id 追加しようとする対象
+     * @param integer $policy_id 追加しようとする施設
+     *
+     * @return Collection SimulationModelPolicy シミュレーションモデル実施施策
+     */
+    public static function addNewSmPolicy($request, $simulation_model, $stl_type_id, $policy_id)
+    {
+        // 現状のシミュレーションモデル実施施策の各レコードを取得
+        $smPoliciesSession = $request->session()->get(Constants::SM_POLICY_SESSION_KEY);
+        $smPolicies = $smPoliciesSession ? $smPoliciesSession : $simulation_model->simulation_model_policies()->get();
+
+        // 新規追加しようとするデータが既に存在しているかチェック
+        $newSmPolicyIsExist = $smPolicies->filter(function($item) use ($stl_type_id, $policy_id) {
+            return $item->stl_type_id == intval($stl_type_id) && $item->policy_id == intval($policy_id);
+        })->count() > 0;
+
+        // 新規追加しようとするデータが存在していない場合、実施施策一覧に行を追加する。
+        if (!$newSmPolicyIsExist) {
+            $smPolicy = new SimulationModelPolicy(['simulation_model_id' => $simulation_model->simulation_model_id, 'stl_type_id' => $stl_type_id, 'policy_id' => $policy_id]);
+            $smPolicies->put($smPolicies->count(), $smPolicy);
+            $request->session()->put(Constants::SM_POLICY_SESSION_KEY, $smPolicies);
+        }
+
+        return $smPolicies;
+    }
+
+    /**
+     * 実施施策一覧より選択した行を削除
+     * @param Request $request リクエスト
+     * @param SimulationModel $simulation_model 編集対象のシミュレーション
+     * @param integer $stl_type_id 削除しようとする対象
+     * @param integer $policy_id 削除しようとする施設
+     *
+     * @return Collection SimulationModelPolicy シミュレーションモデル実施施策
+     */
+    public static function deleteSmPolicy($request, $simulation_model, $stl_type_id, $policy_id)
+    {
+        // 現状のシミュレーションモデル実施施策の各レコードを取得
+        $smPoliciesSession = $request->session()->get(Constants::SM_POLICY_SESSION_KEY);
+        $smPolicies = $smPoliciesSession ? $smPoliciesSession : $simulation_model->simulation_model_policies()->get();
+
+        // 選択中の「施策」と「対象」を実施施策一覧より削除
+        $smPolicies = $smPolicies->filter(function($item) use ($stl_type_id, $policy_id) {
+            return !(($item->stl_type_id == intval($stl_type_id)) && ($item->policy_id == intval($policy_id)));
+        });
+
+        $request->session()->put(Constants::SM_POLICY_SESSION_KEY, $smPolicies);
+
+        return $smPolicies;
+    }
+
+    /**
+     * シミュレーションモデル実施施策テーブルにレコードを更新する。
+     * @param mixed $simulation_model_id シミュレーションモデルID
+     * @param array $new_simulation_model_policies 更新対象レコード
+     *
+     * @return bool
+     *  更新に成功した場合、true
+     *  更新に失敗した場合、false
+     */
+    public static function updateSimulationModelPolicy($simulation_model_id, $new_simulation_model_policies)
+    {
+        $result = true;
+
+        // 編集対象シミュレーションモデルに関する全てレコードを削除
+        $oldSimulationModelPolicies = SimulationModelPolicy::where('simulation_model_id', $simulation_model_id)->count();
+        if ($oldSimulationModelPolicies > 0) {
+            if (!(SimulationModelPolicy::where('simulation_model_id', $simulation_model_id)->delete() > 0)) {
+                $result = false;
+            }
+        }
+
+        // レコード登録し直す
+        if ($result && $new_simulation_model_policies) {
+            foreach ($new_simulation_model_policies as $smPolicy) {
+                $simulationModelPolicy = new SimulationModelPolicy($smPolicy);
+                if (!$simulationModelPolicy->save()) {
+                    $result = false;
+                    break;
+                }
             }
         }
         return $result;

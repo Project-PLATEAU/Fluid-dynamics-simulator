@@ -182,15 +182,18 @@ def cancel_process(model_id : str):
 def main():
     log_writer.fileConfig()
     logger.info('Start wrapper_organize.py')
-    task_id = status_db_connection.TASK_UNKNOWN
     model_id = None
+    task_id = status_db_connection.TASK_UNKNOWN
     try:
         # シミュレーションモデルテーブルから実行ステータスが開始処理中・実行中・中止処理中のレコードを取得する
         simulation_models = webapp_db_connection.select_model()
-        for simulation_model in simulation_models:
-            model_id = str(simulation_model.simulation_model_id)
+        models = [{"model_id" : str(simulation_model.simulation_model_id), 
+                   "run_status" : simulation_model.run_status} 
+                  for simulation_model in simulation_models]
+        for model in models:
+            model_id = model["model_id"]
+            run_status = model["run_status"]
             logger.info(f'Start process : model_id = [{model_id}]')
-            run_status = simulation_model.run_status
             if run_status == static.SIMULATION_MODEL_RUN_STATUS_CANCEL_IN_PROGRESS:
                 cancel_process(model_id)
             else:

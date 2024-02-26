@@ -16,7 +16,8 @@ FoamFile
 
 // Which of the steps to run
 castellatedMesh true;
-snap            true;
+snap            false;
+//snap            true;
 addLayers       false;
 
 
@@ -72,10 +73,10 @@ snapControls
     tolerance 2.0;
     nSolveIter 30;
     nRelaxIter 5;
-        nFeatureSnapIter 10;
-        implicitFeatureSnap false;
-        explicitFeatureSnap true;
-        multiRegionFeatureSnap false;
+    nFeatureSnapIter 10;
+    implicitFeatureSnap false;
+    explicitFeatureSnap true;
+    multiRegionFeatureSnap false;
 }
 
 

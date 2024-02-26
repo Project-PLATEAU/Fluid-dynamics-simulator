@@ -88,10 +88,11 @@ class SolverService extends BaseService
      * @param string $user_id ログインユーザ
      * @param string $solver_name 識別名
      * @param Request $solver_compressed_file_rq 選択したソルバ一式圧縮ファイル
+     * @param string $explanation 説明
      *
-     * @return \App\Models\Db\Solver
+     * @return \App\Models\Db\Solver 熱流体解析ソルバ
      */
-    public static function addNewSolver($user_id, $solver_name, $solver_compressed_file_rq)
+    public static function addNewSolver($user_id, $solver_name, $solver_compressed_file_rq, $explanation)
     {
         // 新規追加
         $solver = new Solver();
@@ -102,6 +103,7 @@ class SolverService extends BaseService
         $solver->upload_datetime = DatetimeUtil::getNOW();
         $solver->preset_flag = false;
         $solver->disclosure_flag = false;
+        $solver->explanation = $explanation;
         $solver->save();
 
         // ソルバ一式圧縮ファイルをアップロード
@@ -110,27 +112,35 @@ class SolverService extends BaseService
         // アップロードしたファイルパス保存
         $solver->solver_compressed_file = $tarFileRelativePath;
         $solver->save();
-        LogUtil::i("[solver] [insert] [solver_name: {$solver_name}, solver_compressed_file: {$tarFileRelativePath}, user_id: {$user_id}, upload_datetime: {$solver->upload_datetime}, preset_flag: false, disclosure_flag: false]");
+        LogUtil::i("[solver] [insert] [solver_name: {$solver_name}, solver_compressed_file: {$tarFileRelativePath}, user_id: {$user_id}, upload_datetime: {$solver->upload_datetime}, preset_flag: false, disclosure_flag: false, explanation: {$explanation}]");
         return $solver;
     }
 
     /**
      * 熱流体解析ソルの更新
-     * @param \App\Models\Db\Solver $solver 熱流体解析ソル
+     * @param \App\Models\Db\Solver $solver 熱流体解析ソルバ
+     * @param string $solver_name 更新用の識別名
      * @param Request $solver_compressed_file_rq 選択したソルバ一式圧縮ファイル
+     * @param string $explanation 更新用の説明
      *
      * @return \App\Models\Db\Solver
      */
-    public static function updateSolver($solver, $solver_compressed_file_rq)
+    public static function updateSolver($solver, $solver_name, $solver_compressed_file_rq, $explanation)
     {
+        // 識別名
+        $solver->solver_name = $solver_name;
+
         // ソルバ一式圧縮ファイルをアップロード
         $tarFileRelativePath = self::uploadTarFile($solver->solver_id, $solver_compressed_file_rq);
         // アップロードしたファイルパス更新
         $solver->solver_compressed_file = $tarFileRelativePath;
         // 登録日時を現在日時とする
         $solver->upload_datetime = DatetimeUtil::getNOW();
+        // 説明
+        $solver->explanation = $explanation;
+
         $solver->save();
-        LogUtil::i("[solver] [update] [solver_id: {$solver->solver_id}, solver_compressed_file: {$tarFileRelativePath}, upload_datetime: {$solver->upload_datetime}]");
+        LogUtil::i("[solver] [update] [solver_id: {$solver->solver_id}, , solver_name : {$solver_name}, solver_compressed_file: {$tarFileRelativePath}, upload_datetime: {$solver->upload_datetime}, explanation: {$explanation}]");
         return $solver;
     }
 
@@ -150,13 +160,14 @@ class SolverService extends BaseService
 
     /**
      * 熱流体解析ソルの削除
-     * @param \App\Models\Db\Solver $solver 熱流体解析ソル
+     * @param string $solver_id 熱流体解析ソル
      *
      * @return
      */
-    public static function deleteSolver($solver)
+    public static function deleteSolver($solver_id)
     {
+        $solver = self::getSolverById($solver_id);
         $solver->delete();
-        LogUtil::i("[solver] [delete] [solver_id: {$solver->solver_id}]");
+        LogUtil::i("[solver] [delete] [solver_id: {$solver_id}]");
     }
 }

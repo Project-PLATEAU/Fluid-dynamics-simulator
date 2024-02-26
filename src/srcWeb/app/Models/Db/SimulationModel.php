@@ -134,20 +134,31 @@ class SimulationModel extends DbModel
 		return $this->belongsTo(Solver::class, 'solver_id');
 	}
 
-    public function visualizations()
+    public function policies()
     {
-        return $this->hasMany(Visualization::class, 'simulation_model_id');
+        return $this->belongsToMany(Policy::class, 'simulation_model_policy')
+        ->withPivot('stl_type_id');
     }
+
+    public function simulation_model_policies()
+    {
+        return $this->hasMany(SimulationModelPolicy::class, 'simulation_model_id');
+    }
+
+    public function simulation_model_reference_authorities()
+	{
+		return $this->hasMany(SimulationModelReferenceAuthority::class, 'simulation_model_id');
+	}
 
     public function solar_absorptivities()
     {
         return $this->hasMany(SolarAbsorptivity::class, 'simulation_model_id');
     }
 
-	public function simulation_model_reference_authorities()
-	{
-		return $this->hasMany(SimulationModelReferenceAuthority::class, 'simulation_model_id');
-	}
+    public function visualizations()
+    {
+        return $this->hasMany(Visualization::class, 'simulation_model_id');
+    }
 
     /**
      *

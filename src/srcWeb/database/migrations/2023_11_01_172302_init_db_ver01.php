@@ -159,6 +159,8 @@ return new class extends Migration
             $table->boolean('preset_flag')->nullable()->comment('プリセットフラグ');
             // 公開フラグ
             $table->boolean('disclosure_flag')->nullable()->comment('公開フラグ');
+            // 説明
+            $table->string('explanation', 1024)->nullable()->comment('説明');
 
             // 外部キー(登録ユーザID)の制約を追加
             $table->foreign('user_id')->references('user_id')->on('user_account')
@@ -293,6 +295,10 @@ return new class extends Migration
             $table->boolean('required_flag')->nullable()->comment('必須フラグ');
             // 地面フラグ
             $table->boolean('ground_flag')->nullable()->comment('地面フラグ');
+            // 日射吸収率
+            $table->float('solar_absorptivity')->nullable()->comment('日射吸収率');
+            // 排熱量
+            $table->float('heat_removal')->nullable()->comment('排熱量');
         });
 
         // (CS) STLファイル
@@ -309,6 +315,10 @@ return new class extends Migration
             $table->string('stl_file', 256)->nullable()->comment('STLファイル');
             // アップロード日時
             $table->timestamp('upload_datetime')->nullable()->comment('アップロード日時');
+            // 日射吸収率
+            $table->float('solar_absorptivity')->nullable()->comment('日射吸収率');
+            // 排熱量
+            $table->float('heat_removal')->nullable()->comment('排熱量');
 
             // PK:解析対象地域IDとSTLファイル種別ID
             $table->primary(['region_id', 'stl_type_id']);
@@ -358,11 +368,11 @@ return new class extends Migration
             ->onDelete('restrict');
         });
 
-        // (SA)日射吸収率
+        // (SA)シミュレーションモデル熱効率
         Schema::create('solar_absorptivity', function (Blueprint $table) {
 
             // テーブルにコメント追加
-            $table->comment('(SA)日射吸収率');
+            $table->comment('(SA)シミュレーションモデル熱効率');
 
             // シミュレーションモデルID
             $table->uuid('simulation_model_id')->comment('シミュレーションモデルID');
@@ -370,6 +380,8 @@ return new class extends Migration
             $table->smallInteger('stl_type_id')->comment('STLファイル種別ID');
             // 日射吸収率
             $table->float('solar_absorptivity')->nullable()->comment('日射吸収率');
+            // 排熱量
+            $table->float('heat_removal')->nullable()->comment('排熱量');
 
             // PK:シミュレーションモデルIDとSTLファイル種別ID
             $table->primary(['simulation_model_id', 'stl_type_id']);
@@ -380,6 +392,52 @@ return new class extends Migration
             ->onDelete('restrict');
             // 外部キー(STLファイル種別ID)の制約を追加
             $table->foreign('stl_type_id')->references('stl_type_id')->on('stl_type')
+            ->onUpdate('restrict')
+            ->onDelete('restrict');
+        });
+
+        // (PP)熱対策施策
+        Schema::create('policy', function (Blueprint $table) {
+
+            // テーブルにコメント追加
+            $table->comment('(PP)熱対策施策');
+
+            // 施策ID
+            $table->smallInteger('policy_id')->primary()->comment('施策ID');
+            // 施策名
+            $table->string('policy_name', 16)->nullable()->comment('施策名');
+            // 日射吸収率調整係数
+            $table->float('solar_absorptivity')->nullable()->comment('日射吸収率調整係数');
+            // 排熱量調整係数
+            $table->float('heat_removal')->nullable()->comment('排熱量調整係数');
+        });
+
+        // (SP)シミュレーションモデル実施施策
+        Schema::create('simulation_model_policy', function (Blueprint $table) {
+
+            // テーブルにコメント追加
+            $table->comment('(SP)シミュレーションモデル実施施策');
+
+            // シミュレーションモデルID
+            $table->uuid('simulation_model_id')->comment('シミュレーションモデルID');
+            // STLファイル種別ID
+            $table->smallInteger('stl_type_id')->comment('STLファイル種別ID');
+            // 施策ID
+            $table->smallInteger('policy_id')->comment('施策ID');
+
+            // PK:シミュレーションモデルIDとSTLファイル種別IDと施策ID
+            $table->primary(['simulation_model_id', 'stl_type_id', 'policy_id']);
+
+            // 外部キー(シミュレーションモデルID)の制約を追加
+            $table->foreign('simulation_model_id')->references('simulation_model_id')->on('simulation_model')
+            ->onUpdate('restrict')
+            ->onDelete('restrict');
+            // 外部キー(STLファイル種別ID)の制約を追加
+            $table->foreign('stl_type_id')->references('stl_type_id')->on('stl_type')
+            ->onUpdate('restrict')
+            ->onDelete('restrict');
+            // 外部キー(施策ID)の制約を追加
+            $table->foreign('policy_id')->references('policy_id')->on('policy')
             ->onUpdate('restrict')
             ->onDelete('restrict');
         });

@@ -140,22 +140,12 @@ class RegionController extends BaseController
     public function destroy(Request $request, string $city_model_id, string $region_id)
     {
         try {
-            $errorMessage = [];
 
             // 登録ユーザ
             $registeredUserId = $request->query->get('registered_user_id');
 
-            // 削除操作ができるか確認
-            if ($region_id == 0) {
-                $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
-            }
-
-            // 画面遷移
-            if ($errorMessage) {
-                LogUtil::w($errorMessage["msg"]);
-                return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_delete' => 1])->with(['message' => $errorMessage]);
-            } else {
-
+            $isDeleteFlg = $request->query->get('delete_flg');
+            if ($isDeleteFlg) {
                 // 解析対象地域の削除
                 DB::beginTransaction();
                 $deleteResult = RegionService::deleteRegionById($city_model_id, $region_id);
@@ -167,6 +157,28 @@ class RegionController extends BaseController
                     return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId]);
                 } else {
                     throw new Exception("解析対象地域の削除に失敗しました。解析対象地域ID: {$region_id}");
+                }
+            } else {
+
+                $errorMessage = [];
+
+                // 削除操作ができるか確認
+                if ($region_id == 0) {
+                    $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
+                }
+
+                // 画面遷移
+                if ($errorMessage) {
+                    LogUtil::w($errorMessage["msg"]);
+                    return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_delete' => 1])->with(['message' => $errorMessage]);
+                } else {
+                    $region = RegionService::getRegionById($region_id);
+                    if (!$region) {
+                        throw new Exception("解析対象地域の削除に失敗しました。解析対象地域ID「{$region_id}」のレコードが存在しません。");
+                    } else {
+                        $warningMessage = ["type" => "W", "code" => "W1", "msg" => sprintf(Message::$W1, $region->region_name)];
+                        return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_id' => $region_id])->with(['message' => $warningMessage]);
+                    }
                 }
             }
         } catch (Exception $e) {
@@ -197,6 +209,12 @@ class RegionController extends BaseController
             // STLファイル種別
             $stl_type_id = $request->stl_type_id;
 
+            // 日射吸収率
+            $solar_absorptivity = $request->solar_absorptivity;
+
+            // 排熱量
+            $heat_removal = $request->heat_removal;
+
             // 登録ユーザ
             $registeredUserId = $request->query->get('registered_user_id');
 
@@ -216,7 +234,7 @@ class RegionController extends BaseController
 
                 // STLファイルのアップロード処理
                 DB::beginTransaction();
-                $addOrUpdateResutl = RegionService::addNewOrUpdateStlFile($city_model_id, $region_id, $stl_type_id, $stlFileRq);
+                $addOrUpdateResutl = RegionService::addNewOrUpdateStlFile($city_model_id, $region_id, $stl_type_id, $stlFileRq, $solar_absorptivity, $heat_removal);
                 if ($addOrUpdateResutl['result']) {
                     DB::commit();
                     foreach ($addOrUpdateResutl['log_infos'] as $key => $log) {
@@ -292,7 +310,6 @@ class RegionController extends BaseController
     public function destroyStlFile(Request $request, string $city_model_id, string $region_id)
     {
         try {
-            $errorMessage = [];
 
             // 登録ユーザ
             $registeredUserId = $request->query->get('registered_user_id');
@@ -300,18 +317,10 @@ class RegionController extends BaseController
             // STLファイル種別ID
             $stlTypeId = $request->query->get('stl_type_id');
 
-            // 削除操作ができるか確認
-            if (!$stlTypeId) {
-                $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
-            }
-
-            // 画面遷移
-            if ($errorMessage) {
-                LogUtil::w($errorMessage["msg"]);
-                return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_delete' => 1])->with(['message' => $errorMessage]);
-            } else {
-
-                //STLファイルの削除
+            // 削除実行前確認ダイアログでOKボタンを押した。
+            $isDeleteFlg = $request->query->get('delete_flg');
+            if ($isDeleteFlg) {
+                // STLファイルの削除
                 DB::beginTransaction();
                 $deleteResult = RegionService::deleteStlFile($city_model_id, $region_id, $stlTypeId);
                 if ($deleteResult['result']) {
@@ -323,12 +332,67 @@ class RegionController extends BaseController
                 } else {
                     throw new Exception("STLファイルの削除に失敗しました。解析対象地域ID: {$region_id}, STLファイル種別ID: {$$stlTypeId}");
                 }
+            } else {
+
+                $errorMessage = [];
+
+                // 削除操作ができるか確認
+                if (!$stlTypeId) {
+                    $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
+                }
+
+                // 画面遷移
+                if ($errorMessage) {
+                    LogUtil::w($errorMessage["msg"]);
+                    return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_delete' => 1])->with(['message' => $errorMessage]);
+                } else {
+                    $sltModel = RegionService::getSltFile($region_id, $stlTypeId);
+                    if (!$sltModel) {
+                        throw new Exception("STLファイルの削除に失敗しました。解析対象地域ID「{$region_id}」とSTLファイル種別ID「{$stlTypeId}」の STLファイルレコードが存在しません。");
+                    } else {
+                        $warningMessage = ["type" => "W", "code" => "W1", "msg" => sprintf(Message::$W1, $sltModel->stl_type->stl_type_name)];
+                        return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_id' => $region_id, 'stl_type_id' => $stlTypeId])->with(['message' => $warningMessage]);
+                    }
+                }
             }
         } catch (Exception $e) {
             DB::rollback();
             $error = $e->getMessage();
             LogUtil::e($error);
             return view('layouts.error', compact('e'));
+        }
+    }
+
+    /**
+     * 特定のSTLファイル種別によりSTLファイル種別情報を更新
+     * @param Request $request STLファイル種別情報更新のリクエスト
+     *
+     * @return
+     */
+    public function onChangeStlType(Request $request)
+    {
+        try {
+
+            $stlTypeInfos = [];
+
+            // 特定のSTLファイル種別ID
+            $stl_type_id = $request->stl_type_id;
+            if ($stl_type_id) {
+                $stlType = RegionService::getStlType($stl_type_id);
+                if (!$stlType) {
+                    throw new Exception("特定のSTLファイル種別によりSTLファイル種別情報の更新に失敗しました。STLファイル種別IDが{$stl_type_id}のレコードが登録されていないようです。");
+                }
+                $stlTypeInfos = ['stl_type' => $stlType];
+            } else {
+                throw new Exception("特定のSTLファイル種別によりSTLファイル種別情報の更新に失敗しました。STLファイル種別ID: [{$stl_type_id}] が不正です。");
+            }
+            return response()->json($stlTypeInfos);
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            LogUtil::e($error);
+            header('HTTP/1.1 500 Internal Server');
+            header('Content-Type: application/json; charset=UTF-8');
+            die(json_encode(array('message' => 'error', 'code' => 500)));
         }
     }
 }

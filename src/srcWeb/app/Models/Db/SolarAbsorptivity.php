@@ -16,6 +16,7 @@ use Faker\Core\Uuid;
  * @property Uuid $simulation_model_id
  * @property int $stl_type_id
  * @property float|null $solar_absorptivity
+ * @property float|null $heat_removal
  *
  * @property SimulationModel $simulation_model
  * @property StlType $stl_type
@@ -35,13 +36,15 @@ class SolarAbsorptivity extends DbModel
 
 	protected $casts = [
 		'stl_type_id' => 'int',
-		'solar_absorptivity' => 'float'
+		'solar_absorptivity' => 'float',
+        'heat_removal' => 'float'
 	];
 
 	protected $fillable = [
         'simulation_model_id',
         'stl_type_id',
-		'solar_absorptivity'
+		'solar_absorptivity',
+        'heat_removal'
 	];
 
 	public function simulation_model()

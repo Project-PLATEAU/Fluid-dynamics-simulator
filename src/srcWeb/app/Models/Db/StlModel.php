@@ -18,6 +18,8 @@ use Faker\Core\Uuid;
  * @property int $stl_type_id
  * @property string|null $stl_file
  * @property Carbon|null $upload_datetime
+ * @property float|null $solar_absorptivity
+ * @property float|null $heat_removal
  *
  * @property Region $region
  * @property StlType $stl_type
@@ -45,7 +47,9 @@ class StlModel extends DbModel
         'region_id',
         'stl_type_id',
 		'stl_file',
-		'upload_datetime'
+		'upload_datetime',
+        'solar_absorptivity',
+        'heat_removal'
 	];
 
 	public function region()

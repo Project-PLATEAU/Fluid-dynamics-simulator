@@ -90,7 +90,7 @@
                     $("div#messageModal [class='modal-body']").html(
                         '<div class="d-flex flex-row"><img class="ms-2" src="{{ asset('/image/dialog/warning.png') }}?ver={{ config('const.ver_image') }}" height="65px" width="65px" alt="warning"><span class="ms-4" id="message"></span></div>');
                     $("div#messageModal [class='modal-footer']").html(
-                        '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-outline-secondary" id="ButtonOK">OK</button>');
+                        '<button type="button" class="btn btn-outline-secondary" id="ButtonOK">OK</button><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>');
                 }
 
                 $("div#messageModal [class='modal-header'] h1#messageModalLabel").html(code);
@@ -173,12 +173,12 @@
         function togglebgTr(target)
         {
             if ($(target).hasClass('bg-cyan')) {
-                    // 既に選択されている場合は背景色を解除
-                    removebgColor(target);
-                } else {
-                    // 選択されていない場合は背景色を設定
-                    setbgColor(target);
-                }
+                // 既に選択されている場合は背景色を解除
+                removebgColor(target);
+            } else {
+                // 選択されていない場合は背景色を設定
+                setbgColor(target);
+            }
         }
 
         /**

@@ -18,7 +18,7 @@
         <button type="button" name="ButtonEdit" id="ButtonEdit" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.edit', ['id' => 0]) }}">編集</button>
         <button type="button" name="ButtonDelete" id="ButtonDelete" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.delete', ['id' => 0]) }}">削除</button>
         <button type="button" name="ButtonShare" id="ButtonShare" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.share', ['id' => 0]) }}">共有</button>
-        <button type="button" name="ButtonSimulationStart" id="ButtonSimulationStart" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.start', ['id' => 0]) }}">シミュレーションモデル開始</button>
+        <button type="button" name="ButtonSimulationStart" id="ButtonSimulationStart" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.start', ['id' => 0]) }}">シミュレーション開始</button>
         <button type="button" name="ButtonStatusDetail" id="ButtonStatusDetail" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.status_detail', ['id' => 0]) }}">ステータス詳細</button>
         <button type="button" name="ButtonSimulationStop" id="ButtonSimulationStop" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.stop', ['id' => 0]) }}">中止</button>
         <button type="button" name="ButtonSimulationResultShow" id="ButtonSimulationResultShow" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.show', ['id' => 0]) }}">シミュレーション結果閲覧</button>
@@ -111,15 +111,15 @@
                         '<div class="d-flex flex-row"><img class="ms-2" src="{{ asset('/image/dialog/question.png') }}?ver={{ config('const.ver_image') }}" height="65px" width="65px" alt="warning"><span class="ms-4" id="message"></span></div>');
                     if (code == "Q1")
                     {
-                        // シミュレーションモデル開始ボタンでのQ1
+                        // シミュレーション開始ボタンでのQ1
                         $("div#messageModal [class='modal-footer']").html(
-                            '<button type="button" class="btn btn-outline-secondary" id="ButtonStartYes">Yes</button><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>');
+                            '<button type="button" class="btn btn-outline-secondary" id="ButtonStartYes">Yes</button><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>');
                     }
                     else if (code == "Q2")
                     {
                         // ステータス詳細ボタンでのQ2
                         $("div#messageModal [class='modal-footer']").html(
-                        '<button type="button" class="btn btn-outline-secondary" id="ButtonStatusDetailYes">Yes</button><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>');
+                        '<button type="button" class="btn btn-outline-secondary" id="ButtonStatusDetailYes">Yes</button><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No</button>');
                     }
                 }
 

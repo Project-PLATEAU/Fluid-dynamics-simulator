@@ -2,6 +2,7 @@
 
 namespace App\Commons;
 
+use App\Utils\DatetimeUtil;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 
@@ -39,5 +40,16 @@ class CommonUtils
         } else {
             return [];
         }
+    }
+
+    /**
+     * gitへ最終コミットがされた日時を取得
+     * @return
+     */
+    public static function getLastGitCommitDate()
+    {
+        $commitHash = trim(shell_exec('git rev-parse HEAD'));
+        $commitDate = shell_exec("git log -1 --pretty=format:'%ci' $commitHash");
+        return DatetimeUtil::changeFormat($commitDate, 'Y.m.d');
     }
 }

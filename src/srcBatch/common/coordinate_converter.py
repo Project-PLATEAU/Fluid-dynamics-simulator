@@ -21,6 +21,17 @@ def convert_from_LatLon(system_id:int,lat:float,lon:float) -> tuple:
     x, y = tr.transform(lat,lon)
     return x, y
 
+
+# 大量のデータ変換が必要なためクラスに_transformerを保持する
+class Convert_To_LatLon:
+    def __init__(self, system_id) -> None:
+        self.rect_epsg = to_epsg_code(system_id)
+        self._transformer =  Transformer.from_proj(self.rect_epsg, EPSG_CODE_LATLON)
+    def convert(self, x:float, y:float) -> tuple:
+        lat,lon  = self._transformer.transform(x, y)
+        return lat, lon
+    
+
 def convert_to_LatLon(system_id:int,x:float,y:float) -> tuple:
     '''
         Args:

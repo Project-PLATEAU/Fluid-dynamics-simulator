@@ -3,12 +3,11 @@
 
 namespace App\Services;
 
-use App\Models\Db\CityModelReferenceAuthority;
 use App\Models\Db\Region;
 use App\Models\Db\StlModel;
+use App\Models\Db\StlType;
 use App\Utils\DatetimeUtil;
 use App\Utils\FileUtil;
-use App\Utils\LogUtil;
 use Illuminate\Http\Request;
 
 /**
@@ -183,10 +182,12 @@ class RegionService extends BaseService
      * @param string $region_id 解析対象地域ID
      * @param string $stl_type_id STLファイル種別ID
      * @param Request $stl_file_rq 選択したSTLファイル
+     * @param float $solar_absorptivity 入力した日射吸収率
+     * @param float $heat_removal 入力した排熱量
      *
      * @return array 新規追加または更新の結果(log含む)
      */
-    public static function addNewOrUpdateStlFile($city_model_id, $region_id, $stl_type_id, $stl_file_rq)
+    public static function addNewOrUpdateStlFile($city_model_id, $region_id, $stl_type_id, $stl_file_rq, $solar_absorptivity, $heat_removal)
     {
         $result = true;
         $logInfos = [];
@@ -209,8 +210,19 @@ class RegionService extends BaseService
         // 登録日時を現在日時とする
         $now = DatetimeUtil::getNOW();
         $sltFile->upload_datetime = $now;
-        $logInfo .= "upload_datetime: {$now}]";
+        $logInfo .= "upload_datetime: {$now}, ";
+
+        // 日射吸収率
+        $sltFile->solar_absorptivity = $solar_absorptivity;
+        $logInfo .= "solar_absorptivity: {$solar_absorptivity}, ";
+
+        // 排熱量
+        $sltFile->heat_removal = $heat_removal;
+        $logInfo .= "heat_removal: {$heat_removal}]";
+
+        // 保存
         $result = $sltFile->save();
+
         if ($result) {
 
             array_push($logInfos,$logInfo);
@@ -253,5 +265,17 @@ class RegionService extends BaseService
             $result = false;
         }
         return ["result" => $result, "log_infos" => $logInfos];
+    }
+
+    /**
+     * 特定のSTLファイル種別を取得
+     * @param integer $stl_type_id STLファイル種別ID
+     *
+     * @return StlType STLファイル種別
+     */
+    public static function getStlType($stl_type_id)
+    {
+        // STLファイル種別
+        return StlType::where('stl_type_id', $stl_type_id)->first();
     }
 }

@@ -49,6 +49,7 @@ class SolverController extends BaseController
 
             $solverName = $request->solver_name;
             $solverCompressedFileRq = $request->file('solver_compressed_file');
+            $explanation = $request->explanation;
 
             if (!$solverName) {
                 // 識別名が未入力
@@ -64,7 +65,7 @@ class SolverController extends BaseController
                 return redirect()->route('solver.index')->with(['message' => $errorMessage]);
             } else {
                 // ソルバーレコードを新規追加(※アップロード処理を含む)
-                SolverService::addNewSolver(self::getCookie(Constants::LOGIN_COOKIE_NAME)->user_id, $solverName, $solverCompressedFileRq);
+                SolverService::addNewSolver(self::getCookie(Constants::LOGIN_COOKIE_NAME)->user_id, $solverName, $solverCompressedFileRq, $explanation);
                 return redirect()->route('solver.index');
             }
         } catch (Exception $e) {
@@ -89,12 +90,21 @@ class SolverController extends BaseController
 
             $solver = null;
 
+            // 更新用の識別名
+            $solverName = $request->solver_name;
+            // 更新用のソルバー式圧縮ファイル
             $solverCompressedFileRq = $request->file('solver_compressed_file');
+            // 更新用の説明
+            $explanation = $request->explanation;
+
 
             if ($id == 0) {
                 $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
             } else {
                 $solver = SolverService::getSolverById($id);
+                if (!$solver) {
+                    throw new Exception("熱流体解析ソルバの更新に失敗しました。ソルバID「{$id}」のレコードが存在しません。");
+                }
                 if ($solver->preset_flag) {
                     // プリセットフラグが有効の場合、[E8]エラー
                     $errorMessage = ["type" => "E", "code" => "E8", "msg" => Message::$E8];
@@ -109,7 +119,7 @@ class SolverController extends BaseController
                 LogUtil::w($errorMessage["msg"]);
                 return redirect()->route('solver.index')->with(['message' => $errorMessage]);
             } else {
-                SolverService::updateSolver($solver, $solverCompressedFileRq);
+                SolverService::updateSolver($solver, $solverName, $solverCompressedFileRq, $explanation);
                 return redirect()->route('solver.index');
             }
         } catch (Exception $e) {
@@ -162,39 +172,50 @@ class SolverController extends BaseController
      * @param Request $request リクエスト
      * @param string $id 熱流体解析ソルバID
      *
-     * @return [type]
+     * @return
      */
     public function destroy(Request $request, string $id)
     {
         try {
 
-            $errorMessage = [];
-
-            $solver = null;
-
-            if ($id == 0) {
-                $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
-            } else {
-                $solver = SolverService::getSolverById($id);
-                $simulationIdentificationNameList = $solver->simulation_models()->get()
-                    ->map(function ($item) {
-                        // シミュレーションモデルの識別名の配列を取得
-                        return $item->identification_name;
-                    })->toArray();
-                if (count($simulationIdentificationNameList) > 0) {
-                    // シミュレーションモデルに紐づいているレコードが1つ以上存在する場合、[E27]エラーを表示
-                    $e27Msg = sprintf(Message::$E27, StringUtil::arrayToString($simulationIdentificationNameList));
-                    $errorMessage = ["type" => "E", "code" => "E27", "msg" => $e27Msg];
-                }
-            }
-
-            // 画面遷移
-            if ($errorMessage) {
-                LogUtil::w($errorMessage["msg"]);
-                return redirect()->route('solver.index')->with(['message' => $errorMessage]);
-            } else {
-                SolverService::deleteSolver($solver);
+            $isDeleteFlg = $request->query->get('delete_flg');
+            if ($isDeleteFlg) {
+                SolverService::deleteSolver($id);
                 return redirect()->route('solver.index');
+            } else {
+                $errorMessage = [];
+
+                $solver = null;
+
+                if ($id == 0) {
+                    $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
+                } else {
+                    $solver = SolverService::getSolverById($id);
+
+                    if (!$solver) {
+                        throw new Exception("熱流体解析ソルバの削除に失敗しました。ソルバID「{$id}」のレコードが存在しません。");
+                    }
+
+                    $simulationIdentificationNameList = $solver->simulation_models()->get()
+                        ->map(function ($item) {
+                            // シミュレーションモデルの識別名の配列を取得
+                            return $item->identification_name;
+                        })->toArray();
+                    if (count($simulationIdentificationNameList) > 0) {
+                        // シミュレーションモデルに紐づいているレコードが1つ以上存在する場合、[E27]エラーを表示
+                        $e27Msg = sprintf(Message::$E27, StringUtil::arrayToString($simulationIdentificationNameList));
+                        $errorMessage = ["type" => "E", "code" => "E27", "msg" => $e27Msg];
+                    }
+                }
+
+                // 画面遷移
+                if ($errorMessage) {
+                    LogUtil::w($errorMessage["msg"]);
+                    return redirect()->route('solver.index')->with(['message' => $errorMessage]);
+                } else {
+                    $warningMessage = ["type" => "W", "code" => "W1", "msg" => sprintf(Message::$W1, $solver->solver_name)];
+                    return redirect()->route('solver.index')->with(['message' => $warningMessage, 'solverId' => $id]);
+                }
             }
         } catch (Exception $e) {
             $error = $e->getMessage();

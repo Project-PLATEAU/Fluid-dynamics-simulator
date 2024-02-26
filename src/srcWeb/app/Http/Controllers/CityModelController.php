@@ -177,7 +177,7 @@ class CityModelController extends BaseController
 
             $cityModel = CityModelService::getCityModelById($id);
 
-            // 更新処理に失敗時のエラー
+            // 更新処理に失敗時のエラーなど
             $message = session('message');
 
             // 3D タイル選択欄
@@ -189,10 +189,12 @@ class CityModelController extends BaseController
             // STLファイル種別の選択欄
             $stlTypeOptions = CityModelService::getStlTypeOptions();
 
-            // STLファイルアップロード・削除時に選択した解析対象地域
+            // 解析対象地域削除やSTLファイルアップロード・削除時等に選択した解析対象地域
             $regionId = $request->query->get('region_id');
+            // STLファイル削除時に選択したSTLファイル種別ID
+            $stlTypeId = $request->query->get('stl_type_id');
 
-            return view('city_model.edit', compact('cityModel', 'registeredUserId', 'message', '_3dTilesOptions', 'coordinateOptions', 'stlTypeOptions', 'regionId'));
+            return view('city_model.edit', compact('cityModel', 'registeredUserId', 'message', '_3dTilesOptions', 'coordinateOptions', 'stlTypeOptions', 'regionId', 'stlTypeId'));
 
         } catch (Exception $e) {
             $error = $e->getMessage();
@@ -292,11 +294,17 @@ class CityModelController extends BaseController
             if ($isDeleteFlg) {
 
                 DB::beginTransaction();
-                // 都市モデル削除
-                CityModelService::deleteCityModelById($id);
-
-                DB::commit();
-                return redirect()->route('city_model.index');
+                // 都市モデル参照権限と都市モデルを削除
+                $deleteResult = CityModelService::deleteCityModelById($id);
+                if ($deleteResult['result']) {
+                    DB::commit();
+                    foreach ($deleteResult['log_infos'] as $key => $log) {
+                        LogUtil::i($log);
+                    }
+                    return redirect()->route('city_model.index');
+                } else {
+                    throw new Exception("都市モデル削除に失敗しました。都市モデルID: {$id}");
+                }
             } else {
 
                 $errorMessage = [];

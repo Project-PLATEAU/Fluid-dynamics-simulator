@@ -80,6 +80,7 @@ Route::middleware(['log'])->group(function () {
         Route::post('/region/stl/load/{region_id}', 'App\Http\Controllers\RegionController@updateStlInfo')->name('region.update_stl_info');
         Route::post('/region/stl/delete/{city_model_id}/{region_id}', 'App\Http\Controllers\RegionController@destroyStlFile')->name('region.delete_stl_file');
         Route::post('/region/update/{city_model_id}/{region_id}', 'App\Http\Controllers\RegionController@update')->name('region.update');
+        Route::post('/on_change_stl_type', 'App\Http\Controllers\RegionController@onChangeStlType')->name('stl_type.change');
 
         /**
          * シミュレーションモデル作成画面(index)
@@ -107,6 +108,14 @@ Route::middleware(['log'])->group(function () {
          * シミュレーションモデル編集画面(保存)
          */
         Route::post('/simulation_model/edit/{id}', 'App\Http\Controllers\SimulationModelController@update')->name('simulation_model.update');
+        /**
+         * シミュレーションモデル編集画面(実施施策一覧に行を追加)
+         */
+        Route::post('/simulation_model/sm_policy/create', 'App\Http\Controllers\SimulationModelController@createSmPolicy')->name('simulation_model.addnew_sm_policy');
+        /**
+         * シミュレーションモデル編集画面(実施施策一覧より行を削除)
+         */
+        Route::post('/simulation_model/sm_policy/delete', 'App\Http\Controllers\SimulationModelController@deleteSmPolicy')->name('simulation_model.delete_sm_policy');
         /**
          * シミュレーションモデル一覧画面(削除)
          */

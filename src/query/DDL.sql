@@ -176,6 +176,8 @@ CREATE TABLE SIMULATION_MODEL
 	last_sim_start_datetime timestamp(0),
 	-- 最終シミュレーション完了日時
 	last_sim_end_datetime timestamp(0),
+	-- 一般公開フラグ
+	disclosure_flag boolean,
 	PRIMARY KEY (simulation_model_id)
 ) WITHOUT OIDS;
 
@@ -189,7 +191,7 @@ CREATE TABLE SIMULATION_MODEL_POLICY
 	stl_type_id smallint NOT NULL,
 	-- 施策ID
 	policy_id smallint NOT NULL,
-	PRIMARY KEY (simulation_model_id, stl_type_id)
+	PRIMARY KEY (simulation_model_id, stl_type_id, policy_id)
 ) WITHOUT OIDS;
 
 
@@ -555,6 +557,7 @@ COMMENT ON COLUMN SIMULATION_MODEL.run_status_details IS '実行ステータス詳細';
 COMMENT ON COLUMN SIMULATION_MODEL.cfd_error_log_file IS '熱流体解析エラーログファイル';
 COMMENT ON COLUMN SIMULATION_MODEL.last_sim_start_datetime IS '最終シミュレーション開始日時';
 COMMENT ON COLUMN SIMULATION_MODEL.last_sim_end_datetime IS '最終シミュレーション完了日時';
+COMMENT ON COLUMN SIMULATION_MODEL.disclosure_flag IS '一般公開フラグ';
 COMMENT ON TABLE SIMULATION_MODEL_POLICY IS '(SP)シミュレーションモデル実施施策';
 COMMENT ON COLUMN SIMULATION_MODEL_POLICY.simulation_model_id IS 'シミュレーションモデルID';
 COMMENT ON COLUMN SIMULATION_MODEL_POLICY.stl_type_id IS 'STLファイル種別ID';

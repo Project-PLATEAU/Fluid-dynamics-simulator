@@ -25,16 +25,6 @@ FoamFile
     };
 }
 
-Bottom
-{
-    type    opaqueDiffusive;
-    wallAbsorptionEmissionModel
-    {
-        type            multiBandAbsorption;
-        absorptivity    (0.3 0.7);
-        emissivity      (0.3 0.7);
-    };
-}
 
 #include "userBoundaryRadiationProperties"
 

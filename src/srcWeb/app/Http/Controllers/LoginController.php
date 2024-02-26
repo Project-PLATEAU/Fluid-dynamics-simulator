@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Commons\CommonUtils;
 use App\Commons\Constants;
 use App\Commons\Message;
 use App\Models\Db\UserAccount;
@@ -23,7 +24,9 @@ class LoginController extends BaseController
         // 他画面からのリダイレクトで渡されたデータを受け取る。
         $message = session('message');
         $userAccount = new UserAccount();
-        return view('login.index', compact('userAccount', 'message'));
+        // gitへ最終コミットがされた日時をバージョンとする。
+        $version = CommonUtils::getLastGitCommitDate();
+        return view('login.index', compact('userAccount', 'message', 'version'));
     }
 
 

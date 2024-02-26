@@ -44,17 +44,34 @@ class CityModelService extends BaseService
      * 都市モデル削除
      * @param mixed $id 都市モデルID
      *
-     * @return
+     * @return array 削除結果(log含む)
      */
     public static function deleteCityModelById($id)
     {
+        $result = true;
+        $logInfos = [];
+        $logInfo = "";
+
         // 都市モデル参照権限テーブルから削除
-        CityModelReferenceAuthority::destroy($id);
-        LogUtil::i("[city_model_reference_authority] [delete] [city_model_id: {$id}]");
+        $cityModelReferenceAuthority = self::getCityModelById($id)->city_model_reference_authoritys()->count();
+        if ($cityModelReferenceAuthority > 0) {
+            if (self::getCityModelById($id)->city_model_reference_authoritys()->delete() > 0) {
+                $logInfo = "[city_model_reference_authority] [delete] [city_model_id: {$id}]";
+                array_push($logInfos, $logInfo);
+            } else {
+                $result = false;
+            }
+        }
 
         // 都市モデルテーブルから削除
-        CityModel::destroy($id);
-        LogUtil::i("[city_model] [delete] [city_model_id: {$id}]");
+        if ($result && CityModel::destroy($id)) {
+            $logInfo = "[city_model] [delete] [city_model_id: {$id}]";
+            array_push($logInfos, $logInfo);
+        } else {
+            $result =  false;
+        }
+
+        return ["result" => $result, "log_infos" => $logInfos];
     }
 
     /**
@@ -187,7 +204,7 @@ class CityModelService extends BaseService
      */
     public static function getStlTypeOptions()
     {
-        // 平面角直角座標系
+        // STLファイル種別
         return StlType::all();
     }
 }

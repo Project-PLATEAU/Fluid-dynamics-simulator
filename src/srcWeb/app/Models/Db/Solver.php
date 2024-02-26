@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Collection;
  * @property Carbon|null $upload_datetime
  * @property bool|null $preset_flag
  * @property bool|null $disclosure_flag
+ * @property string|null $explanation
  *
  * @property UserAccount $user_account
  * @property Collection|SimulationModel[] $simulation_models
@@ -50,7 +51,8 @@ class Solver extends DbModel
 		'user_id',
 		'upload_datetime',
 		'preset_flag',
-		'disclosure_flag'
+		'disclosure_flag',
+        'explanation'
 	];
 
 	public function user_account()

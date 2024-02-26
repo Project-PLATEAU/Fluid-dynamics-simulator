@@ -105,7 +105,7 @@ def fetch_model(model_id):
     with session_con() as session:
         try:
             model = session.query(SimulationModel, Region)\
-            .join(SimulationModel, SimulationModel.city_model_id == Region.city_model_id)\
+            .join(SimulationModel, SimulationModel.region_id == Region.region_id)\
             .filter(SimulationModel.simulation_model_id == model_id).one()
             return model
         except NoResultFound :

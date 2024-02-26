@@ -4,4 +4,4 @@
 -- varchar(32)型のuser_idはユーザテーブル外部キーだがnull許容
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-INSERT INTO public.SOLVER(solver_id,solver_name, solver_compressed_file, upload_datetime, preset_flag, disclosure_flag,explanation) VALUES (uuid_generate_v4(),N'標準',N'comperssed_solver/default/template.tar', CURRENT_TIMESTAMP, TRUE, TRUE,N'OpenFOAMのbuoyantSimpleFoamを利用')
+INSERT INTO public.SOLVER(solver_id,solver_name, solver_compressed_file, upload_datetime, preset_flag, disclosure_flag,explanation) VALUES (uuid_generate_v4(),N'標準',N'comperssed_solver/default/template.tar', CURRENT_TIMESTAMP, TRUE, TRUE,N'OpenFOAMのbuoyantSimpleFoamを利用');

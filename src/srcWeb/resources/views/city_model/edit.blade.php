@@ -5,7 +5,7 @@
 @section('css')
 <style type="">
     .bg-cyan {
-        background-color: cyan;
+        background-color: cyan
     }
 </style>
 @endsection
@@ -57,7 +57,7 @@
         <div class="mb-3 row mt-5">
             <label for="identification_name" class="col-sm-2 col-form-label">解析対象地域</label>
             <div class="col-sm-3">
-                <div id="region-list" class="d-flex flex-column border p-2" style="height: 100px;">
+                <div id="region-list" class="d-flex flex-column border p-2" style="height: 130px;">
                     @foreach($cityModel->regions()->get() as $region)
                     <span class="region" data-region-id="{{ $region->region_id }}" onclick="selectRegion(this)">{{ $region->region_name }}</span>
                     @endforeach
@@ -98,32 +98,40 @@
         <div class="mb-3 row">
             <label for="" class="col-sm-2 col-form-label"></label>
             <div class="col-sm-5">
-                <input class="form-control form-control-sm" id="stl_file" name="stl_file" type="file" accept=".stl">
-                <div class="d-flex flex-row mt-2"> {{-- d-flex flex-row  --}}
-                    <label for="identification_name" class="col-form-label me-2">種類</label>
-                    <select class="form-select me-2" style="width: 380px;" id="stl_type_id" name="stl_type_id">
-                        @foreach ($stlTypeOptions as $stlType)
-                        <option value="{{ $stlType->stl_type_id }}">{{ $stlType->stl_type_name }}</option>
-                        @endforeach
-                    </select>
-                    <button type="button" class="btn btn-outline-secondary mt-2" id="ButtonUploadStl" onclick="submitFrmUploadStl()">アップロード</button>
+                <input class="form-control form-control-sm" id="stl_file" name="stl_file" type="file" accept=".stl,.obj">
+                <div class="row mt-1">
+                    <div class="col-sm-3"><label for="stl_type_id" class="col-form-label me-2">種類</label></div>
+                    <div class="col-sm-9">
+                        <select class="form-select me-2" style="width: 53%;" id="stl_type_id" name="stl_type_id" onchange="onchangeStlType(this)">
+                            @foreach ($stlTypeOptions as $stlType)
+                            <option value="{{ $stlType->stl_type_id }}">{{ $stlType->stl_type_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
-
-                <label for="solar_absorptivity" class="col-form-label me-2">日射吸収率(0以上1以下の実数)</label>
-                <div class="d-flex flex-row mt-2">
-                    <label for="identification_name" class="col-form-label col-sm-1"></label>
-                    <div class="col-sm-6">
-                        <input type="text" class="form-control form-control-sm" id="solar_absorptivity" name="solar_absorptivity">
+                <div class="row mt-1">
+                    <div class="col-sm-3"><label for="solar_absorptivity" class="col-form-label me-2">日射吸収率</label></div>
+                    <div class="col-sm-5"><input type="text" class="form-control form-control-sm" id="solar_absorptivity" name="solar_absorptivity"></div>
+                    <div class="col-sm-4"><label for="solar_absorptivity" class="col-form-label me-2 float-right">(0以上1以下の実数)</label></div>
+                </div>
+                <div class="row mt-1">
+                    <div class="col-sm-3"><label for="heat_removal" class="col-form-label me-2">排熱量初期値</label></div>
+                    <div class="col-sm-5"><input type="text" class="form-control form-control-sm" id="heat_removal" name="heat_removal"></div>
+                    <div class="col-sm-4"><label for="heat_removal" class="col-form-label me-2">(W/m2)</label></div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <button type="button" class="btn btn-outline-secondary mt-2 float-end" id="ButtonUploadStl" onclick="submitFrmUploadStl()">アップロード</button>
                     </div>
                 </div>
             </div>
 
             <div class="col-sm-3">
-                <div class="form-control d-flex flex-column border" style="height: 100px;" id="stlFileListArea">
+                <div class="form-control d-flex flex-column border" style="height: 210px;" id="stlFileListArea">
                     {{-- 解析対象地域により、更新される。 --}}
                 </div>
             </div>
-                <div class="col-sm-2">
+            <div class="col-sm-2">
                 <button type="button" class="btn btn-outline-secondary" id="ButtonDeleteStlFile" onclick="submitFrmDeleteStlFile()">削除</button>
             </div>
         </div>
@@ -178,13 +186,36 @@
                     $("div#messageModal [class='modal-body']").html(
                         '<div class="d-flex flex-row"><img class="ms-2" src="{{ asset('/image/dialog/warning.png') }}?ver={{ config('const.ver_image') }}" height="65px" width="65px" alt="warning"><span class="ms-4" id="message"></span></div>');
                     $("div#messageModal [class='modal-footer']").html(
-                        '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-outline-secondary" id="ButtonOK">OK</button>');
+                        '<button type="button" class="btn btn-outline-secondary" id="{{ $stlTypeId ? "ButtonDelStlOK" : "ButtonDelRegionOK"  }}">OK</button><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>');
+
+                    // 解析対象地域を削除確認ダイアログでOKボタンを押した
+                    $("div#messageModal [class='modal-footer'] button#ButtonDelRegionOK").click(function() {
+                        const frmId = "#frmRegion";
+                        const iniUrl = "{{ route('region.delete', ['city_model_id' => $cityModel->city_model_id, 'region_id' => isset($regionId) ? $regionId : 0]) }}";
+                        const delAction =  iniUrl + "?registered_user_id=" + "{{ $registeredUserId }}" + "&delete_flg=1";
+                        // フォームサブミット
+                        submitFrm(frmId, delAction);
+                    });
+
+                    // STLファイルを削除確認ダイアログでOKボタンを押した
+                    $("div#messageModal [class='modal-footer'] button#ButtonDelStlOK").click(function() {
+                        const frmId = "#frmStl";
+                        const iniUrl = "{{ route('region.delete_stl_file', ['city_model_id' => $cityModel->city_model_id, 'region_id' => isset($regionId) ? $regionId : 0]) }}";
+                        const delAction =  iniUrl + "?registered_user_id=" + "{{ $registeredUserId }}" + "&stl_type_id=" + "{{ $stlTypeId }}" + "&delete_flg=1";
+                        // フォームサブミット
+                        submitFrm(frmId, delAction);
+                    });
                 }
 
                 $("div#messageModal [class='modal-header'] h1#messageModalLabel").html(code);
                 $("div#messageModal [class='modal-body'] span#message").html(msg);
                 $('#messageModal').modal('show');
             @endif
+
+
+
+            // 初期のSTLファイル種別により、日射吸収率と排熱量の値を表示します。
+            ajaxUpdateStlType($("#stl_type_id").val());
         });
 
 
@@ -301,128 +332,182 @@
         }
 
 
-    /**
-     * STL情報更新のリクエスト
-     *
-     * @return
-     */
-    function ajaxUpdateStlInfo()
-    {
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        /**
+        * STL情報更新のリクエスト
+        *
+        * @return
+        */
+        function ajaxUpdateStlInfo()
+        {
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            })
+
+            let url = "{{ route('region.update_stl_info', ['region_id' => 0]) }}";
+            // 選択した解析対象地域を取得
+            let regionId = $("#region-list span.bg-cyan").data('region-id');
+            if (regionId) {
+                url = url.replace(/.$/, regionId); // 最後の文字列を置換
             }
-        });
 
-        let url = "{{ route('region.update_stl_info', ['region_id' => 0]) }}";
-        // 選択した解析対象地域を取得
-        let regionId = $("#region-list span.bg-cyan").data('region-id');
-        if (regionId) {
-            url = url.replace(/.$/, regionId); // 最後の文字列を置換
+            $.ajax({
+                url: url,
+                type: 'POST',
+                dataType: 'json',
+                success: function (response) {
+
+                    // STLファイル一覧を更新する。
+                    let paritalViewStlFile = response['paritalViewStlFile'];
+                    updateStlFileList(paritalViewStlFile);
+
+                    // STL定義上下限を更新する。
+                    let paritalViewStlDefinition = response['paritalViewStlDefinition'];
+                    updateStlDefination(paritalViewStlDefinition);
+                },
+                error: function(xhr, textStatus, errorThrown) {
+                    console.log(xhr, textStatus, errorThrown);
+                },
+                complete: function(xhr, textStatus, errorThrown) {
+                    // do nothing
+                }
+            });
         }
 
-        $.ajax({
-            url: url,
-            type: 'POST',
-            dataType: 'json',
-            success: function (response) {
+        /**
+        * 選択した解析対象地域により、STLファイル一覧を更新する。
+        * @param string html
+        *
+        * @return
+        */
+        function updateStlFileList(html)
+        {
+            $('#stlFileListArea').html('');
+            $('#stlFileListArea').html(html);
+        }
 
-                // STLファイル一覧を更新する。
-                let paritalViewStlFile = response['paritalViewStlFile'];
-                updateStlFileList(paritalViewStlFile);
+        /**
+        * 選択した解析対象地域により、STL定義上下限を更新する。
+        * @param string html
+        *
+        * @return
+        */
+        function updateStlDefination(html)
+        {
+            $('#stlDefinitionArea').html('');
+            $('#stlDefinitionArea').html(html);
+        }
 
-                // STL定義上下限を更新する。
-                let paritalViewStlDefinition = response['paritalViewStlDefinition'];
-                updateStlDefination(paritalViewStlDefinition);
+        /**
+        * Stlファイルを削除
+        * @return
+        */
+        function submitFrmDeleteStlFile()
+        {
+            const frmId = "#frmStl";
+            let iniUrl = "{{ route('region.delete_stl_file', ['city_model_id' => $cityModel->city_model_id, 'region_id' => 0]) }}";
+
+            //選択した解析対象地域
+            let regionId = $("#region-list span.bg-cyan").data('region-id');
+            let action = "";
+            if (regionId)
+            {
+                // 最後の文字を置換
+                action = iniUrl.replace(/.$/, regionId);
             }
-        });
-    }
+            else
+            {
+                action = iniUrl;
+            }
 
-    /**
-     * 選択した解析対象地域により、STLファイル一覧を更新する。
-     * @param string html
-     *
-     * @return
-     */
-    function updateStlFileList(html)
-    {
-        $('#stlFileListArea').html('');
-        $('#stlFileListArea').html(html);
-    }
+            // STLファイル種別ID
+            let stlTypeId = $("#stlFileListArea span.bg-cyan").data('stl-type-id');
+            stlTypeId = stlTypeId ? stlTypeId : 0;
+            // パラメータ設定
+            action += '?registered_user_id=' + '{{ $registeredUserId }}' + '&stl_type_id=' + stlTypeId;
 
-    /**
-     * 選択した解析対象地域により、STL定義上下限を更新する。
-     * @param string html
-     *
-     * @return
-     */
-    function updateStlDefination(html)
-    {
-        $('#stlDefinitionArea').html('');
-        $('#stlDefinitionArea').html(html);
-    }
-
-    /**
-    * Stlファイルを削除
-    * @return
-    */
-    function submitFrmDeleteStlFile()
-    {
-        const frmId = "#frmStl";
-        let iniUrl = "{{ route('region.delete_stl_file', ['city_model_id' => $cityModel->city_model_id, 'region_id' => 0]) }}";
-
-        //選択した解析対象地域
-        let regionId = $("#region-list span.bg-cyan").data('region-id');
-        let action = "";
-        if (regionId)
-        {
-            // 最後の文字を置換
-            action = iniUrl.replace(/.$/, regionId);
-        }
-        else
-        {
-            action = iniUrl;
+            // フォームサブミット
+            submitFrm(frmId, action);
         }
 
-        // STLファイル種別ID
-        let stlTypeId = $("#stlFileListArea span.bg-cyan").data('stl-type-id');
-        stlTypeId = stlTypeId ? stlTypeId : 0;
-        // パラメータ設定
-        action += '?registered_user_id=' + '{{ $registeredUserId }}' + '&stl_type_id=' + stlTypeId;
-
-        // フォームサブミット
-        submitFrm(frmId, action);
-    }
-
-    /**
-    * 解析対象地域を更新
-    * @return
-    */
-    function submitFrmUpdateRegion()
-    {
-        const frmId = "#frmStl";
-        let iniUrl = "{{ route('region.update', ['city_model_id' => $cityModel->city_model_id, 'region_id' => 0]) }}";
-
-        //選択した解析対象地域
-        let regionId = $("#region-list span.bg-cyan").data('region-id');
-        let action = "";
-        if (regionId)
+        /**
+        * 解析対象地域を更新
+        * @return
+        */
+        function submitFrmUpdateRegion()
         {
-            // 最後の文字を置換
-            action = iniUrl.replace(/.$/, regionId);
-        }
-        else
-        {
-            action = iniUrl;
+            const frmId = "#frmStl";
+            let iniUrl = "{{ route('region.update', ['city_model_id' => $cityModel->city_model_id, 'region_id' => 0]) }}";
+
+            //選択した解析対象地域
+            let regionId = $("#region-list span.bg-cyan").data('region-id');
+            let action = "";
+            if (regionId)
+            {
+                // 最後の文字を置換
+                action = iniUrl.replace(/.$/, regionId);
+            }
+            else
+            {
+                action = iniUrl;
+            }
+
+            // パラメータ設定
+            action += '?registered_user_id=' + '{{ $registeredUserId }}';
+
+            // フォームサブミット
+            submitFrm(frmId, action);
         }
 
-        // パラメータ設定
-        action += '?registered_user_id=' + '{{ $registeredUserId }}';
+        /**
+        * STLファイル種類のonchangeイベント
+        * @return
+        */
+        function onchangeStlType(target)
+        {
+            // ajax処理で特定のSTLファイル種別情報を更新
+            const stlTypeId = $(target).val();
+            ajaxUpdateStlType(stlTypeId);
+        }
 
-        // フォームサブミット
-        submitFrm(frmId, action);
-    }
+        /**
+        * 特定のSTLファイル種別を更新
+        * @param integer $stl_type_id $stl_type_id STLファイル種別ID
+        *
+        * @return
+        */
+        function ajaxUpdateStlType($stl_type_id)
+        {
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            })
 
+            let url = "{{ route('stl_type.change') }}";
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: {stl_type_id: $stl_type_id},
+                dataType: 'json',
+                success: function (response) {
+
+                    // レスポンスした特定のSTLファイル種別情報
+                    const stl_type = response['stl_type'];
+
+                    // 特定のSTLファイル種別の日射吸収率と排熱量を更新
+                    $('#solar_absorptivity').val(stl_type['solar_absorptivity']);
+                    $('#heat_removal').val(stl_type['heat_removal']);
+                },
+                error: function(xhr, textStatus, errorThrown) {
+                    console.log(xhr, textStatus, errorThrown);
+                },
+                complete: function(xhr, textStatus, errorThrown) {
+                    // do nothing
+                }
+            });
+        }
     </script>
 @endsection
 
