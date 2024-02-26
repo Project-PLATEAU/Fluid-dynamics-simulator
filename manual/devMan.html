@@ -1,0 +1,606 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>環境構築手順・インストール </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="環境構築手順・インストール ">
+    
+    
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../resources/logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first="First" data-prev="Previous" data-next="Next" data-last="Last"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="環境構築手順インストール">環境構築手順・インストール</h1>
+
+<p>本書では日射や風況等に基づく温熱環境シミュレーションシステム（以下「本システム」という。）の利用環境構築手順について記載しています。
+本システムの構成や仕様の詳細については以下も参考にしてください。</p>
+<p><a href="https://www.mlit.go.jp/plateau/file/libraries/doc/plateau_tech_doc_0030_ver01.pdf">技術検証レポート</a></p>
+<h1 id="1-事前準備推奨条件">1. 事前準備・推奨条件</h1>
+<p>はじめに、本システムを利用する際は、
+<a href="https://github.com/Project-PLATEAU/">動作環境</a>
+で示すサーバマシン内の構成を２台のマシンに分けて構成することを推奨します。また、OSはどちらのマシンもUbuntuを推奨します。</p>
+<p>上記に伴い、本書では２台のサーバマシンを以下のように定義し、構築手順を記載します。</p>
+<ul>
+<li><p>コンテナ管理用マシン</p>
+<ul>
+<li>Webコンテナ、DBコンテナ、Wrapperコンテナを管理するマシン</li>
+</ul>
+</li>
+<li><p>コンテナ管理用マシンに接続されたファイルストレージ</p>
+<ul>
+<li>Webコンテナ、DBコンテナ、Wrapperコンテナから参照できるファイルサーバーやストレージ<br>
+※本システムのファイルストレージは、コンテナ管理用マシンにアクセスできる環境であれば、コンテナ管理用マシンに接続したハードディスク、または別のNASやパブリッククラウドサービス（Amazon EFS等）のいずれを利用しても問題ございません。そのため、本書でのインストール手順の詳細は省略します。</li>
+</ul>
+</li>
+<li><p>シミュレータ用マシン</p>
+<ul>
+<li>熱流体シミュレーションの稼働に十分なスペックであるマシン</li>
+</ul>
+</li>
+</ul>
+<h2 id="11-データベース情報の検討">1.1. データベース情報の検討</h2>
+<p>本システムの環境構築を効率よく進めていくうえで、データベース情報を事前に定義しておくことを推奨します。
+下記、３点を検討し、手元に記録または管理してください。</p>
+<ul>
+<li>DB USER</li>
+<li>DB PASSWORD</li>
+<li>DB NAME</li>
+</ul>
+<h2 id="12-ファイルストレージのマウント">1.2. ファイルストレージのマウント</h2>
+<p>コンテナ管理用マシンに接続されたファイルストレージをコンテナ管理用マシンの/mntにマウントしてください。
+マウント方法はストレージによって異なるため、本書では省略いたします。</p>
+<h2 id="13-dockerインストール">1.3. Dockerインストール</h2>
+<p>本システムのコンテナ管理用マシンでは、Docker Engine および Docker Composeを利用します。<br>
+未インストールの方は以下参考にインストールから実施してください。</p>
+<h3 id="docker-engine">Docker Engine</h3>
+<p>詳細は、
+<a href="https://docs.docker.com/engine/install/ubuntu/">公式サイト</a>
+をご覧ください。</p>
+<p>本書では、新しいマシンに初めてDocker エンジンをインストールすることを想定し、公式サイトでも紹介されている aptリポジトリを使用したインストール方法を記載します。<br>
+以下手順に沿って、コマンドを実行してください。</p>
+<ol>
+<li>Docker の'apt'リポジトリを設定</li>
+</ol>
+<pre><code># Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  &quot;deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release &amp;&amp; echo &quot;$VERSION_CODENAME&quot;) stable&quot; | \
+  sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+sudo apt-get update
+</code></pre>
+<ol start="2">
+<li>Docker パッケージのインストール</li>
+</ol>
+<pre><code>sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+</code></pre>
+<ol start="3">
+<li>インストール成功確認</li>
+</ol>
+<pre><code>sudo docker run hello-world
+</code></pre>
+<h3 id="docker-compose">Docker Compose</h3>
+<p>詳細は、
+<a href="https://docs.docker.com/compose/install/linux/#install-using-the-repository">公式サイト</a>
+をご覧ください。</p>
+<p>本書では、Docker Engine をインストールした人が続けて Docker Compose をインストールすることを想定し、上記と同様に公式サイトでも紹介されている aptリポジトリを使用したインストール方法を記載します。<br>
+以下手順に沿って、コマンドを実行してください。</p>
+<ol>
+<li>パッケージインデックスの更新</li>
+</ol>
+<pre><code>sudo apt-get update
+</code></pre>
+<ol start="2">
+<li>Docker Compose のインストール</li>
+</ol>
+<pre><code>sudo apt-get install docker-compose-plugin
+</code></pre>
+<ol start="3">
+<li>インストール成功確認</li>
+</ol>
+<pre><code>docker compose version
+</code></pre>
+<h1 id="2-動作環境">2. 動作環境</h1>
+<p>本システムは、利用者端末であるクライアントPCおよびネットワーク接続するサーバマシンの各ハードウェアより構成されます。サーバマシンでは複数のマシン（コンテナ）から構成され、うちWebコンテナがクライアントPC上のブラウザに対してウェブアプリをホストし、他のコンテナはWebコンテナと結合して諸機能を提供します。</p>
+<p><img src="../resources/devMan/devMan00-fig33.png" alt="ハードウェアアーキテクチャ図"></p>
+<p>動作環境は以下のとおりです。</p>
+<h2 id="21-クライアントpc">2.1. クライアントPC</h2>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>最小動作環境</th>
+<th>推奨動作環境</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ブラウザ</td>
+<td>JavaScript、jQuery、CesiumJS対応ブラウザ</td>
+<td>Google Chrome　120.0以上</td>
+</tr>
+<tr>
+<td>ディスプレイ解像度</td>
+<td>1024×768以上</td>
+<td>1920×1080以上</td>
+</tr>
+<tr>
+<td>ネットワーク</td>
+<td>以下のURLを閲覧可能。 <br>・サーバマシンのWebアプリ<br>・<a href="https://github.com/Project-PLATEAU/plateau-streaming-tutorial/">PLATEAU-3DTilesの配信サービス</a></td>
+<td>インターネット接続</td>
+</tr>
+</tbody>
+</table>
+<h2 id="22-コンテナ管理用マシン---webコンテナ">2.2. コンテナ管理用マシン - Webコンテナ</h2>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>最小動作環境</th>
+<th>推奨動作環境</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OS</td>
+<td>Ubuntu</td>
+<td>Dockerファイルに依り立ち上げた仮想環境</td>
+</tr>
+<tr>
+<td>ネットワーク</td>
+<td>クライアントPCとHTTPSでのネットワーク接続</td>
+<td>インターネット接続、ファイアウォール設置</td>
+</tr>
+<tr>
+<td>ネットワーク</td>
+<td>DBコンテナ、ファイルストレージとのネットワーク接続</td>
+<td>サーバマシン内でのVPN</td>
+</tr>
+</tbody>
+</table>
+<h2 id="23-コンテナ管理用マシン---dbコンテナ">2.3. コンテナ管理用マシン - DBコンテナ</h2>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>最小動作環境</th>
+<th>推奨動作環境</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DBMS</td>
+<td>PostgresSQL</td>
+<td>同左</td>
+</tr>
+<tr>
+<td>ネットワーク</td>
+<td>Webコンテナ、Wrapperコンテナとのネットワーク接続</td>
+<td>サーバマシン内でのVPN</td>
+</tr>
+</tbody>
+</table>
+<h2 id="24-コンテナ管理用マシン---ファイルストレージ">2.4. コンテナ管理用マシン - ファイルストレージ</h2>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>最小動作環境</th>
+<th>推奨動作環境</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ファイルシステム</td>
+<td>Ubuntu（Webコンテナ、Wrapperコンテナ）がマウント可能なファイルシステム</td>
+<td>Amazon EFSやsamba</td>
+</tr>
+<tr>
+<td>ネットワーク</td>
+<td>Webコンテナ、Wrapperコンテナとのネットワーク接続</td>
+<td>サーバマシン内でのVPN</td>
+</tr>
+</tbody>
+</table>
+<h2 id="25-コンテナ管理用マシン---wrapperコンテナ">2.5. コンテナ管理用マシン - Wrapperコンテナ</h2>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>最小動作環境</th>
+<th>推奨動作環境</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OS</td>
+<td>Ubuntu</td>
+<td>Dockerファイルに依り立ち上げた仮想環境</td>
+</tr>
+<tr>
+<td>ネットワーク</td>
+<td>DBコンテナ、ファイルストレージ、シミュレーショタ用マシンとのネットワーク接続</td>
+<td>サーバマシン内でのVPN</td>
+</tr>
+</tbody>
+</table>
+<h2 id="26-シミュレータ用マシン">2.6. シミュレータ用マシン</h2>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>最小動作環境</th>
+<th>推奨動作環境</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OS</td>
+<td>Ubuntu</td>
+<td>Dockerファイルに依り立ち上げた仮想環境</td>
+</tr>
+<tr>
+<td>ネットワーク</td>
+<td>Wrapperコンテナとのネットワーク接続</td>
+<td>サーバマシン内でのVPN</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>i7 6コア 以上</td>
+<td>同左</td>
+</tr>
+<tr>
+<td>メモリ</td>
+<td>32GB以上</td>
+<td>64GB以上</td>
+</tr>
+<tr>
+<td>ストレージ</td>
+<td>1TB以上</td>
+<td>2TB以上</td>
+</tr>
+</tbody>
+</table>
+<h1 id="3-ダウンロード">3 ダウンロード</h1>
+<h2 id="31-dockerコンテナの作成と起動">3.1. Dockerコンテナの作成と起動</h2>
+<p>コンテナ管理用マシン上に、３つのコンテナの作成から起動までを実施します。<br>
+まずは、自身でソースファイルを実行することで、コンテナを作成することができます。作成に必要なソースファイル一式は
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/container">こちら</a>
+からダウンロード可能です。</p>
+<p>GitHubからダウンロードしたソースファイルの構成は以下のようになっています。</p>
+<p><img src="../resources/devMan/file-container.png" alt=""></p>
+<p>ここでは、コンテナ管理用マシン上でコマンドを実行してコンテナを作成するまでの手順を記載します。</p>
+<ol>
+<li>GitHub mainブランチから<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/container">src/container</a>をコピー</li>
+</ol>
+<pre><code>sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git src/container
+</code></pre>
+<ol start="2">
+<li>ymlファイルの編集
+事前準備で検討したデータベース情報をPOSTGRESで始まる３つの設定値に反映します。
+（ファイルサーバも同様とするか。）</li>
+</ol>
+<pre><code>vi docker-compose.yml
+</code></pre>
+<ul>
+<li>POSTGRES_USER: DB USER</li>
+<li>POSTGRES_PASSWORD: DB PASSWORD</li>
+<li>POSTGRES_DB: DB NAME</li>
+</ul>
+<ol start="3">
+<li>Docker コンテナの作成<br>
+数分間かけてコンテナが作成されます。</li>
+</ol>
+<pre><code>cd container
+sudo docker-compose up
+</code></pre>
+<ol start="4">
+<li>作成確認およびコンテナIDの把握</li>
+</ol>
+<pre><code>sudo docker ps -a
+</code></pre>
+<p>出力結果より、Webコンテナ、DBコンテナ、Wrapperコンテナの[STATUS]がUPになっていることを確認します。また、英数字12桁で1番左側に出力されている[CONTAINER ID]を記録しておきます。</p>
+<h2 id="32-webコンテナ">3.2. Webコンテナ</h2>
+<p>作成したWebコンテナへアクセスし、Webアプリの動作に必要な設定を実施します。<br>
+Webコンテナで利用するソースファイル一式は
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcWeb">こちら</a>
+からダウンロード可能です。</p>
+<ol>
+<li>Webコンテナへアクセス</li>
+</ol>
+<p>コンテナ管理用マシン上で、WebコンテナのコンテナIDを入力します。</p>
+<pre><code>sudo docker  exec -it  [Web-CONTAINER ID] /bin/bash
+</code></pre>
+<ol start="2">
+<li>GitHub mainブランチから
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcWeb">src/srcWeb</a>
+をコピー</li>
+</ol>
+<pre><code>sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git src/srcWeb
+</code></pre>
+<ol start="3">
+<li>設定ファイルの作成</li>
+</ol>
+<p>サンプルファイル[.env.example]を参考に、[.env]を編集します。
+（編集箇所や記入内容も記載するか相談）</p>
+<ul>
+<li>サンプルファイルの確認方法</li>
+</ul>
+<pre><code>cd srcWeb
+sudo view .env.example
+</code></pre>
+<ul>
+<li>設定ファイルの新規作成と編集</li>
+</ul>
+<pre><code>sudo touch .env
+sudo vi .env
+</code></pre>
+<ul>
+<li>次に、「APP_KEY」を生成します。</li>
+</ul>
+<pre><code>cd srcWeb/bridge-cfd/
+php artisan key:generate
+</code></pre>
+<ul>
+<li>生成後、設定ファイルの「APP_KEY」に自動で入力されていることを確認します。</li>
+</ul>
+<pre><code>sudo view .env
+</code></pre>
+<ol start="4">
+<li>ライブラリのインストール<br>
+最後に、ライブラリをインストールします。設定ファイルを作成後に実施します。</li>
+</ol>
+<pre><code>cd srcWeb/bridge-cfd/
+composer install
+</code></pre>
+<h2 id="33-dbコンテナ">3.3. DBコンテナ</h2>
+<p>作成したDBコンテナへアクセスし、データベースを作成します。<br>
+DBコンテナで利用するクエリ一式は
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query">こちら</a>
+からダウンロード可能です。</p>
+<ol>
+<li>データベース作成と初期データの投入</li>
+</ol>
+<p>まず、Webコンテナにアクセスし、データベースを作成するために以下のコマンドを実行ます。</p>
+<pre><code>php artisan migrate --path=/database/migrations/2023_11_01_172302_init_db_ver01.php
+</code></pre>
+<p>次に、初期データの投入をするために以下のコマンドを実行します。</p>
+<pre><code>php artisan db:seed
+</code></pre>
+<ol start="2">
+<li>DBコンテナへアクセス</li>
+</ol>
+<p>コンテナ管理用マシン上で、DBコンテナのコンテナIDを入力します。</p>
+<pre><code>sudo docker  exec -it  [DB-CONTAINER ID] /bin/bash
+</code></pre>
+<ol start="3">
+<li>ユーザアカウント登録</li>
+</ol>
+<p>pgAdmin 4などのRDBMSからデータベースに接続します。mainブランチの
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query">src/query</a>
+にあるINSERT_USER_ACCOUNT.sql を参考にして、必要なユーザアカウントを登録します。</p>
+<h2 id="34-シミュレーションマシン">3.4. シミュレーションマシン</h2>
+<ol>
+<li>OpenFOAM インストール<br>
+下記に示す４つのコマンドを順に実行します。</li>
+</ol>
+<pre><code># 1. Add the repository
+curl https://dl.openfoam.com/add-debian-repo.sh | sudo bash
+
+# 2. Update the repository information
+sudo apt-get update
+
+# 3. Install preferred package. Eg,
+sudo apt-get install openfoam2306-default
+
+# 4. .bashrc に OpenFOAM 用のパスを追加
+source /usr/lib/openfoam/openfoam2306/etc/bashrc
+</code></pre>
+<ol start="2">
+<li>.pemファイルの作成<br>
+本システムでは、シミュレーションマシンとWrapperコンテナでSSH接続による通信を利用します。<br>
+.pemファイル作成後、シミュレーションマシンのホスト名 or IPアドレスと併せて記録しておきます。</li>
+</ol>
+<h2 id="35-wrapperコンテナ">3.5. Wrapperコンテナ</h2>
+<p>作成したWrapperコンテナへアクセスし、必要な設定を実施します。<br>
+Wrapperコンテナで利用するソースファイル一式は
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcBatch">こちら</a>
+からダウンロード可能です。</p>
+<ol>
+<li>Wrapperコンテナへアクセス<br>
+コンテナ管理用マシン上で、WrapperコンテナのコンテナIDを入力します。</li>
+</ol>
+<pre><code>sudo docker  exec -it  [wrapper-CONTAINER ID] /bin/bash
+</code></pre>
+<ol start="2">
+<li>GitHub mainブランチから
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcBatch">src/srcBatch</a>
+をコピーします。</li>
+</ol>
+<pre><code>mkdir /bridge-plateau-cfd &amp; cd /bridge-plateau-cfd
+sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git src/srcBatch
+</code></pre>
+<p>/bridge-plateau-cfdが作成され、その直下にwrapper_organize.pyなどのpythonプログラム群が配置されていることを確認します。</p>
+<ol start="3">
+<li><p>.pemファイルの作成（任意）<br>
+本システムでは、シミュレーションマシンとWrapperコンテナでSSH接続による通信を利用します。</p>
+</li>
+<li><p>設定ファイルの編集<br>
+連携するデータベースの情報とシミュレーションマシンの情報を、設定ファイルに追記します。</p>
+</li>
+</ol>
+<ul>
+<li><p>事前準備にて検討していたデータベース情報を[WebappDB]セクション以降の下記項目に入力します。</p>
+<ul>
+<li>user = DB USER</li>
+<li>password = DB PASSWORD</li>
+<li>dbname = DB NAME</li>
+</ul>
+</li>
+<li><p>シミュレーションマシン作成時に記録しておいた情報を[SimEC2]セクション以降の下記項目に入力します。</p>
+<ul>
+<li>user = ubuntu (※)</li>
+<li>host = シミュレーションマシンのホスト名 or IPアドレス</li>
+<li>key_filename = .pemファイルのパス</li>
+</ul>
+</li>
+</ul>
+<p>また、ファイルストレージを外部で準備した場合は、必要に応じて[PATH]セクションshared_folder_rootの設定値を変更してください。</p>
+<h1 id="4-シミュレーション管理ジョブの起動">4 シミュレーション管理ジョブの起動</h1>
+<h2 id="41-crontabの設定">4.1. crontabの設定</h2>
+<p>コンテナ管理用マシンで、1分おきにシミュレーション管理ジョブ(wrapper_organize.py)を実行させるための設定をcrontabに入力します。<br>
+コンテナ管理用マシン上でcrontab を編集します。下記コマンドを実行したとき、Select an editorと出たら開くEditorを設定してください。</p>
+<pre><code>sudo crontab -e
+</code></pre>
+<p>※もし上記コマンド実行後、command not foundが表示された場合は、先に以下のコマンドでcronをインストールしてください。</p>
+<pre><code>sudo apt-get update
+sudo install cron
+</code></pre>
+<p>crontabに下記を追記して保存します。</p>
+<pre><code>* * * * * docker exec -w /bridge-plateau-cfd &lt;WrapperのContainer ID&gt; sh -c &quot;/usr/bin/python3 /bridge-plateau-cfd/wrapper_organize.py &gt;&gt; /bridge-plateau-cfd/log/wrapper.log 2&gt;&amp;1&quot;
+</code></pre>
+<p>crontabがサービス起動中であることを確認します。もし、正常に起動していない場合は再起動します。</p>
+<pre><code>service cron status　　（起動確認）
+service cron restart　　（再起動）
+</code></pre>
+<p>上記手順を終えたあとに、Wrapperコンテナへログインし、ログが1分おきに出力されていることを確認します。\</p>
+<pre><code>tail bridge-plateau-cfd/tail log/wrapper.log
+</code></pre>
+<ul>
+<li>INFO      2024-02-14 02:46:02,109 [wrapper_organize.py:184] Start wrapper_organize.py</li>
+<li>INFO      2024-02-14 02:46:02,161 [wrapper_organize.py:204] Complete wrapper_organize.py</li>
+<li>INFO      2024-02-14 02:47:02,052 [wrapper_organize.py:184] Start wrapper_organize.py</li>
+<li>INFO      2024-02-14 02:47:02,108 [wrapper_organize.py:204] Complete wrapper_organize.py</li>
+</ul>
+<h1 id="5-プリセットデータの登録と疎通確認">5 プリセットデータの登録と疎通確認</h1>
+<p>プリセットデータの登録を、環境構築後の疎通確認も兼ねてクライアントPC上のブラウザからウェブアプリにアクセスして実施します。</p>
+<ol>
+<li><p>クライアントPC上のブラウザから、[3.2. Webコンテナ 3. 設定ファイルの作成]で設定した[.env]の&quot;APP_URL&quot;にアクセスします。</p>
+</li>
+<li><p>DML（データ投入）で登録したユーザーIDおよびパスワードで、本システムにログインします。</p>
+</li>
+<li><p>操作マニュアル[4-2 都市モデルの登録]を参考に、
+(examples/input)にある<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/input">こちらの</a>
+STLファイルをアップロードします。</p>
+</li>
+<li><p>操作マニュアル[4-3 シミュレーションモデルの作成]を参考に、シミュレーションモデルの作成およびシミュレーション実行します。</p>
+</li>
+<li><p>シミュレーションの実行ステータスが「正常終了」となったら、シミュレーション結果を閲覧します。</p>
+</li>
+<li><p>ダウンロードボタンからGeoJSONファイルをダウンロードし、(examples/output)にある
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/output">こちらの</a>
+ファイルと内容が同一であることを確認します。</p>
+</li>
+<li><p>pgAdmin 4などのRDBMSからデータベースに接続し、都市モデルおよびシミュレーションモデルのプリセットフラグを有効化します。</p>
+</li>
+</ol>
+<pre><code>UPDATE public.city_model SET preset_flag = TRUE;
+UPDATE public.simulation_model SET preset_flag = TRUE;
+</code></pre>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>
