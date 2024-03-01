@@ -6,6 +6,7 @@ namespace App\Services;
 use App\Models\Db\CityModelReferenceAuthority;
 use App\Utils\DatetimeUtil;
 use App\Utils\LogUtil;
+use Faker\Core\Uuid;
 
 /**
  * 都市モデル参照権限サービス
@@ -17,7 +18,7 @@ class CityModelReferenceAuthorityService extends BaseService
      * 都市モデル参照権限の新規追加
      *
      * @param string $user_id 共有ユーザID
-     * @param string $city_model_id 都市モデルID
+     * @param Uuid $city_model_id 都市モデルID
      *
      * @return bool
      *  レコード登録に成功した場合、true
@@ -42,7 +43,7 @@ class CityModelReferenceAuthorityService extends BaseService
      * 都市モデル参照権限の削除
      *
      * @param string $user_id 共有ユーザID
-     * @param string $city_model_id 都市モデルID
+     * @param Uuid $city_model_id 都市モデルID
      *
      * @return bool
      *  レコード削除に成功した場合、true

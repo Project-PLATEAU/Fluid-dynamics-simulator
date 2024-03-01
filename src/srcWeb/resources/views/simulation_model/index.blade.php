@@ -18,6 +18,8 @@
         <button type="button" name="ButtonEdit" id="ButtonEdit" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.edit', ['id' => 0]) }}">編集</button>
         <button type="button" name="ButtonDelete" id="ButtonDelete" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.delete', ['id' => 0]) }}">削除</button>
         <button type="button" name="ButtonShare" id="ButtonShare" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.share', ['id' => 0]) }}">共有</button>
+        <button type="button" name="ButtonPublish" id="ButtonPublish" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.publish', ['id' => 0]) }}">公開</button>
+		<button type="button" name="ButtonPublishStop" id="ButtonPublishStop" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.publish_stop', ['id' => 0]) }}">公開停止</button>
         <button type="button" name="ButtonSimulationStart" id="ButtonSimulationStart" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.start', ['id' => 0]) }}">シミュレーション開始</button>
         <button type="button" name="ButtonStatusDetail" id="ButtonStatusDetail" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.status_detail', ['id' => 0]) }}">ステータス詳細</button>
         <button type="button" name="ButtonSimulationStop" id="ButtonSimulationStop" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.stop', ['id' => 0]) }}">中止</button>
@@ -34,6 +36,7 @@
                     <th scope="col">最終更新日時</th>
                     <th scope="col">登録ユーザ</th>
                     <th scope="col">共有ユーザ</th>
+                    <th scope="col">公開</th>
                     <th scope="col">実行ステータス</th>
                     <th scope="col">最終実行開始日時</th>
                 </tr>
@@ -48,6 +51,7 @@
                     <td class="d-none" id="hiddenRegisteredUserIdTd">{{ $simulationModel->registered_user_id }}</td>
                     <td>{{ $simulationModel->user_account->display_name }}</td>
                     <td>{{ $simulationModel->getUpdateUser(App\Commons\Constants::SHARE_MODE_SIMULATION_MODEL, $simulationModel->simulation_model_id) }}</td>
+                    <td>{{ $simulationModel->getPublishStatus() }}</td>
                     <td class="{{ $simulationModel->setTableTdColorByRunStatus() }}">{{ $simulationModel->getRunStatusName() }}</td>
                     <td>{{ $simulationModel->last_sim_start_datetime ? App\Utils\DatetimeUtil::changeFormat($simulationModel->last_sim_start_datetime) : "" }}</td>
                 </tr>

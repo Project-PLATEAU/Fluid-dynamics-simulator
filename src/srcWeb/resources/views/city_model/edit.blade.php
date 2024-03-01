@@ -127,7 +127,7 @@
             </div>
 
             <div class="col-sm-3">
-                <div class="form-control d-flex flex-column border" style="height: 210px;" id="stlFileListArea">
+                <div class="form-control d-flex flex-column border" style="height: 300px;" id="stlFileListArea">
                     {{-- 解析対象地域により、更新される。 --}}
                 </div>
             </div>

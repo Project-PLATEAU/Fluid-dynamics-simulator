@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
-    <title>{{ config('app.name', 'BRIDGE-CFD') }} - @yield('title')</title>
+    <title>{{ config('app.name', '熱流体シミュレーションシステム') }} - @yield('title')</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -10,16 +10,12 @@
 
     <link rel="stylesheet" href="{{ asset('/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('/css/bootstrap-icons.min.css') }}">
-    {{-- 3d地図描画はMPAで対応するため、SPA(Angular + CesiumJS)用のソースは一旦無効にする。 --}}
-    {{-- <link rel="stylesheet" href="{{ asset('/3d_graph_library/assets/cesium/Widgets/widgets.css') }}"> --}}
 
     {{-- 個別css --}}
     @yield('css')
 
     <script src="{{ asset('/js/jquery-3.7.1.min.js') }}"></script>
     <script src="{{ asset('/js/bootstrap.min.js') }}"></script>
-    {{-- 3d地図描画はMPAで対応するため、SPA(Angular + CesiumJS)用のソースは一旦無効にする。 --}}
-    {{-- <script src="{{ asset('/3d_graph_library/assets/cesium/Cesium.js') }}"></script> --}}
 </head>
 
 <body>

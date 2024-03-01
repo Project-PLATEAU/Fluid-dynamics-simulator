@@ -40,6 +40,7 @@ use Illuminate\Database\Eloquent\Collection;
  * @property string|null $cfd_error_log_file
  * @property Carbon|null $last_sim_start_datetime
  * @property Carbon|null $last_sim_end_datetime
+ * @property bool|null $disclosure_flag
  *
  * @property CityModel $city_model
  * @property Region $region
@@ -84,7 +85,8 @@ class SimulationModel extends DbModel
 		'solar_absorption_rate_ground_3' => 'float',
 		'run_status' => 'int',
 		'last_sim_start_datetime' => 'datetime',
-		'last_sim_end_datetime' => 'datetime'
+		'last_sim_end_datetime' => 'datetime',
+        'disclosure_flag' => 'bool'
 	];
 
 	protected $fillable = [
@@ -111,7 +113,8 @@ class SimulationModel extends DbModel
 		'run_status_details',
 		'cfd_error_log_file',
 		'last_sim_start_datetime',
-		'last_sim_end_datetime'
+		'last_sim_end_datetime',
+        'disclosure_flag'
 	];
 
 	public function city_model()
@@ -206,6 +209,20 @@ class SimulationModel extends DbModel
             return Constants::RUN_STATUS_ADMIN_CANCEL;
         } else {
             return Constants::RUN_STATUS_NONE;
+        }
+    }
+
+    /**
+     * 公開状況を取得
+     * @return string 公開状況
+     */
+    public function getPublishStatus()
+    {
+        // SM26 一般公開フラグが有効であれば「公開中」、無効であれば「未」と表示する
+        if ($this->disclosure_flag) {
+            return Constants::SIMULATION_MODEL_PUBLISH;
+        } else {
+            return Constants::SIMULATION_MODEL_NON_PUBLISH;
         }
     }
 }

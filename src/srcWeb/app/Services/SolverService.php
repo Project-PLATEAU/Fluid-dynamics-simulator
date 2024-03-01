@@ -9,6 +9,7 @@ use App\Models\Db\Solver;
 use App\Utils\DatetimeUtil;
 use App\Utils\FileUtil;
 use App\Utils\LogUtil;
+use Faker\Core\Uuid;
 use Illuminate\Http\Request;
 
 /**
@@ -55,7 +56,7 @@ class SolverService extends BaseService
      *
      * 熱流体解析ソルIDでレコード取得
      *
-     * @param integer $id 熱流体解析ソルID
+     * @param Uuid $id 熱流体解析ソルID
      *
      * @return \App\Models\Db\Solver
      */
@@ -67,7 +68,7 @@ class SolverService extends BaseService
 
     /**
      * ソルバ一式圧縮ファイルをアップロード
-     * @param integer $solver_id 熱流体解析ソルID
+     * @param Uuid $solver_id 熱流体解析ソルID
      * @param Request $solver_compressed_file_rq 選択したtarファイル
      *
      * @return
@@ -160,7 +161,7 @@ class SolverService extends BaseService
 
     /**
      * 熱流体解析ソルの削除
-     * @param string $solver_id 熱流体解析ソル
+     * @param Uuid $solver_id 熱流体解析ソル
      *
      * @return
      */

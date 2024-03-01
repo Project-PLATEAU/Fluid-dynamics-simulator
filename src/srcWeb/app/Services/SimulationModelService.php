@@ -6,6 +6,7 @@ namespace App\Services;
 use App\Commons\Constants;
 use App\Commons\Message;
 use App\Models\Db\Policy;
+use App\Models\Db\Region;
 use App\Models\Db\SimulationModel;
 use App\Models\Db\SimulationModelPolicy;
 use App\Models\Db\SimulationModelReferenceAuthority;
@@ -14,9 +15,7 @@ use App\Models\Db\Solver;
 use App\Models\Db\StlModel;
 use App\Models\Db\Visualization;
 use App\Utils\DatetimeUtil;
-use App\Utils\FileUtil;
-use App\Utils\LogUtil;
-use App\Utils\StringUtil;
+use Faker\Core\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 
@@ -50,7 +49,7 @@ class SimulationModelService extends BaseService
      *
      * シミュレーションモデルIDでレコード取得
      *
-     * @param string $id シミュレーションモデルID
+     * @param Uuid $id シミュレーションモデルID
      *
      * @return\App\Models\Db\SimulationModel
      */
@@ -62,10 +61,10 @@ class SimulationModelService extends BaseService
 
     /**
      * シミュレーションモデルの新規作成
-     * @param mixed $identification_name 識別名
-     * @param mixed $city_model_id 都市モデルID
-     * @param mixed $region 解析対象地域
-     * @param mixed $registeredUserId 登録ユーザID
+     * @param string $identification_name 識別名
+     * @param Uuid $city_model_id 都市モデルID
+     * @param Region $region 解析対象地域
+     * @param string $registeredUserId 登録ユーザID
      *
      * @return array 規追加結果(log含む)
      */
@@ -120,7 +119,7 @@ class SimulationModelService extends BaseService
      * シミュレーションモデル更新のバリエーション
      *   E9, E21, E23, E24, E25, E19, E20
      * @param Request $request リクエスト
-     * @param string $id シミュレーションモデルID
+     * @param Uuid $id シミュレーションモデルID
      *
      * @return array エラー
      */
@@ -191,7 +190,7 @@ class SimulationModelService extends BaseService
     /**
      * 編集画面よりシミュレーションモデルを更新する。
      * @param Request $request リクエスト
-     * @param string $id シミュレーションモデルID
+     * @param Uuid $id シミュレーションモデルID
      *
      * @return array 新規追加結果(log含む)
      */
@@ -268,7 +267,7 @@ class SimulationModelService extends BaseService
      * シミュレーションモデルの複製
      *
      * @param string $loginUserId ログイン中のユーザ
-     * @param string $srcId コピー元のシミュレーションモデルID
+     * @param Uuid $srcId コピー元のシミュレーションモデルID
      *
      * @return array 複製結果(log含む)
      */
@@ -290,10 +289,11 @@ class SimulationModelService extends BaseService
                 $simulationModel->{$attribute} = $srcSimulationModel->{$attribute};
             }
         }
-        // SM7プリセットフラグを0(無効)、SM21実行ステータスを0（未）、SM22実行ステータス詳細を未入力とする。
+        // SM7プリセットフラグを0(無効)、SM21実行ステータスを0（未）、SM22実行ステータス詳細を未入力、SM26一般公開フラグを0(無効)とする。
         $simulationModel->preset_flag = false;
         $simulationModel->run_status = Constants::RUN_STATUS_CODE_NONE;
         $simulationModel->run_status_details = null;
+        $simulationModel->disclosure_flag = false;
         // == シミュレーションモデルのレコードを複製 //==
 
         if ($simulationModel->save()) {
@@ -302,19 +302,28 @@ class SimulationModelService extends BaseService
 
             // == シミュレーションモデル熱効率のレコードを複製 ==
             $result = self::copySolarAbsorptivity($srcId, $simulationModel->simulation_model_id);
-            $logInfo = "[solar_absorptivity] [insert] [copy from simulation: {$srcId}]";
-            array_push($logInfos, $logInfo);
-            // == シミュレーションモデル熱効率のレコードを複製 //==
+            if ($result) {
+                $logInfo = "[solar_absorptivity] [insert] [copy from simulation: {$srcId}]";
+                array_push($logInfos, $logInfo);
+
+                // == シミュレーションモデル実施施策のレコードを複製 ==
+                $result = self::copySimulationModelPolicy($srcId, $simulationModel->simulation_model_id);
+                if ($result) {
+                    $logInfo = "[simulation_model_policy] [insert] [copy from simulation: {$srcId}]";
+                    array_push($logInfos, $logInfo);
+                }
+            }
         } else {
             $result = false;
         }
+
         return ["result" => $result, "log_infos" => $logInfos];
     }
 
     /**
      *
      * シミュレーションモデル削除
-     * @param string $id シミュレーションモデルID
+     * @param Uuid $id シミュレーションモデルID
      * @return array 削除結果(log含む)
      */
     public static function deleteSimulationModelById($id)
@@ -328,6 +337,17 @@ class SimulationModelService extends BaseService
         if ($solarAbsorptivitys > 0) {
             if (SolarAbsorptivity::where(['simulation_model_id' => $id])->delete() > 0) {
                 $logInfo = "[solar_absorptivity] [delete] [simulation_model_id: {$id}]";
+                array_push($logInfos, $logInfo);
+            } else {
+                $result =  false;
+            }
+        }
+
+        // シミュレーションモデル実施施策から削除
+        $simulationModelPolicys = self::getSimulationModelById($id)->simulation_model_policies()->count();
+        if ($simulationModelPolicys > 0) {
+            if ($result && (SimulationModelPolicy::where(['simulation_model_id' => $id])->delete() > 0)) {
+                $logInfo = "[simulation_model_policy] [delete] [simulation_model_id: {$id}]";
                 array_push($logInfos, $logInfo);
             } else {
                 $result =  false;
@@ -358,7 +378,7 @@ class SimulationModelService extends BaseService
 
     /**
      * シミュレーションモデルのレコード更新
-     * @param string $id シミュレーションモデルID
+     * @param Uuid $id シミュレーションモデルID
      * @param string $attribute 更新対象要素
      * @param mixed $val 更新値
      *
@@ -380,7 +400,7 @@ class SimulationModelService extends BaseService
 
     /**
      * シミュレーション開始処理
-     * @param string $id シミュレーションモデルID
+     * @param Uuid $id シミュレーションモデルID
      * @return array シミュレーション開始処理結果とログ情報
      */
     public static function startSimulation($id)
@@ -422,7 +442,7 @@ class SimulationModelService extends BaseService
 
     /**
      * シミュレーション中止処理
-     * @param string $id シミュレーションモデルID
+     * @param Uuid $id シミュレーションモデルID
      * @return array シミュレーション中止処理結果とログ情報
      */
     public static function stopSimulation($id)
@@ -449,7 +469,7 @@ class SimulationModelService extends BaseService
 
     /**
      * 可視化ファイルを取得
-     * @param string $simulation_model_id シミュレーションモデルID
+     * @param Uuid $simulation_model_id シミュレーションモデルID
      * @param integer $visualization_type 可視化種別:1(風況)、2(温度)、3(暑さ指数)
      * @param integer $height_id 相対高さID
      *
@@ -470,8 +490,8 @@ class SimulationModelService extends BaseService
 
     /**
      * シミュレーションモデル熱効率テーブルにレコード新規追加
-     * @param mixed $simulation_model_id シミュレーションモデルID
-     * @param mixed $region_id 解析対象地域ID
+     * @param Uuid $simulation_model_id シミュレーションモデルID
+     * @param Uuid $region_id 解析対象地域ID
      *
      * @return bool
      *  新規追加に成功した場合、true
@@ -501,8 +521,8 @@ class SimulationModelService extends BaseService
 
     /**
      * シミュレーションモデル熱効率のレコードを複製
-     * @param string $src_simulation_model_id コピー元のシミュレーションモデル
-     * @param string $des_simulation_model_id コピー先のシミュレーションモデル
+     * @param Uuid $src_simulation_model_id コピー元のシミュレーションモデル
+     * @param Uuid $des_simulation_model_id コピー先のシミュレーションモデル
      *
      * @return bool
      *  複製に成功した場合、true
@@ -521,6 +541,34 @@ class SimulationModelService extends BaseService
             $newSolarAbsorptivity->solar_absorptivity = $srcSolarAbsorptivity->solar_absorptivity;
             $newSolarAbsorptivity->heat_removal = $srcSolarAbsorptivity->heat_removal;
             if (!$newSolarAbsorptivity->save()) {
+                $result = false;
+                break;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * シミュレーションモデル実施施策のレコードを複製
+     * @param Uuid $src_simulation_model_id コピー元のシミュレーションモデル
+     * @param Uuid $des_simulation_model_id コピー先のシミュレーションモデル
+     *
+     * @return bool
+     *  複製に成功した場合、true
+     *  複製に失敗した場合、false
+     */
+    public static function copySimulationModelPolicy($src_simulation_model_id, $des_simulation_model_id)
+    {
+        $result = true;
+
+        // コピー元のシミュレーションモデル実施施策のレコードを取得
+        $simulationModelPolicys = self::getSimulationModelById($src_simulation_model_id)->simulation_model_policies()->get();
+        foreach ($simulationModelPolicys as $srcSimulationModelPolicy) {
+            $newSimulationModelPolicy = new SimulationModelPolicy();
+            $newSimulationModelPolicy->simulation_model_id = $des_simulation_model_id;
+            $newSimulationModelPolicy->stl_type_id = $srcSimulationModelPolicy->stl_type_id;
+            $newSimulationModelPolicy->policy_id = $srcSimulationModelPolicy->policy_id;
+            if (!$newSimulationModelPolicy->save()) {
                 $result = false;
                 break;
             }
@@ -596,7 +644,7 @@ class SimulationModelService extends BaseService
 
     /**
      * シミュレーションモデル実施施策テーブルにレコードを更新する。
-     * @param mixed $simulation_model_id シミュレーションモデルID
+     * @param Uuid $simulation_model_id シミュレーションモデルID
      * @param array $new_simulation_model_policies 更新対象レコード
      *
      * @return bool

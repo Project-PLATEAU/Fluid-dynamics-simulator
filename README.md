@@ -1,5 +1,4 @@
-﻿# FY2023 PLATAEU-UC23-025「熱流体シミュレーションシステムの開発」の成果物
-### Fluid-dynamics-simulator
+﻿# 熱流体シミュレーションシステムの開発
 ![概要](./docs/images/fig00.png)
 
 ## 1.概要
@@ -161,6 +160,3 @@
 ## 10. 参考資料
 - 技術検証レポート: https://xxxx
 - PLATEAU Webサイト Use caseページ「熱流体シミュレーションシステムの開発」: https://www.mlit.go.jp/plateau/use-case/uc23-025/
-- 熱流体解析ライブラリOpenFOAM：https://www.openfoam.com/
-
-

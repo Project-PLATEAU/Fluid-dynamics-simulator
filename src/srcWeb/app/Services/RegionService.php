@@ -8,6 +8,7 @@ use App\Models\Db\StlModel;
 use App\Models\Db\StlType;
 use App\Utils\DatetimeUtil;
 use App\Utils\FileUtil;
+use Faker\Core\Uuid;
 use Illuminate\Http\Request;
 
 /**
@@ -18,8 +19,8 @@ class RegionService extends BaseService
 
     /**
      * 解析対象地域の削除
-     * @param mixed $city_model_id 都市モデルID
-     * @param mixed $region_id 解析対象地域ID
+     * @param Uuid $city_model_id 都市モデルID
+     * @param Uuid $region_id 解析対象地域ID
      *
      * @return array 削除結果(log含む)
      */
@@ -49,8 +50,8 @@ class RegionService extends BaseService
     /**
      * 解析対象地域の新規追加
      * @param Request $request リクエスト
-     * @param mixed $region_id 解析対象地域ID
-     * @param mixed $city_model_id 都市モデルID
+     * @param Uuid $region_id 解析対象地域ID
+     * @param Uuid $city_model_id 都市モデルID
      *
      * @return array 規追加結果(log含む)
      */
@@ -136,7 +137,7 @@ class RegionService extends BaseService
 
     /**
      * 解析対象地域IDで解析対象地域を取得する。
-     * @param mixed $region_id 解析対象地域ID
+     * @param Uuid $region_id 解析対象地域ID
      *
      * @return Region 解析対象地域
      */
@@ -147,8 +148,8 @@ class RegionService extends BaseService
 
     /**
      * STLファイルのレコードを取得
-     * @param mixed $region_id 解析対象地域ID
-     * @param mixed $stl_type_id STLファイル種別ID
+     * @param Uuid $region_id 解析対象地域ID
+     * @param integer $stl_type_id STLファイル種別ID
      *
      * @return StlModel
      */
@@ -159,8 +160,8 @@ class RegionService extends BaseService
 
     /**
      * STLファイルをアップロード
-     * @param string $city_model_id 都市モデルID
-     * @param string $region_id 解析対象地域ID
+     * @param Uuid $city_model_id 都市モデルID
+     * @param Uuid $region_id 解析対象地域ID
      * @param integer $stl_type_id STLファイル種別ID
      * @param Request $stl_file_rq 選択したSTLファイル
      *
@@ -178,9 +179,9 @@ class RegionService extends BaseService
 
     /**
      * STLファイルの新規追加または更新
-     * @param string $city_model_id 解析対象地域ID
-     * @param string $region_id 解析対象地域ID
-     * @param string $stl_type_id STLファイル種別ID
+     * @param Uuid $city_model_id 解析対象地域ID
+     * @param Uuid $region_id 解析対象地域ID
+     * @param integer $stl_type_id STLファイル種別ID
      * @param Request $stl_file_rq 選択したSTLファイル
      * @param float $solar_absorptivity 入力した日射吸収率
      * @param float $heat_removal 入力した排熱量
@@ -239,9 +240,9 @@ class RegionService extends BaseService
 
     /**
      * STLファイルの削除
-     * @param mixed $city_model_id 都市モデルID
-     * @param mixed $region_id 解析対象地域ID
-     * @param mixed $stl_type_id STLファイル種別ID
+     * @param Uuid $city_model_id 都市モデルID
+     * @param Uuid $region_id 解析対象地域ID
+     * @param integer $stl_type_id STLファイル種別ID
      *
      * @return array 削除結果(log含む)
      */

@@ -6,6 +6,7 @@ namespace App\Services;
 use App\Models\Db\SimulationModelReferenceAuthority;
 use App\Utils\DatetimeUtil;
 use App\Utils\LogUtil;
+use Faker\Core\Uuid;
 
 /**
  * シミュレーションモデル参照権限サービス
@@ -17,7 +18,7 @@ class SimulationModelReferenceAuthorityService extends BaseService
      * シミュレーションモデル参照権限の新規追加
      *
      * @param string $user_id 共有ユーザID
-     * @param string $simulation_model_id シミュレーションモデルID
+     * @param Uuid $simulation_model_id シミュレーションモデルID
      *
      * @return bool
      *  レコード登録に成功した場合、true
@@ -42,7 +43,7 @@ class SimulationModelReferenceAuthorityService extends BaseService
      * シミュレーションモデル参照権限の削除
      *
      * @param string $user_id 共有ユーザID
-     * @param string $simulation_model_id シミュレーションモデルID
+     * @param Uuid $simulation_model_id シミュレーションモデルID
      *
      * @return bool
      *  レコード削除に成功した場合、true

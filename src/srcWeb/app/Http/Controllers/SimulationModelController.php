@@ -13,6 +13,7 @@ use App\Utils\DatetimeUtil;
 use App\Utils\FileUtil;
 use App\Utils\LogUtil;
 use Exception;
+use Faker\Core\Uuid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
@@ -44,7 +45,7 @@ class SimulationModelController extends BaseController
     /**
      * シミュレーションモデルを複製
      * @param Request $request リクエスト
-     * @param string $id 複製元のシミュレーションモデルID
+     * @param Uuid $id 複製元のシミュレーションモデルID
      *
      * @return
      */
@@ -82,7 +83,7 @@ class SimulationModelController extends BaseController
 
     /**
      * シミュレーションモデル追加画面を表示する。
-     * @param mixed $city_model_id 都市モデルID
+     * @param Uuid $city_model_id 都市モデルID
      *
      * @return
      */
@@ -294,7 +295,7 @@ class SimulationModelController extends BaseController
     /**
      * シミュレーションモデルを削除
      * @param Request $request リクエスト
-     * @param string $id シミュレーションモデルID
+     * @param Uuid $id シミュレーションモデルID
      *
      * @return
      */
@@ -389,6 +390,130 @@ class SimulationModelController extends BaseController
                 return redirect()->route('simulation_model.index')->with(['message' => $errorMessage]);
             } else {
                 return redirect()->route('share.index')->with(['share_mode' => Constants::SHARE_MODE_SIMULATION_MODEL, 'model' => $simulationModel]);
+            }
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            LogUtil::e($error);
+            return view('layouts.error', compact('e'));
+        }
+    }
+
+
+    /**
+     * シミュレーションモデルの公開
+     * @param Request $request リクエスト
+     * @param string $id シミュレーションモデルID
+     *
+     * @return
+     */
+    public function publish(Request $request, string $id)
+    {
+        try {
+            $errorMessage = [];
+
+            $simulationModel = null;
+
+            // 登録ユーザ
+            $registeredUserId = $request->query->get('registered_user_id');
+
+            // 編集操作ができるか確認
+            if ($id == 0) {
+                $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
+            } else if (!self::isLoginUser($registeredUserId)) {
+                $errorMessage = ["type" => "E", "code" => "E3", "msg" => Message::$E3];
+            } else {
+                $simulationModel = SimulationModelService::getSimulationModelById($id);
+                if (!$simulationModel) {
+                    throw new Exception("シミュレーションモデルの公開に失敗しました。シミュレーションモデルID「{$id}」のレコードが存在しません。");
+                } else if ($simulationModel->run_status != Constants::RUN_STATUS_CODE_NORMAL_END) {
+                    // 実行ステータスがが正常終了でない場合、[E5]を表示する。
+                    $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NORMAL_END)];
+                }
+            }
+
+            // 画面遷移
+            if ($errorMessage) {
+                LogUtil::w($errorMessage["msg"]);
+                return redirect()->route('simulation_model.index')->with(['message' => $errorMessage]);
+            } else {
+
+                $infoMessage = [];
+                // 公開用の閲覧URL
+                $showURL = route('simulation_model.show_publish', ['id' => $id]);
+
+                // 今の一般公開フラグが有効であれば、I7を表示する。
+                if ($simulationModel->disclosure_flag) {
+                    $infoMessage = ["type" => "I", "code" => "I7", "msg" => sprintf(Message::$I7, $showURL)];
+                } else {
+                    // 今の一般公開フラグが無効であれば、有効にして、I6を表示する。
+                    $updateResult = SimulationModelService::updateSimulationById($id, 'disclosure_flag', true);
+                    if ($updateResult) {
+                        LogUtil::i("[simulation_model] [update] [simulation_model_id: {$id}, disclosure_flag: true]");
+                        $infoMessage = ["type" => "I", "code" => "I6", "msg" => sprintf(Message::$I6, $showURL)];
+                    } else {
+                        throw new Exception("シミュレーションモデルID「{$id}」の公開に失敗しました。");
+                    }
+                }
+
+                return redirect()->route('simulation_model.index')->with(['message' => $infoMessage]);
+            }
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            LogUtil::e($error);
+            return view('layouts.error', compact('e'));
+        }
+    }
+
+    /**
+     * シミュレーションモデルの公開停止
+     * @param Request $request リクエスト
+     * @param string $id シミュレーションモデルID
+     *
+     * @return
+     */
+    public function publishStop(Request $request, string $id)
+    {
+        try {
+            $errorMessage = [];
+
+            $simulationModel = null;
+
+            // 登録ユーザ
+            $registeredUserId = $request->query->get('registered_user_id');
+
+            // 編集操作ができるか確認
+            if ($id == 0) {
+                $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
+            } else if (!self::isLoginUser($registeredUserId)) {
+                $errorMessage = ["type" => "E", "code" => "E3", "msg" => Message::$E3];
+            } else {
+                $simulationModel = SimulationModelService::getSimulationModelById($id);
+                if (!$simulationModel) {
+                    throw new Exception("シミュレーションモデルの公開停止に失敗しました。シミュレーションモデルID「{$id}」のレコードが存在しません。");
+                } else if (!$simulationModel->disclosure_flag) {
+                    // 今の一般公開フラグが無効であれば、「E30」を表示する。
+                    $errorMessage = ["type" => "E", "code" => "E30", "msg" => Message::$E30];
+                }
+            }
+
+            // 画面遷移
+            if ($errorMessage) {
+                LogUtil::w($errorMessage["msg"]);
+                return redirect()->route('simulation_model.index')->with(['message' => $errorMessage]);
+            } else {
+
+                $infoMessage = [];
+
+                // 一般公開フラグを無効にして、I8を表示する。
+                $updateResult = SimulationModelService::updateSimulationById($id, 'disclosure_flag', false);
+                if ($updateResult) {
+                    LogUtil::i("[simulation_model] [update] [simulation_model_id: {$id}, disclosure_flag: false]");
+                    $infoMessage = ["type" => "I", "code" => "I8", "msg" => Message::$I8];
+                } else {
+                    throw new Exception("シミュレーションモデルID「{$id}」の公開停止に失敗しました。");
+                }
+
+                return redirect()->route('simulation_model.index')->with(['message' => $infoMessage]);
             }
         } catch (Exception $e) {
             $error = $e->getMessage();
@@ -652,7 +777,9 @@ class SimulationModelController extends BaseController
                 $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
             } else {
                 $simulationModel = SimulationModelService::getSimulationModelById($id);
-                if ($simulationModel->run_status != Constants::RUN_STATUS_CODE_NORMAL_END) {
+                if (!$simulationModel) {
+                    throw new Exception("シミュレーション結果閲覧に失敗しました。シミュレーションモデルID: 「{$id}」のレコードが存在しません。");
+                } else if ($simulationModel->run_status != Constants::RUN_STATUS_CODE_NORMAL_END) {
                     $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NORMAL_END)];
                 }
             }
@@ -681,6 +808,51 @@ class SimulationModelController extends BaseController
             $error = $e->getMessage();
             LogUtil::e($error);
             return view('layouts.error', compact('e'));
+        }
+    }
+
+    /**
+     * 公開用のシミュレーション結果閲覧
+     * @param Request $request リクエスト
+     * @param string $id シミュレーションモデルID
+     *
+     * @return
+     */
+    public function showPublish(Request $request, string $id)
+    {
+        try {
+            $errorMessage = [];
+
+            $simulationModel = SimulationModelService::getSimulationModelById($id);
+
+            if (!$simulationModel) {
+                throw new Exception("シミュレーション結果閲覧に失敗しました。「{$id}」のシミュレーションモデルが存在しません。");
+            } else if (!$simulationModel->disclosure_flag) {
+                // 閲覧用のシミュレーションモデルが公開されない場合はエラースルー
+                throw new Exception("シミュレーション結果閲覧に失敗しました。{$id}」のシミュレーションモデルが一般公開されていません。");
+            } else {
+
+                // 高さを取得
+                $heightList = HeightService::getAll();
+
+                //可視化種別：風況（※デフォルト）
+                $visualizationType = Constants::VISUALIZATION_TYPE_WINDY;
+
+                // 高さ:1.5m（※デフォルト）
+                $heightId = $request->query->get('height') ? $request->query->get('height') : $heightList->toArray()[0]['height_id'];
+
+                // 可視化ファイル
+                $visualization = SimulationModelService::getVisualization($id, $visualizationType, $heightId);
+                if (!$visualization) {
+                    throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}, 高さ: {$heightId} の可視化ファイルが見つかりませんでした。");
+                } else {
+                    return view('simulation_model.view_publish', compact('simulationModel', 'heightList', 'visualizationType', 'heightId', 'visualization'));
+                }
+            }
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            LogUtil::e($error);
+            return view('layouts.error_publish', compact('e'));
         }
     }
 
@@ -721,20 +893,103 @@ class SimulationModelController extends BaseController
             }
 
             $simulationModel = SimulationModelService::getSimulationModelById($id);
-            // 可視化ファイル
-            $visualization = SimulationModelService::getVisualization($id, $visualizationType, $heightId);
-            if ($visualization) {
-                return view('simulation_model.view', compact(
-                    'simulationModel', 'heightList', 'visualizationType', 'heightId', 'visualization',
-                    'mapCurrentHeading', 'mapCurrentPitch', 'mapCurrentRoll', 'mapCurrentPositionX',
-                    'mapCurrentPositionY', 'mapCurrentPositionZ'));
+            if (!$simulationModel) {
+                throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーション結果閲覧に失敗しました。「{$id}」のシミュレーションモデルが存在しません。");
             } else {
-                throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}, 高さ: {$heightId} の可視化ファイルが見つかりませんでした。");
+                // 可視化ファイル
+                $visualization = SimulationModelService::getVisualization($id, $visualizationType, $heightId);
+                if ($visualization) {
+                    return view('simulation_model.view', compact(
+                        'simulationModel',
+                        'heightList',
+                        'visualizationType',
+                        'heightId',
+                        'visualization',
+                        'mapCurrentHeading',
+                        'mapCurrentPitch',
+                        'mapCurrentRoll',
+                        'mapCurrentPositionX',
+                        'mapCurrentPositionY',
+                        'mapCurrentPositionZ'
+                    ));
+                } else {
+                    throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}, 高さ: {$heightId} の可視化ファイルが見つかりませんでした。");
+                }
             }
         } catch (Exception $e) {
             $error = $e->getMessage();
             LogUtil::e($error);
             return view('layouts.error', compact('e'));
+        }
+    }
+
+    /**
+     * 公開用のシミュレーション結果閲覧(可視化種別により表示)
+     * @param Request $request リクエスト
+     * @param string $id シミュレーションモデルID
+     *
+     * @return
+     */
+    public function changeShowModePublish(Request $request, string $id)
+    {
+        try {
+
+            // 高さを取得
+            $heightList = HeightService::getAll();
+
+            //可視化種別
+            $visualizationType = $request->query->get('visualization_type');
+            // 高さ
+            $heightId = $request->query->get('height');
+
+            // 表示モードを切り替え前の状態（方向、ピッチ、ポジション）を取得
+            $mapCurrentHeading = $request->query->get('map_current_heading');
+            $mapCurrentPitch = $request->query->get('map_current_pitch');
+            $mapCurrentRoll = $request->query->get('map_current_roll');
+            $mapCurrentPositionX = $request->query->get('map_current_position_x');
+            $mapCurrentPositionY = $request->query->get('map_current_position_y');
+            $mapCurrentPositionZ = $request->query->get('map_current_position_z');
+
+            if ($id && $visualizationType) {
+                if (($visualizationType == Constants::VISUALIZATION_TYPE_WINDY ||
+                    $visualizationType == Constants::VISUALIZATION_TYPE_TEMP) && !$heightId) {
+                    throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}, 高さ: null");
+                }
+            } else {
+                throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}");
+            }
+
+            $simulationModel = SimulationModelService::getSimulationModelById($id);
+            if (!$simulationModel) {
+                throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーション結果閲覧に失敗しました。「{$id}」のシミュレーションモデルが存在しません。");
+            } else if (!$simulationModel->disclosure_flag) {
+                // 閲覧用のシミュレーションモデルが公開されない場合はエラースルー
+                throw new Exception("可視化種別や高さにより表示切替に失敗しました。{$id}」のシミュレーションモデルが一般公開されていません。");
+            } else {
+                // 可視化ファイル
+                $visualization = SimulationModelService::getVisualization($id, $visualizationType, $heightId);
+                if ($visualization) {
+                    return view('simulation_model.view_publish', compact(
+                        'simulationModel',
+                        'heightList',
+                        'visualizationType',
+                        'heightId',
+                        'visualization',
+                        'mapCurrentHeading',
+                        'mapCurrentPitch',
+                        'mapCurrentRoll',
+                        'mapCurrentPositionX',
+                        'mapCurrentPositionY',
+                        'mapCurrentPositionZ'
+                    ));
+                } else {
+                    throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}, 高さ: {$heightId} の可視化ファイルが見つかりませんでした。");
+                }
+            }
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            LogUtil::e($error);
+            return view('layouts.error_publish', compact('e'));
         }
     }
 
@@ -773,6 +1028,52 @@ class SimulationModelController extends BaseController
             $error = $e->getMessage();
             LogUtil::e($error);
             return view('layouts.error', compact('e'));
+        }
+    }
+
+    /**
+     * 公開用の画面でシミュレーション結果（GeoJSON）ファイルをダウンロード
+     * @param Request $request リクエスト
+     * @param string $id シミュレーションモデルID
+     *
+     * @return
+     */
+    public function downloadPublish(Request $request, string $id)
+    {
+        try {
+
+            // 選択したラジオボタン
+            $visualizationType = $request->query->get('visualization_type');
+            // 選択した高さ
+            $heightId = $request->query->get('height');
+
+            $simulationModel = SimulationModelService::getSimulationModelById($id);
+            if (!$simulationModel) {
+                throw new Exception("シミュレーション結果閲覧に失敗しました。「{$id}」のシミュレーションモデルが存在しません。");
+            } else if (!$simulationModel->disclosure_flag) {
+                // 閲覧用のシミュレーションモデルが公開されない場合はエラースルー
+                throw new Exception("シミュレーション結果閲覧に失敗しました。{$id}」のシミュレーションモデルが一般公開されていません。");
+            } else {
+
+                // 可視化ファイル
+                $visualization = SimulationModelService::getVisualization($id, $visualizationType, $heightId);
+
+                if (!$visualization) {
+                    throw new Exception("指定した条件「シミュレーションモデルID： {$id}、可視化種別: {$visualizationType}、高さID：{$heightId}」に当てはまる「可視化ファイル」が存在しません。");
+                } else {
+                    $geojsonFilePath = $visualization->geojson_file;
+
+                    if ($geojsonFilePath && FileUtil::isExists($geojsonFilePath)) {
+                        return FileUtil::download($geojsonFilePath);
+                    } else {
+                        throw new Exception("指定したシミュレーション結果（GeoJSON）ファイルが存在しません。 {$geojsonFilePath}");
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            LogUtil::e($error);
+            return view('layouts.error_publish', compact('e'));
         }
     }
 

@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
-    <title>{{ config('app.name', 'BRIDGE-CFD') }} - ログイン</title>
+    <title>{{ config('app.name', '熱流体シミュレーションシステム') }} - ログイン</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -76,7 +76,7 @@
         <div class="form-signin">
             <form method="POST" id="frmLogin"action="{{ url('/login') }}">
                 @csrf
-                <h1 class="h3 mb-3 fw-normal text-center">BRIDGE　CFDシミュレータ</h1>
+                <h1 class="h3 mb-3 fw-normal text-center">熱流体シミュレーションシステム</h1>
 
                 <div class="form-floating">
                     <input type="text" class="form-control" name="user_id" id="user_id" placeholder="Test User" value="{{ $userAccount->user_id }}">

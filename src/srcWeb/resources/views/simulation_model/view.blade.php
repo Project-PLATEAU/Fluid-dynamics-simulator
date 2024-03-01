@@ -38,7 +38,7 @@
                         <label>3D都市モデル</label>
                     </div>
                     <div class="col-sm-7">
-                        <span>{{$simulationModel->city_model->identification_name}}</span>
+                        <span>{{ $simulationModel->city_model->identification_name }}</span>
                     </div>
                 </div>
                 <div class="row">
@@ -46,7 +46,7 @@
                         <label>対象地域</label>
                     </div>
                     <div class="col-sm-7">
-                        <span>{{$simulationModel->region->region_name}}</span>
+                        <span>{{ $simulationModel->region->region_name }}</span>
                     </div>
                 </div>
                 <div class="row">
@@ -54,7 +54,7 @@
                         <label>モデル識別名</label>
                     </div>
                     <div class="col-sm-7">
-                        <span>{{$simulationModel->identification_name}}</span>
+                        <span>{{ $simulationModel->identification_name }}</span>
                     </div>
                 </div>
 
@@ -67,7 +67,7 @@
                         <label>登録ユーザ</label>
                     </div>
                     <div class="col-sm-7">
-                        <span>{{$simulationModel->user_account->display_name}}</span>
+                        <span>{{ $simulationModel->user_account->display_name }}</span>
                     </div>
                 </div>
                 <div class="row">
@@ -75,7 +75,7 @@
                         <label>シミュレーション開始日時</label>
                     </div>
                     <div class="col-sm-7">
-                        <span>{{ App\Utils\DatetimeUtil::changeFormat($simulationModel->last_sim_start_datetime)}}</span>
+                        <span>{{ App\Utils\DatetimeUtil::changeFormat($simulationModel->last_sim_start_datetime) }}</span>
                     </div>
                 </div>
                 <div class="row">
@@ -83,7 +83,7 @@
                         <label>シミュレーション完了日時</label>
                     </div>
                     <div class="col-sm-7">
-                        <span>{{ App\Utils\DatetimeUtil::changeFormat($simulationModel->last_sim_end_datetime)}}</span>
+                        <span>{{ App\Utils\DatetimeUtil::changeFormat($simulationModel->last_sim_end_datetime) }}</span>
                     </div>
                 </div>
 

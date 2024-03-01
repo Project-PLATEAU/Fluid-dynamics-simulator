@@ -12,7 +12,7 @@
 
 @section('content')
 <div class="d-flex flex-column container">
-    <form id="frmSolver" method="POST" action="{{route('solver.addnew')}}" enctype="multipart/form-data">
+    <form id="frmSolver" method="POST" action="{{ route('solver.addnew') }}" enctype="multipart/form-data">
         {{ csrf_field() }}
         <div class="mb-3 row">
             <label for="solver_name" class="col-sm-2 col-form-label">ソルバ識別名</label>
@@ -61,11 +61,11 @@
                     <tbody class="table-group-divider">
                         @foreach($solverList as $solver)
                         <tr onclick="toggleTr(this)">
-                            <td class="d-none" id="hiddenSolverIdTd">{{ $solver->solver_id}}</td>
+                            <td class="d-none" id="hiddenSolverIdTd">{{ $solver->solver_id }}</td>
                             <td class="d-none" id="hiddenRegisteredUserIdTd">{{ $solver->user_id }}</td>
                             <td>{{ $solver->solver_name }}</td>
                             <input type="hidden" class="form-control" name="hiddenSolverName" id="hiddenSolverName" value="{{ $solver->solver_name }}">
-                            <td>{{ $solver->getPublicStatus() }}</td>
+                            <td>{{ $solver->getPublishStatus() }}</td>
                             <td>{{ $solver->getUserName() }}</td>
                             <td>{{ $solver->upload_datetime ? App\Utils\DatetimeUtil::changeFormat($solver->upload_datetime) : "" }}</td>
                             <td>{{ $solver->explanation }}</td>
@@ -112,7 +112,7 @@
                         '<button type="button" class="btn btn-outline-secondary" id="ButtonDelOK">OK</button><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>');
 
                     // 削除確認ダイアログでOKボタンを押した
-                    $("div#messageModal [class='modal-footer'] button#ButtonDelOK").click(function(){
+                    $("div#messageModal [class='modal-footer'] button#ButtonDelOK").click(function() {
                         const solverId = "{{ $solverId }}";
                         const changeHref = $("button#ButtonDelete").data('href').replace(/.$/, solverId); // 最後の文字列を置換
                         const delAction =  changeHref + "?delete_flg=1";
@@ -135,7 +135,7 @@
             @endif
 
             // 「更新」「公開」「削除」「ダウンロード」ボタンは押下後
-            $("button.button-href-with-id").click(function(){
+            $("button.button-href-with-id").click(function() {
 
                 // ソルバIDを取得
                 const $currentSolverId = $("#tblSolver tr.table-primary").find('td#hiddenSolverIdTd').html();

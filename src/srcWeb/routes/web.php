@@ -13,10 +13,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
-
 // アクションの前後に開始・終了ログを自動で挟むようにmiddleware log groupを設定
 Route::middleware(['log'])->group(function () {
 
@@ -26,6 +22,19 @@ Route::middleware(['log'])->group(function () {
     Route::get('/', 'App\Http\Controllers\LoginController@index')->name('login.index');
     Route::post('/login', 'App\Http\Controllers\LoginController@login')->name('login.login');
     Route::get('/logout', 'App\Http\Controllers\LoginController@logout')->name('login.logout');
+
+    /**
+     * 公開用のシミュレーション結果閲覧画面(初期表示)
+     */
+    Route::get('/simulation_model/show_publish/{id}', 'App\Http\Controllers\SimulationModelController@showPublish')->name('simulation_model.show_publish');
+    /**
+     * 公開用のシミュレーション結果閲覧画面(可視化種別により表示)
+     */
+    Route::get('/simulation_model/show_publish/change_mode_publish/{id}', 'App\Http\Controllers\SimulationModelController@changeShowModePublish')->name('simulation_model.change_mode_publish');
+    /**
+     * 公開用のシミュレーション結果閲覧画面(ダウンロード)
+     */
+    Route::get('/simulation_model/show_publish/download_publish/{id}', 'App\Http\Controllers\SimulationModelController@downloadPublish')->name('simulation_model.download_publish');
 
     // ログインせずに直接URLアクセスすると、強制的にログイン画面を求める。
     Route::middleware(['check_login'])->group(function () {
@@ -124,6 +133,14 @@ Route::middleware(['log'])->group(function () {
          * シミュレーションモデル一覧画面(共有)
          */
         Route::get('/simulation_model/share/{id}', 'App\Http\Controllers\SimulationModelController@share')->name('simulation_model.share');
+        /**
+         * シミュレーションモデル一覧画面(公開)
+         */
+        Route::get('/simulation_model/publish/{id}', 'App\Http\Controllers\SimulationModelController@publish')->name('simulation_model.publish');
+        /**
+         * シミュレーションモデル一覧画面(公開停止)
+         */
+        Route::get('/simulation_model/publish_stop/{id}', 'App\Http\Controllers\SimulationModelController@publishStop')->name('simulation_model.publish_stop');
         /**
          * シミュレーションモデル一覧画面(シミュレーション開始)
          */

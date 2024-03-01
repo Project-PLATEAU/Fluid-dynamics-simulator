@@ -69,13 +69,13 @@ class Solver extends DbModel
      * 公開状況を取得
      * @return string 公開状況
      */
-    public function getPublicStatus()
+    public function getPublishStatus()
     {
         // SC7公開フラグが有効であれば「公開」、無効であれば「非公開」と表示する
         if ($this->disclosure_flag) {
-            return Constants::PUBLIC;
+            return Constants::SOLVER_PUBLISH;
         } else {
-            return Constants::NON_PUBLIC;
+            return Constants::SOLVER_NON_PUBLISH;
         }
     }
 

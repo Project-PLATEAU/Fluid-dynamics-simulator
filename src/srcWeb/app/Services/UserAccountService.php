@@ -7,6 +7,7 @@ use App\Commons\Constants;
 use App\Models\Db\CityModelReferenceAuthority;
 use App\Models\Db\SimulationModelReferenceAuthority;
 use App\Models\Db\UserAccount;
+use Faker\Core\Uuid;
 
 /**
  * ユーザアカウントのサービス
@@ -15,8 +16,8 @@ class UserAccountService extends BaseService
 {
     /**
      * ユーザの表示名を取得
-     * @param  $share_mode 都市モデル：1, シミュレーションモデル：2
-     * @param  $id 都市モデルID or シミュレーションモデルID
+     * @param  integer $share_mode 都市モデル：1, シミュレーションモデル：2
+     * @param  Uuid $id 都市モデルID or シミュレーションモデルID
      *
      * @return array ユーザの表示名リスト
      */

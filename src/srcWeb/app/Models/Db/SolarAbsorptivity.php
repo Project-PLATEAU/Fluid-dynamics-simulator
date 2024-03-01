@@ -59,7 +59,7 @@ class SolarAbsorptivity extends DbModel
 
     /**
      * シミュレーションモデルIDとSTLファイル種別IDで日射吸収率のレコードを取得
-     * @param string $simulation_model_id シミュレーションモデルID
+     * @param Uuid $simulation_model_id シミュレーションモデルID
      * @param integer $stl_type_id STLファイル種別ID
      *
      * @return self
@@ -71,7 +71,7 @@ class SolarAbsorptivity extends DbModel
 
     /**
      * シミュレーションモデルIDで日射吸収率のレコードを取得
-     * @param string $simulation_model_id シミュレーションモデルID
+     * @param Uuid $simulation_model_id シミュレーションモデルID
      *
      * @return self
      */

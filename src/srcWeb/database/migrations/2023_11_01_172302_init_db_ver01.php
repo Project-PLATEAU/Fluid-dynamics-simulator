@@ -224,6 +224,8 @@ return new class extends Migration
             $table->timestamp('last_sim_start_datetime')->nullable()->comment('最終シミュレーション開始日時');
             // 最終シミュレーション完了日時
             $table->timestamp('last_sim_end_datetime')->nullable()->comment('最終シミュレーション完了日時');
+            // 一般公開フラグ
+            $table->boolean('disclosure_flag')->nullable()->comment('一般公開フラグ');
 
             // 外部キー(都市モデルID)の制約を追加
             $table->foreign('city_model_id')->references('city_model_id')->on('city_model')

@@ -6,11 +6,11 @@ namespace App\Services;
 use App\Commons\CommonUtils;
 use App\Commons\Constants;
 use App\Models\Db\CityModel;
-use App\Models\Db\CityModelReferenceAuthority;
 use App\Models\Db\Coordinate;
 use App\Models\Db\StlType;
 use App\Utils\DatetimeUtil;
 use App\Utils\LogUtil;
+use Faker\Core\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -42,7 +42,7 @@ class CityModelService extends BaseService
     /**
      *
      * 都市モデル削除
-     * @param mixed $id 都市モデルID
+     * @param Uuid $id 都市モデルID
      *
      * @return array 削除結果(log含む)
      */
@@ -104,7 +104,7 @@ class CityModelService extends BaseService
 
     /**
      * 都市モデルのレコード更新
-     * @param integer $id 都市モデルID
+     * @param Uuid $id 都市モデルID
      * @param string $attribute 更新対象カラム
      * @param string $val 更新値
      *
@@ -135,9 +135,9 @@ class CityModelService extends BaseService
      *
      * 都市モデルIDでレコード取得
      *
-     * @param mixed $id 都市モデルID
+     * @param Uuid $id 都市モデルID
      *
-     * @return \App\Models\Db\CityModel
+     * @return CityModel
      */
     public static function getCityModelById($id)
     {

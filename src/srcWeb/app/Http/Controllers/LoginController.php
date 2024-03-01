@@ -49,8 +49,8 @@ class LoginController extends BaseController
                 // クッキー設定
                 self::setCookie(Constants::LOGIN_COOKIE_NAME, $userInfo->toArray());
 
-                // 都市モデル一覧へ遷移する。
-                return redirect()->route('city_model.index');
+                // シミュレーションモデル一覧画面へ遷移する。
+                return redirect()->route('simulation_model.index');
             }
 
             // ログイン認証に失敗した場合

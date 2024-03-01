@@ -13,8 +13,8 @@ class LoginService extends BaseService
 {
     /**
      * ログイン認証
-     * @param mixed $user_id ユーザID
-     * @param mixed $password パスワード
+     * @param string $user_id ユーザID
+     * @param string $password パスワード
      *
      * @return mixed
      *      true: UserAccount
