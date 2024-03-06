@@ -1,5 +1,5 @@
 {
-  "source_base_path": "C:/Users/HarukaNakanose/Documents/prj/BRIDGE_PLATEAU/GitHub Pages/gh-pages/markdown",
+  "source_base_path": "C:/Users/HarukaNakanose/Documents/prj/BRIDGE_PLATEAU/GitHub Pages/gh-pages_Backlog/markdown",
   "xrefmap": "xrefmap.yml",
   "files": [
     {
@@ -65,6 +65,16 @@
     },
     {
       "type": "Resource",
+      "source_relative_path": "resources/devMan/file-container.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/devMan/file-container.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
       "source_relative_path": "resources/index00-fig00.png",
       "output": {
         "resource": {
@@ -79,6 +89,146 @@
       "output": {
         "resource": {
           "relative_path": "resources/logo.svg"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/3-2Add3dModel.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/3-2Add3dModel.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/3-2Edit3dModel.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/3-2Edit3dModel.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/3-2UpStlFile.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/3-2UpStlFile.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/3dCityModel.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/3dCityModel.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/SimModel.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/SimModel.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/SimModel_add.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/SimModel_add.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/SimModel_view.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/SimModel_view.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/Solver.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/Solver.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/login.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/login.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/mapMan.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/mapMan.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/top-menu.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/top-menu.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/top.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/top.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/userMan00-login.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/userMan00-login.png"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "resources/userMan/userMan00-top.png",
+      "output": {
+        "resource": {
+          "relative_path": "resources/userMan/userMan00-top.png"
         }
       },
       "version": ""

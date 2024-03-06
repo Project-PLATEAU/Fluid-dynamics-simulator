@@ -171,29 +171,40 @@ GitHubからダウンロードしたソースファイルの構成は以下の�
 sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git src/container
 ```
 
-2. ymlファイルの編集
-事前準備で検討したデータベース情報をPOSTGRESで始まる３つの設定値に反映します。
-（ファイルサーバも同様とするか。）
+2. ymlファイルの編集\
+事前準備で検討したデータベース情報をPOSTGRESで始まる以下の３つの設定値に反映します。
+
 ```
 vi docker-compose.yml
 ```
- - POSTGRES_USER: DB USER
- - POSTGRES_PASSWORD: DB PASSWORD
- - POSTGRES_DB: DB NAME
+   - POSTGRES_USER:  "DB USER"
+   - POSTGRES_PASSWORD:  "DB PASSWORD"
+   - POSTGRES_DB:  "DB NAME"
 
- 3. Docker コンテナの作成\
+3. Webコンテナの作成準備\
+ymlファイルが存在するディレクトリに、srcフォルダを作成します。\
+その後、Webコンテナで利用するソースファイル一式を
+[こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcWeb)
+からダウンロードします。
+
+```
+cd src
+sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git srcWeb
+```
+
+4. Docker コンテナの作成\
 数分間かけてコンテナが作成されます。
 ```
 cd container
-sudo docker-compose up
+sudo docker compose up
 ```
 
- 4. 作成確認およびコンテナIDの把握
+5. 作成確認およびコンテナIDの把握
 ```
 sudo docker ps -a
 ```
 
-出力結果より、Webコンテナ、DBコンテナ、Wrapperコンテナの[STATUS]がUPになっていることを確認します。また、英数字12桁で1番左側に出力されている[CONTAINER ID]を記録しておきます。
+出力結果より、Webコンテナ/DBコンテナ/Wrapperコンテナの [ STATUS ] がUPになっていることを確認します。また、英数字12桁で1番左側に出力されている [ CONTAINER ID ] を記録しておきます。
 
 ## 3.2. Webコンテナ
 作成したWebコンテナへアクセスし、Webアプリの動作に必要な設定を実施します。\
@@ -201,24 +212,15 @@ Webコンテナで利用するソースファイル一式は
 [こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcWeb)
 からダウンロード可能です。
 
-1. Webコンテナへアクセス
-
+1. Webコンテナへアクセス\
 コンテナ管理用マシン上で、WebコンテナのコンテナIDを入力します。
 ```
 sudo docker  exec -it  [Web-CONTAINER ID] /bin/bash
 ```
 
-2. GitHub mainブランチから
-[src/srcWeb](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcWeb)
-をコピー
-```
-sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git src/srcWeb
-```
-
-3. 設定ファイルの作成
-
+2. 設定ファイルの作成\
 サンプルファイル[.env.example]を参考に、[.env]を編集します。
-（編集箇所や記入内容も記載するか相談）
+
 - サンプルファイルの確認方法
 ```
 cd srcWeb
@@ -239,7 +241,7 @@ php artisan key:generate
 sudo view .env
 ```
 
-4. ライブラリのインストール\
+3. ライブラリのインストール\
 最後に、ライブラリをインストールします。設定ファイルを作成後に実施します。
 ```
 cd srcWeb/bridge-cfd/
@@ -252,27 +254,24 @@ DBコンテナで利用するクエリ一式は
 [こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query)
 からダウンロード可能です。
 
-1. データベース作成と初期データの投入
-
-まず、Webコンテナにアクセスし、データベースを作成するために以下のコマンドを実行ます。
+1. データベース作成と初期データの投入\
+まず、Webコンテナにアクセスし、データベースの作成と初期データを投入するために以下２つのコマンドを実行します。初期データ投入後、アカウントが１つ登録されます。\
+ユーザーID：「testuser」　パスワード：「&ezULtAW3FYa」
 ```
+# データベースの作成
 php artisan migrate --path=/database/migrations/2023_11_01_172302_init_db_ver01.php
-```
 
-次に、初期データの投入をするために以下のコマンドを実行します。
-```
+# 初期データの投入
 php artisan db:seed
 ```
 
-2. DBコンテナへアクセス
-
+2. DBコンテナへアクセス\
 コンテナ管理用マシン上で、DBコンテナのコンテナIDを入力します。
 ```
 sudo docker  exec -it  [DB-CONTAINER ID] /bin/bash
 ```
 
-3. ユーザアカウント登録
-
+3. ユーザアカウント登録\
 pgAdmin 4などのRDBMSからデータベースに接続します。mainブランチの
 [src/query](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query)
 にあるINSERT_USER_ACCOUNT.sql を参考にして、必要なユーザアカウントを登録します。
@@ -317,7 +316,7 @@ sudo docker  exec -it  [wrapper-CONTAINER ID] /bin/bash
 mkdir /bridge-plateau-cfd & cd /bridge-plateau-cfd
 sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git src/srcBatch
 ```
-/bridge-plateau-cfdが作成され、その直下にwrapper_organize.pyなどのpythonプログラム群が配置されていることを確認します。
+bridge-plateau-cfd が作成され、その直下にwrapper_organize.pyなどのpythonプログラム群が配置されていることを確認します。
 
 3. .pemファイルの作成（任意）\
 本システムでは、シミュレーションマシンとWrapperコンテナでSSH接続による通信を利用します。
@@ -336,7 +335,7 @@ sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git s
   - host = シミュレーションマシンのホスト名 or IPアドレス
   - key_filename = .pemファイルのパス
 
-また、ファイルストレージを外部で準備した場合は、必要に応じて[PATH]セクションshared_folder_rootの設定値を変更してください。
+もし、ファイルストレージを外部で準備した場合は、必要に応じて[PATH]セクションshared_folder_rootの設定値を変更してください。
 
 # 4 シミュレーション管理ジョブの起動
 
@@ -363,7 +362,7 @@ service cron status　　（起動確認）
 service cron restart　　（再起動）
 ```
 
-上記手順を終えたあとに、Wrapperコンテナへログインし、ログが1分おきに出力されていることを確認します。\
+上記手順を終えたあとに、Wrapperコンテナへログインし、ログが1分おきに出力されていることを確認します。
 ```
 tail bridge-plateau-cfd/tail log/wrapper.log
 ```
