@@ -12,7 +12,7 @@ services:
       - db
     volumes:
       - ./src:/var/www/html
-      - /mnt:
+      - /mnt:/var/www/html/srcWeb/bridge-cfd/storage/app/public
 
   db:
     build:
