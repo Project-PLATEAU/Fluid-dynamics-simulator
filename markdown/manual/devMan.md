@@ -1,6 +1,6 @@
 # 環境構築手順・インストール
 
-本書では日射や風況等に基づく温熱環境シミュレーションシステム（以下「本システム」という。）の利用環境構築手順について記載しています。
+本書では3D都市モデルを活用した熱流体シミュレーションシステム（以下「本システム」という。）の利用環境構築手順について記載しています。
 本システムの構成や仕様の詳細については以下も参考にしてください。
 
 # 1. 事前準備・推奨条件
@@ -23,10 +23,10 @@
 
 ## 1.1. データベース情報の検討
 本システムの環境構築を効率よく進めていくうえで、データベース情報を事前に定義しておくことを推奨します。
-下記、３点を検討し、手元に記録または管理してください。
- - DB USER
- - DB PASSWORD
- - DB NAME
+下記、３点(データベースのユーザー名、データベースのパスワード、データベース名)を検討し、手元に記録または管理してください。
+ - DB_USER
+ - DB_PASSWORD
+ - DB_NAME
 
 ## 1.2. ファイルストレージのマウント
 コンテナ管理用マシンに接続されたファイルストレージをコンテナ管理用マシンの/mntにマウントしてください。
@@ -164,45 +164,63 @@ GitHubからダウンロードしたソースファイルの構成は以下の�
 
 ここでは、コンテナ管理用マシン上でコマンドを実行してコンテナを作成するまでの手順を記載します。
 
-1. GitHub mainブランチから[src/container](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/container)をコピー
+1. GitHub mainブランチから[src/container](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/container)と[src/secWeb](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcWeb)を/optにコピー
 ```
-sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git src/container
+cd /opt/
+sudo git clone --no-checkout https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git
+cd Fluid-dynamics-simulator/
+sudo git sparse-checkout init --cone
+sudo git sparse-checkout add src/container/
+sudo git sparse-checkout add src/srcWeb/
+sudo git checkout main
+cd src/container
 ```
 
 2. ymlファイルの編集\
-事前準備で検討したデータベース情報をPOSTGRESで始まる以下の３つの設定値に反映します。
-
+docker-compose.ymlファイルを編集します。
 ```
-vi docker-compose.yml
+sudo vi docker-compose.yml
 ```
-   - POSTGRES_USER:  "DB USER"
-   - POSTGRES_PASSWORD:  "DB PASSWORD"
-   - POSTGRES_DB:  "DB NAME"
-
-3. Webコンテナの作成準備\
-ymlファイルが存在するディレクトリに、srcフォルダを作成します。\
-その後、Webコンテナで利用するソースファイル一式を
-[こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcWeb)
-からダウンロードします。
-
+以下の行を
 ```
-cd src
-sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git srcWeb
+  - ./src:/var/www/html
 ```
+以下のように書き換えます。
+```
+  - ../:/var/www/html
+```
+事前準備で検討したデータベース情報（データベースのユーザー名、データベースのパスワード、データベース名）をPOSTGRESで始まる以下の３つの設定値に反映します。
+```
+      POSTGRES_USER: DB_USER
+      POSTGRES_PASSWORD: DB_PASSWORD
+      POSTGRES_DB: DB_NAME
+```
+上記編集が終わったらdocker-compose.ymlファイルを保存します。
 
-4. Docker コンテナの作成\
+3. Docker コンテナの作成\
+docker-compose.ymlファイルの存在するフォルダ内で以下のコマンドを実行します。\
 数分間かけてコンテナが作成されます。
 ```
-cd container
 sudo docker compose up
 ```
+しばらく動かなくなったところでCtrl+Cでコンテナを終了させます。
 
-5. 作成確認およびコンテナIDの把握
+4. 作成確認およびコンテナIDの把握
 ```
 sudo docker ps -a
 ```
+出力結果より、container-web、container-db、container-wrapperの3つのコンテナに対して、数字12桁で1番左側に出力されている [ CONTAINER ID ] を記録しておきます。
 
-出力結果より、Webコンテナ/DBコンテナ/Wrapperコンテナの [ STATUS ] がUPになっていることを確認します。また、英数字12桁で1番左側に出力されている [ CONTAINER ID ] を記録しておきます。
+5. コンテナのスタート
+container-web、container-db、container-wrapperの3つのコンテナを起動します。
+以下のコマンドをそれぞれの [ CONTAINER ID ] に対して実行します。
+```
+sudo docker start [ CONTAINER ID ]
+```
+以下のコマンドを実行し、Webコンテナ(container-web)/DBコンテナ(container-db)/Wrapperコンテナ(container-wrapper)の [ STATUS ] がUPになっていることを確認します。
+```
+sudo docker ps -a
+```
 
 ## 3.2. Webコンテナ
 作成したWebコンテナへアクセスし、Webアプリの動作に必要な設定を実施します。\

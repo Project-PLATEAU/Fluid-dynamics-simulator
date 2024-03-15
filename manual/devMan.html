@@ -79,7 +79,7 @@
             <article class="content wrap" id="_content" data-uid="">
 <h1 id="環境構築手順インストール">環境構築手順・インストール</h1>
 
-<p>本書では日射や風況等に基づく温熱環境シミュレーションシステム（以下「本システム」という。）の利用環境構築手順について記載しています。
+<p>本書では3D都市モデルを活用した熱流体シミュレーションシステム（以下「本システム」という。）の利用環境構築手順について記載しています。
 本システムの構成や仕様の詳細については以下も参考にしてください。</p>
 <h1 id="1-事前準備推奨条件">1. 事前準備・推奨条件</h1>
 <p>はじめに、本システムを利用する際は、
@@ -106,11 +106,11 @@
 </ul>
 <h2 id="11-データベース情報の検討">1.1. データベース情報の検討</h2>
 <p>本システムの環境構築を効率よく進めていくうえで、データベース情報を事前に定義しておくことを推奨します。
-下記、３点を検討し、手元に記録または管理してください。</p>
+下記、３点(データベースのユーザー名、データベースのパスワード、データベース名)を検討し、手元に記録または管理してください。</p>
 <ul>
-<li>DB USER</li>
-<li>DB PASSWORD</li>
-<li>DB NAME</li>
+<li>DB_USER</li>
+<li>DB_PASSWORD</li>
+<li>DB_NAME</li>
 </ul>
 <h2 id="12-ファイルストレージのマウント">1.2. ファイルストレージのマウント</h2>
 <p>コンテナ管理用マシンに接続されたファイルストレージをコンテナ管理用マシンの/mntにマウントしてください。
@@ -343,44 +343,59 @@ sudo apt-get update
 <p><img src="../resources/devMan/file-container.png" alt=""></p>
 <p>ここでは、コンテナ管理用マシン上でコマンドを実行してコンテナを作成するまでの手順を記載します。</p>
 <ol>
-<li>GitHub mainブランチから<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/container">src/container</a>をコピー</li>
+<li>GitHub mainブランチから<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/container">src/container</a>と<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcWeb">src/secWeb</a>を/optにコピー</li>
 </ol>
-<pre><code>sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git src/container
+<pre><code>cd /opt/
+sudo git clone --no-checkout https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git
+cd Fluid-dynamics-simulator/
+sudo git sparse-checkout init --cone
+sudo git sparse-checkout add src/container/
+sudo git sparse-checkout add src/srcWeb/
+sudo git checkout main
+cd src/container
 </code></pre>
 <ol start="2">
 <li>ymlファイルの編集<br>
-事前準備で検討したデータベース情報をPOSTGRESで始まる以下の３つの設定値に反映します。</li>
+docker-compose.ymlファイルを編集します。</li>
 </ol>
-<pre><code>vi docker-compose.yml
+<pre><code>sudo vi docker-compose.yml
 </code></pre>
-<ul>
-<li>POSTGRES_USER:  &quot;DB USER&quot;</li>
-<li>POSTGRES_PASSWORD:  &quot;DB PASSWORD&quot;</li>
-<li>POSTGRES_DB:  &quot;DB NAME&quot;</li>
-</ul>
+<p>以下の行を</p>
+<pre><code>  - ./src:/var/www/html
+</code></pre>
+<p>以下のように書き換えます。</p>
+<pre><code>  - ../:/var/www/html
+</code></pre>
+<p>事前準備で検討したデータベース情報（データベースのユーザー名、データベースのパスワード、データベース名）をPOSTGRESで始まる以下の３つの設定値に反映します。</p>
+<pre><code>      POSTGRES_USER: DB_USER
+      POSTGRES_PASSWORD: DB_PASSWORD
+      POSTGRES_DB: DB_NAME
+</code></pre>
+<p>上記編集が終わったらdocker-compose.ymlファイルを保存します。</p>
 <ol start="3">
-<li>Webコンテナの作成準備<br>
-ymlファイルが存在するディレクトリに、srcフォルダを作成します。<br>
-その後、Webコンテナで利用するソースファイル一式を
-<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcWeb">こちら</a>
-からダウンロードします。</li>
-</ol>
-<pre><code>cd src
-sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git srcWeb
-</code></pre>
-<ol start="4">
 <li>Docker コンテナの作成<br>
+docker-compose.ymlファイルの存在するフォルダ内で以下のコマンドを実行します。<br>
 数分間かけてコンテナが作成されます。</li>
 </ol>
-<pre><code>cd container
-sudo docker compose up
+<pre><code>sudo docker compose up
 </code></pre>
-<ol start="5">
+<p>しばらく動かなくなったところでCtrl+Cでコンテナを終了させます。</p>
+<ol start="4">
 <li>作成確認およびコンテナIDの把握</li>
 </ol>
 <pre><code>sudo docker ps -a
 </code></pre>
-<p>出力結果より、Webコンテナ/DBコンテナ/Wrapperコンテナの [ STATUS ] がUPになっていることを確認します。また、英数字12桁で1番左側に出力されている [ CONTAINER ID ] を記録しておきます。</p>
+<p>出力結果より、container-web、container-db、container-wrapperの3つのコンテナに対して、数字12桁で1番左側に出力されている [ CONTAINER ID ] を記録しておきます。</p>
+<ol start="5">
+<li>コンテナのスタート
+container-web、container-db、container-wrapperの3つのコンテナを起動します。
+以下のコマンドをそれぞれの [ CONTAINER ID ] に対して実行します。</li>
+</ol>
+<pre><code>sudo docker start [ CONTAINER ID ]
+</code></pre>
+<p>以下のコマンドを実行し、Webコンテナ(container-web)/DBコンテナ(container-db)/Wrapperコンテナ(container-wrapper)の [ STATUS ] がUPになっていることを確認します。</p>
+<pre><code>sudo docker ps -a
+</code></pre>
 <h2 id="32-webコンテナ">3.2. Webコンテナ</h2>
 <p>作成したWebコンテナへアクセスし、Webアプリの動作に必要な設定を実施します。<br>
 Webコンテナで利用するソースファイル一式は
