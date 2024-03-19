@@ -41,7 +41,7 @@ def write_text_file_fs(file_path_fs : str ,text:str):
     return
 
 # output_data_convert.py
-def get_subfolder_name_list(folder_name : str)-> []:
+def get_subfolder_name_list(folder_name : str):
     return [d for d in os.listdir(folder_name) if os.path.isdir(os.path.join(folder_name, d))]
 
 # in/out_data_convert.py
@@ -53,3 +53,22 @@ def exist_folder_fs(folder_path_fs : str ) -> bool:
 def create_folder_fs(folder_path_fs : str ):
     os.makedirs(folder_path_fs)
     return
+def create_or_recreate_folder_fs(folder_path_fs : str):
+    if exist_folder_fs(folder_path_fs):
+        delete_folder_fs(folder_path_fs)
+    create_folder_fs(folder_path_fs)
+    return
+
+# simulation_error.py
+def copy_log_files_fs(source_folder : str, destination_folder : str):
+    # ソースフォルダ内の全てのファイルとサブフォルダを取得
+    for root, dirs, files in os.walk(source_folder):
+        for file in files:
+            if file.startswith("log."):
+                # ソースファイルのパスを生成
+                source_path = os.path.join(root, file)
+                # デスティネーションフォルダにファイルをコピー
+                shutil.copy(source_path, destination_folder)
+# simulation_error.py
+def compress_log_files_fs(log_folder : str, extension : str):
+    shutil.make_archive(log_folder, extension, log_folder)

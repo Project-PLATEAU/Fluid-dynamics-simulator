@@ -117,7 +117,7 @@ def simulation_error_end_process(model_id : str):
     logger.error(log_writer.format_str(model_id, msg))
     # status_dbから該当のmodel_idのレコードを削除する
     status_db_connection.delete_model(model_id)
-    error_log_file_path = file_path_generator.get_error_log_file_model_id_fs(model_id)
+    error_log_file_path = file_path_generator.get_compressed_error_log_file_model_id_fs(model_id)
     # WebアプリデータベースのURLには絶対パスではなく、共有フォルダ以下のパスのみを格納する
     trimmed_error_log_file_path = file_path_generator.get_folder_name_without_shared_folder_fs(error_log_file_path)
     webapp_db_connection.update_status(model_id, static.SIMULATION_MODEL_RUN_STATUS_ABNORMAL_END,

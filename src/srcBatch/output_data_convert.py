@@ -75,20 +75,14 @@ def get_wbgt(ta : float, rh : float, sr : float, ws : float) -> float:
     return wbgt
 #endregion
 
-def create_folder(file_path : str):
-    if file_controller.exist_folder_fs(file_path):
-        file_controller.delete_folder_fs(file_path)
-    file_controller.create_folder_fs(file_path)
-    return
-
 def create_converted_output_model_id_folder(model_id : str) -> str:
     file_path = file_path_generator.get_converted_output_model_id_folder_fs(model_id)
-    create_folder(file_path)
+    file_controller.create_or_recreate_folder_fs(file_path)
     return file_path
 
 def create_folder_by_type(model_id_folder : str, file_type : str, result_type : int) -> str:
     file_path = file_path_generator.combine(file_path_generator.combine(model_id_folder, file_type), str(result_type))
-    create_folder(file_path)
+    file_controller.create_or_recreate_folder_fs(file_path)
     return file_path
 
 def get_result_folder(model_id : str) -> str:
@@ -205,7 +199,7 @@ def get_solar_irradiances(file_type_id : str, result_folder_name : str)  -> ndar
         with open(file_path_generator.combine(result_folder_name, SOLAR_IRRADIANCE_FILENAME), "r") as file:
             text = file.read()
         # 正規表現パターンを定義
-        pattern = re.compile(fr"\s+{file_type_id}\s+{{[^}}]*?[\d]+\s+\(\s+([0-9\.e\s]*?)\s+\)\s+;\s+}}", re.DOTALL)
+        pattern = re.compile(fr"\s+{file_type_id}\s+{{[^}}]*?[\d]+\s*\(\s*([0-9\.e\s]*?)\s*\)\s*;\s+}}", re.DOTALL)
         # パターンに一致する部分を検索
         match = pattern.search(text)
         # マッチした部分があれば取得

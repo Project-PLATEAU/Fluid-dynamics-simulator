@@ -12,7 +12,8 @@ PATH_SECTION : str = "PATH" # ファイルパスを記述しているセクシ�
 SHARED_FOLDER_ROOT : str = "shared_folder_root" # 共有ファイルサーバのパスを記述しているキー
 SIM_FOLDER_ROOT : str = "sim_folder_root" # シミュレーションマシン内のmodel_idフォルダを配置するフォルダのパスを記述しているキー
 TEMPLATE : str = "template" # OpenFOAMのテンプレートファイルセットのフォルダ名
-SIMULATION_ERROR_LOG_FILE : str = "log.zip"
+SIMULATION_ERROR_LOG_FOLDER : str = "log"
+COMPRESSED_FILE_EXTENSION : str = "zip"
 
 CITY_MODEL_FOLDER : str = "city_model"
 SIMULATION_INPUT_FOLDER : str = "simulation_input"
@@ -98,8 +99,18 @@ def get_simulation_output_model_id_poly_mesh_folder_fs(model_id : str) -> str:
 def get_converted_output_model_id_folder_fs(model_id : str) -> str:
     return os.path.join(get_converted_output_folder_fs(), model_id)
 
-def get_error_log_file_model_id_fs(model_id : str) -> str:
-    return combine(get_converted_output_model_id_folder_fs(model_id), SIMULATION_ERROR_LOG_FILE)
+# 圧縮前のエラーログフォルダ名(converted_output/<model_id>/log)を取得する関数
+# simulation_error.pyで使用する
+def get_error_log_folder_model_id_fs(model_id : str) -> str:
+    return combine(get_converted_output_model_id_folder_fs(model_id), SIMULATION_ERROR_LOG_FOLDER)
+
+# 圧縮済みエラーログファイル名(converted_output/<model_id>/log.zip)を取得する関数
+# wrapper_organize.pyで使用する
+def get_compressed_error_log_file_model_id_fs(model_id : str) -> str:
+    return get_error_log_folder_model_id_fs(model_id) + "." + get_compressed_file_extension()
+
+def get_compressed_file_extension() -> str:
+    return COMPRESSED_FILE_EXTENSION
 
 def get_folder_name_without_shared_folder_fs(file_path : str) -> str:
     shared_folder = get_shared_folder()
