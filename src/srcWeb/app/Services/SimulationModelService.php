@@ -132,7 +132,7 @@ class SimulationModelService extends BaseService
         if (!$request->identification_name) {
             $errorMessage = ["type" => "E", "code" => "E9", "msg" => Message::$E9];
         } else {
-            // == 仕様変更により、画面上で解析条件入力欄を隠しにするため、E21, E23, E24, E25のチェック処理を無効にします。==
+            // == 仕様変更により、画面上で解析条件入力欄を隠しにするため、E21, E23, E24のチェック処理を無効にします。==
             // // 南,西
             // $south_west = StringUtil::stringToArray($request->south_west);
             // // 北,東
@@ -157,32 +157,36 @@ class SimulationModelService extends BaseService
             //         $errorMessage = ["type" => "E", "code" => "E25", "msg" => sprintf(Message::$E25, $simulationModel->region->ground_altitude . "", $simulationModel->region->sky_altitude . "")];
             //     } else {
 
-                    // === E19のチェック ====
-                    $isNumber = true;
-                    $item = "";
-                    if(!is_numeric($request->temperature)) {
-                        $isNumber = false;
-                        $item = "外気温";
-                    } else if (!is_numeric($request->wind_speed)) {
-                        $isNumber = false;
-                        $item = "風速";
-                    }
-                    // === E19のチェック //====
-                    if (!$isNumber) {
-                        $errorMessage = ["type" => "E", "code" => "E19", "msg" => sprintf(Message::$E19, $item)];
+                    if (!($simulationModel->region->ground_altitude <= floatval($request->ground_altitude) && floatval($request->ground_altitude) < floatval($request->sky_altitude) && floatval($request->sky_altitude) <= $simulationModel->region->sky_altitude)) {
+                        $errorMessage = ["type" => "E", "code" => "E25", "msg" => sprintf(Message::$E25, $simulationModel->region->ground_altitude . "", $simulationModel->region->sky_altitude . "")];
                     } else {
-                        if (!(0 <= intval($request->solar_altitude_time) && intval($request->solar_altitude_time) <= 23)) {
-                            $errorMessage = ["type" => "E", "code" => "E20", "msg" => Message::$E20];
+
+                        // === E19のチェック ====
+                        $isNumber = true;
+                        $item = "";
+                        if(!is_numeric($request->temperature)) {
+                            $isNumber = false;
+                            $item = "外気温";
+                        } else if (!is_numeric($request->wind_speed)) {
+                            $isNumber = false;
+                            $item = "風速";
+                        }
+                        // === E19のチェック //====
+                        if (!$isNumber) {
+                            $errorMessage = ["type" => "E", "code" => "E19", "msg" => sprintf(Message::$E19, $item)];
                         } else {
-                            // 「保存に続けてシミュレーションを開始する」をチェックした場合では、実行ステータスが「1 開始処理中」か「5 中止処理中」であれば、E5エラーを表示する。
-                            if ($request->isStart && ($simulationModel->run_status == Constants::RUN_STATUS_CODE_START_PROCESSING || $simulationModel->run_status == Constants::RUN_STATUS_CODE_CANCEL_PROCESSING)) {
-                                $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NONE)];
+                            if (!(0 <= intval($request->solar_altitude_time) && intval($request->solar_altitude_time) <= 23)) {
+                                $errorMessage = ["type" => "E", "code" => "E20", "msg" => Message::$E20];
+                            } else {
+                                // 「保存に続けてシミュレーションを開始する」をチェックした場合では、実行ステータスが「1 開始処理中」か「5 中止処理中」であれば、E5エラーを表示する。
+                                if ($request->isStart && ($simulationModel->run_status == Constants::RUN_STATUS_CODE_START_PROCESSING || $simulationModel->run_status == Constants::RUN_STATUS_CODE_CANCEL_PROCESSING)) {
+                                    $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NONE)];
+                                }
                             }
                         }
                     }
-            //     }
             // }
-            // == 仕様変更により、画面上で解析条件入力欄を隠しにするため、E21, E23, E24, E25のチェック処理を無効にします。//==
+            // == 仕様変更により、画面上で解析条件入力欄を隠しにするため、E21, E23, E24のチェック処理を無効にします。//==
         }
         return $errorMessage;
     }
@@ -204,29 +208,25 @@ class SimulationModelService extends BaseService
         $simulationModel = self::getSimulationModelById($id);
         if ($simulationModel) {
 
-            $simulationModel->identification_name = $request->identification_name;
-            $simulationModel->last_update_datetime = DatetimeUtil::getNOW();
-            $simulationModel->temperature = $request->temperature;
-            $simulationModel->wind_speed = $request->wind_speed;
-            $simulationModel->wind_direction = $request->wind_direction;
-            $simulationModel->solar_altitude_date = $request->solar_altitude_date;
-            $simulationModel->solar_altitude_time = $request->solar_altitude_time;
+            $simulationModel->identification_name = $request->identification_name; // 識別名
+            $simulationModel->last_update_datetime = DatetimeUtil::getNOW(); // 最終更新日時
+            $simulationModel->temperature = $request->temperature; // 外気温
+            $simulationModel->wind_speed = $request->wind_speed; // 風速
+            $simulationModel->wind_direction = $request->wind_direction; // 風向き
+            $simulationModel->solar_altitude_date = $request->solar_altitude_date; // 日付
+            $simulationModel->solar_altitude_time = $request->solar_altitude_time; // 時間帯
 
-            // == 仕様変更により、画面上で解析条件入力欄を隠しにするため、解析条件情報更新処理を無効にします。==
-            // // 南,西
-            // $south_west = StringUtil::stringToArray($request->south_west);
-            // // 北,東
-            // $north_east = StringUtil::stringToArray($request->north_east);
-            // $simulationModel->south_latitude = number_format($south_west[0], 15);
-            // $simulationModel->north_latitude = number_format($north_east[0], 15);
-            // $simulationModel->west_longitude = number_format($south_west[1], 15);
-            // $simulationModel->east_longitude = number_format($north_east[1], 15);
+            // 淡赤色の長方形の下辺がSM13南端緯度、上辺がSM14北端緯度、左辺がSM15西端経度、右辺がSM16東端経度とする。
+            $simulationModel->south_latitude = $request->south_latitude; // 全域または、狭域指定で設定した南端緯度
+            $simulationModel->north_latitude = $request->north_latitude; // 全域または、狭域指定で設定した北端緯度
+            $simulationModel->west_longitude = $request->west_longitude; // 全域または、狭域指定で設定した西端経度
+            $simulationModel->east_longitude = $request->east_longitude; // 全域または、狭域指定で設定した東端経度
 
-            // $simulationModel->ground_altitude = floatval($request->ground_altitude);
-            // $simulationModel->sky_altitude = floatval($request->sky_altitude);
-            // == 仕様変更により、画面上で解析条件入力欄を隠しにするため、解析条件情報更新処理を無効にします。//==
-            $simulationModel->solver_id = $request->solver_id;
-            $simulationModel->mesh_level = intval($request->mesh_level);
+            $simulationModel->ground_altitude = $request->ground_altitude; //   地面高度
+            $simulationModel->sky_altitude = $request->sky_altitude; // 上空高度
+
+            $simulationModel->solver_id = $request->solver_id; // ソルバID
+            $simulationModel->mesh_level = $request->mesh_level; // メッシュ粒度
 
             // シミュレーションモデルテーブルにレコードを追加
             if ($simulationModel->save()) {

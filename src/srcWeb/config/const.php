@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'ver_js'    => '1',
-    'ver_css'   => '1',
-    'ver_image' => '1'
+    'ver_js'    => date('His'),
+    'ver_css'   => date('His'),
+    'ver_image' => date('His')
 ];

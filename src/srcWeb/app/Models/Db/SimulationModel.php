@@ -70,12 +70,12 @@ class SimulationModel extends DbModel
 		'wind_direction' => 'int',
 		'solar_altitude_date' => 'datetime',
 		'solar_altitude_time' => 'int',
-		'south_latitude' => 'float',
-		'north_latitude' => 'float',
-		'west_longitude' => 'float',
-		'east_longitude' => 'float',
-		'ground_altitude' => 'float',
-		'sky_altitude' => 'float',
+		// 'south_latitude' => 'float',
+		// 'north_latitude' => 'float',
+		// 'west_longitude' => 'float',
+		// 'east_longitude' => 'float',
+		// 'ground_altitude' => 'float',
+		// 'sky_altitude' => 'float',
 		'mesh_level' => 'int',
 		'solar_absorption_rate_building_1' => 'float',
 		'solar_absorption_rate_building_2' => 'float',
@@ -223,6 +223,29 @@ class SimulationModel extends DbModel
             return Constants::SIMULATION_MODEL_PUBLISH;
         } else {
             return Constants::SIMULATION_MODEL_NON_PUBLISH;
+        }
+    }
+
+    /**
+     * 東西南北境界指定のデフォルトを判定する。
+     * @return bool
+     *  trueの場合、 全域とする。
+     *  falseの場合、狭域とする。
+     */
+    public function isWholeArea()
+    {
+        // 以下、いずれかを満たさない場合には狭域指定とします。
+        //   ・CA5南端緯度とSM13南端緯度が同一
+        //   ・CA6北端緯度とSM14北端緯度が同一
+        //   ・CA7西端経度とSM15西端経度が同一
+        //   ・CA8東端経度とSM16東端経度が同一
+        if (($this->region->south_latitude == $this->south_latitude)
+            && ($this->region->north_latitude == $this->north_latitude)
+            && ($this->region->west_longitude == $this->west_longitude)
+            && ($this->region->east_longitude == $this->east_longitude)) {
+                return true;
+        } else {
+            return false;
         }
     }
 }

@@ -143,7 +143,7 @@ class SimulationModelController extends BaseController
                     $stlModels = $region->stl_models()->get();
                     $isE18 = true;
                     foreach ($stlModels as $stlModel) {
-                        if ($stlModel->stl_type->ground_flag) {
+                        if ($stlModel->stl_type->required_flag) {
                             $isE18 = false;
                             break;
                         }

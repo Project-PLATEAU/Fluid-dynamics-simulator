@@ -8,7 +8,8 @@
         background-color: cyan;
     }
 </style>
- <link rel="stylesheet" href="{{ asset('/css/jquery-ui-1.13.2.min.css') }}">
+<link rel="stylesheet" href="{{ asset('/css/jquery-ui-1.13.2.min.css') }}">
+<link rel="stylesheet" href="{{ asset('/css/leaflet-1.9.4.css') }}">
 @endsection
 
 @section('model-kind-display-area')
@@ -50,54 +51,89 @@
             <summary class="d-block">
                 <p class="border-bottom border-secondary border-2 text-center p-2">境界条件</p>
             </summary>
-            <div class="row ms-3">
-                <div class="col-sm-7">
-                    <div class="row">
-                        <label class="col-sm-2 col-form-label"></label>
-                        <div class="col-sm-8 ms-2">
-                            <a class="col-sm-2" href="https://www.google.com/maps/" target="blank">Google Map</a>
+
+            <div class="row">
+                <div class="col-sm-4">
+                    <div class="h-100">
+                        <div style="height: 70%;">
+                            <div class="row ms-1">
+                                <div class="col-sm-12 ms-3">
+                                    <label class="col-form-label">東西南北境界</label>
+                                </div>
+                            </div>
+                            <div class="row mb-1 ms-3">
+                                <div class="col-sm-12">
+                                    <div class="px-2 row">
+                                        <label class="col-sm-1 col-form-label"></label>
+                                        <div class="col-sm-6">
+                                            <input class="form-check-input" type="radio" name="boundary" id="boundary_whole_area" value="1" {{ $simulationModel->isWholeArea() ? "checked" : "" }} onclick="drawMap('1')">
+                                            <label class="form-check-label" for="boundary_whole_area">全域</label>
+                                        </div>
+                                        <div class="col-sm-5">
+                                            <label>東西</label>
+                                            <div class="float-end">
+                                                <label class="ms-4" id="eastAndWestDistance"></label><label>(m)</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-1 ms-3">
+                                <div class="col-sm-12">
+                                    <div class="px-2 row">
+                                        <label class="col-sm-1 col-form-label"></label>
+                                        <div class="col-sm-6">
+                                            <input class="form-check-input" type="radio" name="boundary" id="boundary_narrow_area" value="2" {{ !$simulationModel->isWholeArea() ? "checked" : "" }} onclick="drawMap('2')">
+                                            <label class="form-check-label" for="boundary_narrow_area">狭域指定</label>
+                                        </div>
+                                        <div class="col-sm-5">
+                                            <label>南北</label>
+                                            <div class="float-end">
+                                                <label class="ms-4" id="northAndSouthDistance"></label><label>(m)</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="height: 30%;">
+                            <div class="row ms-1">
+                                <div class="col-sm-12 ms-3">
+                                        <label class="col-form-label">上下境界</label>
+                                </div>
+                            </div>
+                            <div class="row mb-1 ms-1">
+                                <div class="col-sm-12">
+                                    <div class="px-2 row">
+                                        <label class="col-sm-1 col-form-label"></label>
+                                        <label class="col-sm-3 col-form-label ms-2">地面高度</label>
+                                        <div class="col-sm-5">
+                                            <input type="text" class="form-control" name="ground_altitude" id="ground_altitude" value="{{ $simulationModel->ground_altitude }}">
+                                        </div>
+                                        <label class="col-sm-1 col-form-label">(m)</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-1 ms-1">
+                                <div class="col-sm-12">
+                                    <div class="px-2 row">
+                                        <label class="col-sm-1 col-form-label"></label>
+                                        <label class="col-sm-3 col-form-label ms-2">上空高度</label>
+                                        <div class="col-sm-5">
+                                            <input type="text" class="form-control" name="sky_altitude" id="sky_altitude" value="{{ $simulationModel->sky_altitude }}">
+                                        </div>
+                                        <label class="col-sm-1 col-form-label">(m)</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="row mb-1 ms-3">
-                <div class="col-sm-7">
-                    <div class="px-2 row">
-                        <label class="col-sm-2 col-form-label">南,西</label>
-                        <div class="col-sm-9">
-                            <input type="text" class="form-control" name="south_west" id="south_west" value="{{ $simulationModel->south_latitude . ', '. $simulationModel->west_longitude }}">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mb-1 ms-3">
-                <div class="col-sm-7">
-                    <div class="px-2 row">
-                        <label class="col-sm-2 col-form-label">北,東</label>
-                        <div class="col-sm-9">
-                            <input type="text" class="form-control" name="north_east" id="north_east" value="{{ $simulationModel->north_latitude . ', '. $simulationModel->east_longitude }}">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mb-4 ms-3">
-                <div class="col-sm-7">
-                    <div class="px-2 row">
-                        <label class="col-sm-2 col-form-label">地面高度</label>
-                        <div class="col-sm-3">
-                            <input type="text" class="form-control" name="ground_altitude" id="ground_altitude" value="{{ $simulationModel->ground_altitude }}">
-                        </div>
-                        <label class="col-sm-1 col-form-label">(m)</label>
-
-                        <label class="col-sm-2 col-form-label">上空高度</label>
-                        <div class="col-sm-3">
-                            <input type="text" class="form-control" name="sky_altitude" id="sky_altitude" value="{{ $simulationModel->sky_altitude }}">
-                        </div>
-                        <label class="col-sm-1 col-form-label">(m)</label>
-                    </div>
+                {{-- 2D地図描画エリア --}}
+                <div class="col-sm-8 mb-3">
+                    <div id="map" class="border" style="width: 98%; height: 500px;"></div>
                 </div>
             </div>
         </details>
@@ -272,6 +308,12 @@
             <button type="submit" class="btn btn-outline-secondary {{ ($message && $message['code'] == 'I5') ? 'd-none' : '' }}" id="ButtonUpdate">保存</button>
 
         </div>
+
+        {{-- 隠し項目設定のエリア--}}
+        <input type="hidden" name="south_latitude" id="south_latitude" value="{{ $simulationModel->south_latitude }}">{{-- 狭域指定で設定した南端緯度 --}}
+        <input type="hidden" name="north_latitude" id="north_latitude" value="{{ $simulationModel->north_latitude }}">{{-- 狭域指定で設定した北端緯度 --}}
+        <input type="hidden" name="west_longitude" id="west_longitude" value="{{ $simulationModel->west_longitude }}">{{-- 狭域指定で設定した西端経度 --}}
+        <input type="hidden" name="east_longitude" id="east_longitude" value="{{ $simulationModel->east_longitude }}">{{-- 狭域指定で設定した東端経度 --}}
     </form>
 </div>
 @endsection
@@ -279,7 +321,26 @@
 @section('js')
     <script src="{{ asset('/js/jquery-ui-1.13.2.min.js') }}"></script>
     <script src="{{ asset('/js/table.js') }}?ver={{ config('const.ver_js') }}"></script>
+    <script src="{{ asset('/js/leaflet-1.9.4.js') }}"></script>
+    <script src="{{ asset('/js/leaflet.draw-1.0.4.js') }}"></script>
+    <script src="{{ asset('/js/2d_map.js') }}?ver={{ config('const.ver_js') }}"></script>
     <script>
+
+        // 東西南北境界：全域
+        const BOUNDARY_WHOLE_AREA  = "1";
+        // 東西南北境界：狭域
+        const BOUNDARY_NARROW_AREA = "2";
+        // 長方形のサイズや位置を編集する前のRectangleのバウンズを保持する変数
+        let originalBounds;
+        // 2d地図
+        // ※地図オブジェクトを適切に初期化しないと地図が描画されない可能性があるため、適当に東京を中心に表示する。
+        let map = L.map('map').setView([35.689487, 139.691706], 13);
+
+        // 全域の背景色
+        const WHOLE_AREA_BG_COLOR = "#da70d6";
+        // 狭域の背景色
+        const NARROW_AREA_BG_COLOR = "#006400";
+
         $(function(){
 
             $("#solar_altitude_date_view").datepicker({
@@ -332,6 +393,16 @@
                 $("div#messageModal [class='modal-body'] span#message").html(msg);
                 $('#messageModal').modal('show');
             @endif
+
+            // == 地図描画 ============================================
+            @if ($simulationModel->isWholeArea())
+                // 東西南北境界のデフォルトを「全域」にする。
+                drawMap(BOUNDARY_WHOLE_AREA);
+            @else
+                // 東西南北境界のデフォルトを「狭域指定」にする。
+                drawMap(BOUNDARY_NARROW_AREA), 3000;
+            @endif
+            // == 地図描画 //============================================
         });
 
 
@@ -422,6 +493,7 @@
         }
 
         /**
+         * Ajaxによりリクエストを送信する
          * @param mixed rqUrl リクエスト先
          * @param mixed rqData リクエストのデータ
          * @param string rqType リクエストのタイプ(POST or GET)
@@ -450,6 +522,208 @@
                     // do nothing
                 }
             });
+        }
+
+
+        /**
+         * 長方形のサイズや位置変更に伴い、シミュレーションエリア(距離を含む)を更新する
+         * @param mixed rectangleBounds サイズや位置を変更した長方形の範囲
+         * @param Number eastAndWestDistance 東西境界間距離
+         * @param Number northAndSouthDistance 南北境界間距離
+         *
+         * @return
+         */
+        function updateSimulationArea(rectangleBounds, eastAndWestDistance, northAndSouthDistance)
+        {
+            // 変更した長方形のサイズや位置を隠し項目に一時保存する。
+            $("input[name='south_latitude']").val(rectangleBounds['_southWest'].lat); // 南端緯度
+            $("input[name='north_latitude']").val(rectangleBounds['_northEast'].lat); // 北端緯度
+            $("input[name='west_longitude']").val(rectangleBounds['_southWest'].lng); // 西端経度
+            $("input[name='east_longitude']").val(rectangleBounds['_northEast'].lng); // 東端経度
+
+            // =====距離更新============================
+            // 東西境界間距離
+            $('label#eastAndWestDistance').html(eastAndWestDistance);
+            // 南北境界間距離
+            $('label#northAndSouthDistance').html(northAndSouthDistance);
+            // =====距離更新 //============================
+        }
+
+        /**
+        * 長方形のサイズや位置変更時のイベント
+        *
+        * @param mixed map 全域の表示範囲
+        * @param mixed wholeAreaBounds 全域の表示範囲
+        * @param mixed subRectangle 狭域の表示範囲
+        * @param mixed originalBounds サイズや位置を編集する前の長方形のバウンズ
+        * @param Boolean fit_bounds  地図を四角形の境界にズームするかどうか
+        * @param String color        方形の背景色
+        * @param Boolean editable    長方形のサイズ変更許可用のフラグ
+        *
+        * @return
+        */
+        function changeRectangle(map, wholeAreaBounds, subRectangle, originalBounds, fit_bounds, color = "", editable = false)
+        {
+            subRectangle.on('edit', function () {
+
+                // 長方形の現在の位置やサイズ
+                let currentBounds = this.getBounds();
+
+                // 東西境界間距離
+                const eastAndWestDistance = haversineDistance(
+                    currentBounds['_northEast'].lat, // 北端緯度
+                    currentBounds['_southWest'].lng, // 西端経度
+                    currentBounds['_northEast'].lat, // 北端緯度
+                    currentBounds['_northEast'].lng); // 東端経度
+
+                // 南北境界間距離
+                const northAndSouthDistance = haversineDistance(
+                    currentBounds['_northEast'].lat, // 北端緯度
+                    currentBounds['_southWest'].lng, // 西端経度
+                    currentBounds['_southWest'].lat, // 南端端緯度
+                    currentBounds['_southWest'].lng); // 西端経度
+
+                // 淡青色の長方形をはみ出すように広げたり、東西境界間距離および南北境界間距離が10m未満となるように狭めたりすることはできないように対応
+                if ((!wholeAreaBounds.contains(currentBounds)) || ((eastAndWestDistance < 10) && (northAndSouthDistance < 10))) {
+                    this.removeFrom(map);
+                    let _newRectangle = drawRectangle(map, originalBounds, fit_bounds, color, editable);
+                    changeRectangle(map, wholeAreaBounds, _newRectangle, originalBounds, fit_bounds, color, editable);
+                } else {
+                    originalBounds = currentBounds;
+
+                    // 長方形のサイズや位置変更に伴い、シミュレーションエリア(距離を含む)を更新する
+                    updateSimulationArea(originalBounds, eastAndWestDistance, northAndSouthDistance);
+                }
+            });
+        }
+
+        /**
+         * 全域の地図を描画する
+         * @param mixed map 地図
+         * @param Number southernLatitude CA5南端緯度
+         * @param Number northernLatitude CA6北端緯度
+         * @param Number westernLongitude CA7西端経度
+         * @param Number eastLongitude CA8東端経度
+         */
+        function drawWholeAreaMap(map, southernLatitude, northernLatitude, westernLongitude, eastLongitude)
+        {
+            // 全域の長方形描画
+            let bounds = getBounds(southernLatitude, northernLatitude, westernLongitude, eastLongitude);
+            drawRectangle(map, bounds, true, WHOLE_AREA_BG_COLOR);
+            return bounds;
+        }
+
+        /**
+         * 狭域指定の地図を描画する
+         * @param mixed map 地図
+         * @param mixed map wholeAreaBounds 全域の範囲
+         * @param Number southernLatitude 狭域の南端緯度
+         * @param Number northernLatitude 狭域の北端緯度
+         * @param Number westernLongitude 狭域の西端経度
+         * @param Number eastLongitude 狭域の東端経度
+         * @param Boolean editable    長方形のサイズ変更許可用のフラグ
+         */
+        function drawNarrowAreaMap(map, wholeAreaBounds, subSouthernLatitude, subNorthernLatitude, subWesternLongitude, subEastLongitude, editable = false)
+        {
+            // 狭域の長方形描画
+            let subBounds = getBounds(subSouthernLatitude, subNorthernLatitude, subWesternLongitude, subEastLongitude);
+            let subRectangle = drawRectangle(map, subBounds, false, NARROW_AREA_BG_COLOR, editable);
+
+            // 東西境界間距離
+            const eastAndWestDistance = haversineDistance(
+                subBounds['_northEast'].lat, // 北端緯度
+                subBounds['_southWest'].lng, // 西端経度
+                subBounds['_northEast'].lat, // 北端緯度
+                subBounds['_northEast'].lng); // 東端経度
+
+            // 南北境界間距離
+            const northAndSouthDistance = haversineDistance(
+                subBounds['_northEast'].lat, // 北端緯度
+                subBounds['_southWest'].lng, // 西端経度
+                subBounds['_southWest'].lat, // 南端端緯度
+                subBounds['_southWest'].lng); // 西端経度
+
+            // 狭域指定に伴い、シミュレーションエリア(距離を含む)を更新する
+            updateSimulationArea(subBounds, eastAndWestDistance, northAndSouthDistance);
+
+            //  長方形のサイズ変更許可される場合に限り、以下を行う
+            if (editable) {
+                // 長方形のサイズや位置を編集する前のRectangleのバウンズを保持する変数
+                originalBounds = subBounds;
+                // 長方形のサイズや位置変更時のイベント
+                changeRectangle(map, wholeAreaBounds, subRectangle, originalBounds, false, NARROW_AREA_BG_COLOR, true);
+            }
+        }
+
+        /**
+         * 東西南北境界により地図を描画する。
+         * @return
+         */
+        function drawMap(boundary = BOUNDARY_WHOLE_AREA)
+        {
+
+            // 地図描画のごとに地図をリフレッシュする。
+            if (map != undefined) {
+                map.off();
+                map.remove();
+            }
+
+            // 淡青色の長方形（全域）描画用の座標。
+            const southernLatitude  = Number("{{ $simulationModel->region->south_latitude }}");   // CA5南端緯度
+            const northernLatitude  = Number("{{ $simulationModel->region->north_latitude }}");   // CA6北端緯度
+            const westernLongitude  = Number("{{ $simulationModel->region->west_longitude }}");   // CA7西端経度
+            const eastLongitude     = Number("{{ $simulationModel->region->east_longitude }}");   // CA8東端経度
+
+            // 2d地図の初期化
+            map = iniMap(southernLatitude, northernLatitude, westernLongitude, eastLongitude);
+
+            // 全域の長方形の描画
+            const wholeAreaBounds = drawWholeAreaMap(map, southernLatitude, northernLatitude, westernLongitude, eastLongitude);
+
+            // 淡赤色の長方形（狭域）描画用の座標
+            let subSouthernLatitude   = 0;
+            let subNorthernLatitude   = 0;
+            let subWesternLongitude   = 0;
+            let subEastLongitude      = 0;
+
+            // 長方形のサイズ変更許可用のフラグ
+            let editable = true;
+
+            // 東西南北境界が「全域」と選択された場合
+            //  淡赤色の長方形(狭域)を淡青色の長方形(全域)とちょうど重なるようにします。
+            if (boundary == BOUNDARY_WHOLE_AREA) {
+                subSouthernLatitude   = southernLatitude;
+                subNorthernLatitude   = northernLatitude;
+                subWesternLongitude   = westernLongitude;
+                subEastLongitude      = eastLongitude   ;
+
+                editable = false;
+            } else if (boundary == BOUNDARY_NARROW_AREA) {
+                // 東西南北境界が「狭域指定」と選択された場合
+                @if ($simulationModel->isWholeArea())
+
+                    // ★シミュレーションモデルの東西南北端の座標が変更されていない場合
+                    //  以下のように指定した狭い範囲で淡青色の長方形と淡赤色の長方形を重畳表示します。
+                    //   ・下辺（南端）＝（CA5南端緯度×4＋CA6北端緯度）÷5
+                    //   ・上辺（北端）＝（CA5南端緯度＋CA6北端緯度×4）÷5
+                    //   ・左辺（西端）＝（CA7西端経度×4＋CA8東端経度）÷5
+                    //   ・右辺（東端）＝（CA7西端経度＋CA8東端経度×4）÷5
+                    subSouthernLatitude = (southernLatitude * 4 + northernLatitude) / 5;
+                    subNorthernLatitude = (southernLatitude + northernLatitude * 4) / 5;
+                    subWesternLongitude = (westernLongitude * 4 + eastLongitude) / 5;
+                    subEastLongitude = (westernLongitude + eastLongitude * 4) / 5;
+                @else
+                    // ★シミュレーションモデルの東西南北端の座標が変更されている場合
+                    //  前回で保存した変更した位置および大きさに基づいて淡青色の長方形と淡赤色の長方形を重畳表示します。
+                    subSouthernLatitude = Number("{{ $simulationModel->south_latitude }}");   // SM13南端緯度
+                    subNorthernLatitude = Number("{{ $simulationModel->north_latitude }}");   // SM14北端緯度
+                    subWesternLongitude = Number("{{ $simulationModel->west_longitude }}");   // SM15西端経度
+                    subEastLongitude    = Number("{{ $simulationModel->east_longitude }}");   // SM16東端経度
+                @endif
+            }
+
+            // 狭域指定の地図
+            drawNarrowAreaMap(map, wholeAreaBounds, subSouthernLatitude, subNorthernLatitude, subWesternLongitude, subEastLongitude, editable);
         }
     </script>
 @endsection
