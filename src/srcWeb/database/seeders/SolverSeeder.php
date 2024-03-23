@@ -16,7 +16,7 @@ class SolverSeeder extends Seeder
     {
         Solver::create([
             'solver_name'               =>  '標準',
-            'solver_compressed_file'    =>  'comperssed_solver/default/template.tar',
+            'solver_compressed_file'    =>  'compressed_solver/default/template.tar',
             'user_id'                   =>  'testuser',
             'upload_datetime'           =>  DatetimeUtil::getNOW(),
             'preset_flag'               =>  true,
