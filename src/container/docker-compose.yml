@@ -11,8 +11,8 @@ services:
     links:
       - db
     volumes:
-      - ./src:/var/www/html
-      - /mnt:/var/www/html/srcWeb/bridge-cfd/storage/app/public
+      - ../:/var/www/html
+      - /mnt:/var/www/html/srcWeb/storage/app/public
 
   db:
     build:
@@ -37,5 +37,7 @@ services:
     links:
       - db
     volumes:
+      - ./wrapper/opt/:/opt/
       - ./wrapper/var/:/var/
       - /mnt:/mnt
+

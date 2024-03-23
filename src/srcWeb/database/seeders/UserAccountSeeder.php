@@ -16,8 +16,8 @@ class UserAccountSeeder extends Seeder
     {
         UserAccount::create([
             'user_id' => 'testuser',
-            'password' => '&ezULtAW3FYa',
-            'display_name' => '熱田　流体',
+            'password' => '',
+            'display_name' => 'テストユーザ',
             'note' => '環境構築用DMLサンプルユーザ',
             'last_update_datetime' => DatetimeUtil::getNOW(),
         ]);

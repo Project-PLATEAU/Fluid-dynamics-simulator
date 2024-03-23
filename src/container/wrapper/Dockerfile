@@ -7,15 +7,15 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # vim, git, npm インストール
 RUN apt-get update -y && \
-  apt-get install -y vim git sudo libpq-dev \
+  apt-get install -y vim git sudo libpq-dev tzdata\
   npm -y
 
 # pip インストール
 RUN apt-get install -y python3-pip
 # pyproj インストール
 RUN pip3 install pyproj
-# czml インストール
-RUN pip3 install czml
+# numpy インストール
+RUN pip3 install numpy
 # sqlalchemy インストール
 RUN pip3 install sqlalchemy
 # psycopg2 インストール
