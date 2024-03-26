@@ -90,6 +90,8 @@
 <li><p>コンテナ管理用マシン</p>
 <ul>
 <li>Webコンテナ、DBコンテナ、Wrapperコンテナを管理するマシン</li>
+<li>パブリックIPアドレスとホスト名（必要であればドメイン、SSL証明書）を取得し、FQDNでアクセスできるようにする。<br>
+※任意のドメインプロバイダ、またはAWS等パブリッククラウドサービスからパブリックIPアドレス、ドメイン、ホスト名等を取得してください。本書での取得手順の詳細は省略します。</li>
 </ul>
 </li>
 <li><p>コンテナ管理用マシンに接続されたファイルストレージ</p>
@@ -108,9 +110,9 @@
 <p>本システムの環境構築を効率よく進めていくうえで、データベース情報を事前に定義しておくことを推奨します。
 下記、３点(データベースのユーザー名、データベースのパスワード、データベース名)を検討し、手元に記録または管理してください。</p>
 <ul>
-<li>DB_USER</li>
-<li>DB_PASSWORD</li>
-<li>DB_NAME</li>
+<li>[DB_USER]</li>
+<li>[DB_PASSWORD]</li>
+<li>[DB_NAME]</li>
 </ul>
 <h2 id="12-ファイルストレージのマウント">1.2. ファイルストレージのマウント</h2>
 <p>コンテナ管理用マシンに接続されたファイルストレージをコンテナ管理用マシンの/mntにマウントしてください。
@@ -333,7 +335,7 @@ sudo apt-get update
 </tr>
 </tbody>
 </table>
-<h1 id="3-ダウンロード">3 ダウンロード</h1>
+<h1 id="3-コンテナ管理用マシン---webコンテナdbコンテナのセットアップ">3 コンテナ管理用マシン - Webコンテナ・DBコンテナのセットアップ</h1>
 <h2 id="31-dockerコンテナの作成と起動">3.1. Dockerコンテナの作成と起動</h2>
 <p>コンテナ管理用マシン上に、３つのコンテナの作成から起動までを実施します。<br>
 まずは、自身でソースファイルを実行することで、コンテナを作成することができます。作成に必要なソースファイル一式は
@@ -360,16 +362,10 @@ docker-compose.ymlファイルを編集します。</li>
 </ol>
 <pre><code>sudo vi docker-compose.yml
 </code></pre>
-<p>以下の行を</p>
-<pre><code>  - ./src:/var/www/html
-</code></pre>
-<p>以下のように書き換えます。</p>
-<pre><code>  - ../:/var/www/html
-</code></pre>
 <p>事前準備で検討したデータベース情報（データベースのユーザー名、データベースのパスワード、データベース名）をPOSTGRESで始まる以下の３つの設定値に反映します。</p>
-<pre><code>      POSTGRES_USER: DB_USER
-      POSTGRES_PASSWORD: DB_PASSWORD
-      POSTGRES_DB: DB_NAME
+<pre><code>      POSTGRES_USER: [DB_USER]
+      POSTGRES_PASSWORD: [DB_PASSWORD]
+      POSTGRES_DB: [DB_NAME]
 </code></pre>
 <p>上記編集が終わったらdocker-compose.ymlファイルを保存します。</p>
 <ol start="3">
@@ -397,59 +393,87 @@ container-web、container-db、container-wrapperの3つのコンテナを起動�
 <pre><code>sudo docker ps -a
 </code></pre>
 <h2 id="32-webコンテナ">3.2. Webコンテナ</h2>
-<p>作成したWebコンテナへアクセスし、Webアプリの動作に必要な設定を実施します。<br>
-Webコンテナで利用するソースファイル一式は
-<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcWeb">こちら</a>
-からダウンロード可能です。</p>
+<p>作成したWebコンテナへアクセスし、Webアプリの動作に必要な設定を実施します。\</p>
 <ol>
 <li>Webコンテナへアクセス<br>
-コンテナ管理用マシン上で、WebコンテナのコンテナIDを入力します。</li>
+コンテナ管理用マシン上で、以下のコマンドでWebコンテナに入ります。</li>
 </ol>
 <pre><code>sudo docker  exec -it  [Web-CONTAINER ID] /bin/bash
 </code></pre>
+<p>カレントディレクトリが/var/www/htmlであることを確認します。</p>
 <ol start="2">
 <li>設定ファイルの作成<br>
-サンプルファイル[.env.example]を参考に、[.env]を編集します。</li>
+サンプルファイル[.env.example]を[.env]という名前でコピーし、[.env]を編集します。</li>
 </ol>
 <ul>
-<li>サンプルファイルの確認方法</li>
+<li>サンプルファイルのコピー</li>
 </ul>
 <pre><code>cd srcWeb
-sudo view .env.example
+cp .env.example .env
 </code></pre>
 <ul>
-<li>設定ファイルの新規作成と編集</li>
+<li>設定ファイルの編集</li>
 </ul>
-<pre><code>sudo touch .env
-sudo vi .env
+<pre><code>vi .env
 </code></pre>
-<ul>
-<li>次に、「APP_KEY」を生成します。</li>
-</ul>
-<pre><code>cd srcWeb/bridge-cfd/
-php artisan key:generate
+<p>DB_で始まる項目を以下のように編集します。
+[DB_DATABASE]、[DB_USERNAME]、[DB_PASSWORD]には事前準備で検討したデータベース情報（データベース名、データベースのユーザー名、データベースのパスワード）を記入します。</p>
+<pre><code>DB_CONNECTION=pgsql
+DB_HOST=db
+DB_PORT=5432
+DB_DATABASE=[DB_NAME]
+DB_USERNAME=[DB_USERNAME]
+DB_PASSWORD=[DB_PASSWORD]
 </code></pre>
-<ul>
-<li>生成後、設定ファイルの「APP_KEY」に自動で入力されていることを確認します。</li>
-</ul>
-<pre><code>sudo view .env
+<p>APP_NAMEを以下のように編集します。</p>
+<pre><code>APP_NAME=Fluid-dynamics-simulator
 </code></pre>
 <ol start="3">
 <li>ライブラリのインストール<br>
-最後に、ライブラリをインストールします。設定ファイルを作成後に実施します。</li>
+次に、ライブラリをインストールします。同じsrcWebフォルダ内で以下のコマンドを実行します。</li>
 </ol>
-<pre><code>cd srcWeb/bridge-cfd/
-composer install
+<pre><code>composer install
 </code></pre>
-<h2 id="33-dbコンテナ">3.3. DBコンテナ</h2>
-<p>作成したDBコンテナへアクセスし、データベースを作成します。<br>
-DBコンテナで利用するクエリ一式は
-<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query">こちら</a>
-からダウンロード可能です。</p>
+<ul>
+<li>次に、同じsrcWebフォルダ内で「APP_KEY」を生成します。</li>
+</ul>
+<pre><code>php artisan key:generate
+</code></pre>
+<ul>
+<li>生成後、.envファイルの「APP_KEY」に自動で入力されていることを確認します。</li>
+</ul>
+<pre><code>sudo view .env
+</code></pre>
+<ol start="4">
+<li>storageフォルダの権限設定<br>
+以下のコマンドでsrcWebフォルダ以下のstorageフォルダの所有者を変更する。</li>
+</ol>
+<pre><code>chown www-data storage/ -R
+</code></pre>
+<ol start="5">
+<li>リンクの設定<br>
+以下のコマンドでsrcWeb/publicフォルダ以下に/var/www/html/srcWeb/storage/app/public/フォルダへのリンクをstorageという名前で作成する。</li>
+</ol>
+<pre><code>cd public
+ln -s /var/www/html/srcWeb/storage/app/public/ storage
+</code></pre>
+<h2 id="33-db作成と初期データ投入">3.3. DB作成と初期データ投入</h2>
 <ol>
 <li>データベース作成と初期データの投入<br>
-まず、Webコンテナにアクセスし、データベースの作成と初期データを投入するために以下２つのコマンドを実行します。初期データ投入後、アカウントが１つ登録されます。<br>
-ユーザーID：「testuser」　パスワード：「&amp;ezULtAW3FYa」</li>
+まず、Webコンテナにアクセスし、データベースの作成と初期データを投入するために以下２つのコマンドを実行します。<br>
+初期データ投入前に、初期ユーザーである「testuser」アカウント用のパスワードを設定します。<br>
+/var/www/html/srcWeb/database/seeders/UserAccountSeeder.php
+を開きます。</li>
+</ol>
+<pre><code>cd /var/www/html/srcWeb
+vi database/seeders/UserAccountSeeder.php
+</code></pre>
+<p>以下の行の''の間に任意のパスワードを追記して保存します。</p>
+<pre><code>            'password' =&gt; '',
+</code></pre>
+<ol start="2">
+<li>データベースの作成と初期データの投入
+以下のコマンドでデータベースの作成と初期データを投入します。</li>
 </ol>
 <pre><code># データベースの作成
 php artisan migrate --path=/database/migrations/2023_11_01_172302_init_db_ver01.php
@@ -457,22 +481,63 @@ php artisan migrate --path=/database/migrations/2023_11_01_172302_init_db_ver01.
 # 初期データの投入
 php artisan db:seed
 </code></pre>
-<ol start="2">
-<li>DBコンテナへアクセス<br>
-コンテナ管理用マシン上で、DBコンテナのコンテナIDを入力します。</li>
+<p>※上記コマンドで自動で初期データが投入されますが、手動で入力する際は以下からダウンロードできるクエリを適宜編集し、
+データを投入してください。
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query">こちら</a></p>
+<ol start="3">
+<li><p>ユーザアカウント登録<br>
+pgAdmin 4（https://www.pgadmin.org/download/pgadmin-4-windows/）などのPostgreSQL用GUI管理ツールを用いてデータベースに接続します。<br>
+Host nameにコンテナ管理用マシンのホスト名またはIPアドレス、Portに5432、データベース名は[DB_NAME]で設定したデータベース名、Usernameに[DB_USERNAME]で設定したユーザー名を使用します。<br>
+mainブランチの
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query">src/query</a>
+にあるINSERT_USER_ACCOUNT.sql を参考にして、必要なユーザアカウントがあればUSER_ACCOUNTテーブルに追加します。</p>
+</li>
+<li><p>STATUS DBの作成<br>
+Wrapperコンテナで使用するstatusdb_simulation_modelテーブルを作成したデータベース[DB_NAME]に作成する。
+DDL_STATUSDB.sql(<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query">https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query</a>)
+のクエリを実行し、statusdb_simulation_modelテーブルを作成する。</p>
+</li>
 </ol>
-<pre><code>sudo docker  exec -it  [DB-CONTAINER ID] /bin/bash
+<h2 id="34-共有フォルダの権限設定と標準ソルバーの登録">3.4. 共有フォルダの権限設定と標準ソルバーの登録</h2>
+<ol>
+<li>共有フォルダの権限設定<br>
+sudo chown www-data /mnt -R</li>
+<li>フォルダを作成<br>
+コンテナ管理用マシン上で以下のコマンドで3D都市モデル、シミュレーションのインプットとアウトプット、標準ソルバー用のフォルダを作成する。</li>
+</ol>
+<pre><code>sudo mkdir /mnt/city_model
+sudo chown www-data /mnt/city_model -R
+sudo mkdir /mnt/simulation_input
+sudo mkdir /mnt/compressed_solver
+sudo mkdir -p /mnt/compressed_solver/default
+sudo chown www-data /mnt/compressed_solver -R
+sudo mkdir /mnt/simulation_output
+sudo mkdir /mnt/converted_output
 </code></pre>
 <ol start="3">
-<li>ユーザアカウント登録<br>
-pgAdmin 4などのRDBMSからデータベースに接続します。mainブランチの
-<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query">src/query</a>
-にあるINSERT_USER_ACCOUNT.sql を参考にして、必要なユーザアカウントを登録します。</li>
+<li><p>標準ソルバーのダウンロード<br>
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/input/template.tar">こちら</a>から標準ソルバーをダウンロードする。</p>
+</li>
+<li><p>SCPコマンド等で2で作成した/mnt/compressed_solver/default以下に3からダウンロードしたtemplate.tarを配置する。</p>
+</li>
 </ol>
-<h2 id="34-シミュレーションマシン">3.4. シミュレーションマシン</h2>
+<h2 id="35-webアプリ接続の確認">3.5. Webアプリ接続の確認</h2>
 <ol>
-<li>OpenFOAM インストール<br>
-下記に示す４つのコマンドを順に実行します。</li>
+<li><p>Webアプリへの接続<br>
+事前準備で用意したFQDNを使用してWebコンテナ上のWebアプリにアクセスする。
+http://[ コンテナ管理用マシンへのFQDN ]/srcWeb/public/ にアクセスし、熱流体シミュレーションシステムのログイン画面が表示されることを確認します。</p>
+</li>
+<li><p>ログイン
+初期ユーザー「testuser」またはユーザーアカウント登録時に登録したユーザーIDとパスワードでログインできることを確認します。</p>
+</li>
+</ol>
+<h1 id="4-シミュレーション用マシンのセットアップ">4 シミュレーション用マシンのセットアップ</h1>
+<h2 id="41-シミュレータopenfoamのインストール">4.1. シミュレータ（OpenFOAM）のインストール</h2>
+<ol>
+<li><p>事前準備で用意したシミュレーション用マシンにSSH接続します。</p>
+</li>
+<li><p>下記に示す４つのコマンドを順に実行します。</p>
+</li>
 </ol>
 <pre><code># 1. Add the repository
 curl https://dl.openfoam.com/add-debian-repo.sh | sudo bash
@@ -484,60 +549,90 @@ sudo apt-get update
 sudo apt-get install openfoam2306-default
 
 # 4. .bashrc に OpenFOAM 用のパスを追加
+vi .bashrc
+
+以下の行を追記して保存
 source /usr/lib/openfoam/openfoam2306/etc/bashrc
 </code></pre>
-<ol start="2">
-<li>.pemファイルの作成<br>
-本システムでは、シミュレーションマシンとWrapperコンテナでSSH接続による通信を利用します。<br>
-.pemファイル作成後、シミュレーションマシンのホスト名 or IPアドレスと併せて記録しておきます。</li>
-</ol>
-<h2 id="35-wrapperコンテナ">3.5. Wrapperコンテナ</h2>
+<p>※sudo apt-get update時に失敗する場合は、/etc/apt/sources.list.d/openfoam.listを開き、</p>
+<pre><code>deb [arch=arm64] https://dl.openfoam.com/repos/deb jammy main
+</code></pre>
+<p>の行を</p>
+<pre><code>deb [arch=arm64 allow-insecure=yes trusted=yes] https://dl.openfoam.com/repos/deb jammy main
+</code></pre>
+<p>のように修正する。</p>
+<h1 id="5-コンテナ管理用マシン---wrapperコンテナのセットアップ">5 コンテナ管理用マシン - Wrapperコンテナのセットアップ</h1>
+<h2 id="51-wrapperコンテナ">5.1. Wrapperコンテナ</h2>
 <p>作成したWrapperコンテナへアクセスし、必要な設定を実施します。<br>
 Wrapperコンテナで利用するソースファイル一式は
 <a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcBatch">こちら</a>
 からダウンロード可能です。</p>
 <ol>
 <li>Wrapperコンテナへアクセス<br>
-コンテナ管理用マシン上で、WrapperコンテナのコンテナIDを入力します。</li>
+コンテナ管理用マシン上で、Wrapperコンテナに入ります。</li>
 </ol>
 <pre><code>sudo docker  exec -it  [wrapper-CONTAINER ID] /bin/bash
 </code></pre>
 <ol start="2">
-<li>GitHub mainブランチから
+<li>GitHub mainブランチからsrcBatchのソースコードをダウンロードします。
 <a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcBatch">src/srcBatch</a>
 をコピーします。</li>
 </ol>
-<pre><code>mkdir /bridge-plateau-cfd &amp; cd /bridge-plateau-cfd
-sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git src/srcBatch
+<pre><code>cd /opt/
+git clone --no-checkout https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git
+cd Fluid-dynamics-simulator/
+git sparse-checkout init --cone
+git sparse-checkout add src/srcBatch/
+git checkout main
+cd src/srcBatch/
 </code></pre>
-<p>bridge-plateau-cfd が作成され、その直下にwrapper_organize.pyなどのpythonプログラム群が配置されていることを確認します。</p>
+<p>/opt/Fluid-dynamics-simulator/src/srcBatch/ が作成され、その直下にwrapper_organize.pyなどのpythonプログラム群が配置されていることを確認します。</p>
 <ol start="3">
-<li><p>.pemファイルの作成（任意）<br>
-本システムでは、シミュレーションマシンとWrapperコンテナでSSH接続による通信を利用します。</p>
+<li><p>Wrapperコンテナとシミュレーション用マシン間のSSH接続のセットアップ<br>
+本システムでは、WrapperコンテナからSSHでシミュレーション用マシンに接続します。<br>
+WrapperコンテナからSSHでシミュレーション用マシンとのSSH接続をセットアップします。<br>
+※環境によってセットアップ手順が異なるため、本書ではセットアップ手順は省略します。<br>
+秘密鍵ファイルをWrapperコンテナ内に配置し、シミュレーション用マシンのホスト名 or IPアドレスと併せて記録しておきます。</p>
 </li>
 <li><p>設定ファイルの編集<br>
-連携するデータベースの情報とシミュレーションマシンの情報を、設定ファイルに追記します。</p>
+連携するデータベースの情報とシミュレーションマシンの情報を、設定ファイルに追記します。
+以下のコマンドで/opt/Fluid-dynamics-simulator/src/srcBatch/common/config.iniを開きます。</p>
 </li>
 </ol>
+<pre><code>vi common/config.ini
+</code></pre>
+<p>config.iniを編集します。</p>
 <ul>
-<li><p>事前準備にて検討していたデータベース情報を[WebappDB]セクション以降の下記項目に入力します。</p>
+<li>コンテナ管理用マシンに接続されたファイルストレージへのパスを設定します。
+今回は、docker-compose.ymlにおいて自動でWrapperコンテナの/mnt/にマウントしているので、以下のように設定します。</li>
+</ul>
+<pre><code>shared_folder_root = /mnt/
+</code></pre>
 <ul>
-<li>user = DB USER</li>
-<li>password = DB PASSWORD</li>
-<li>dbname = DB NAME</li>
+<li>シミュレーション用マシンにログインした際のホームディレクトリのパスを設定します。</li>
 </ul>
-</li>
-<li><p>シミュレーションマシン作成時に記録しておいた情報を[SimEC2]セクション以降の下記項目に入力します。</p>
+<pre><code>shared_folder_root = [シミュレーション用マシンにログインした際のホームディレクトリ]
+</code></pre>
 <ul>
-<li>user = ubuntu (※)</li>
-<li>host = シミュレーションマシンのホスト名 or IPアドレス</li>
-<li>key_filename = .pemファイルのパス</li>
+<li>事前準備にて検討していたデータベース情報を[WebappDB]セクション以降の下記項目に入力します。</li>
 </ul>
-</li>
+<pre><code>type = postgresql
+user = [DB_USER]
+password = [DB_PASSWORD]
+host = db
+port = 5432
+dbname = [DB_NAME]
+</code></pre>
+<ul>
+<li>シミュレーションマシン作成時に記録しておいた情報を[SimEC2]セクション以降の下記項目に入力します。</li>
 </ul>
-<p>もし、ファイルストレージを外部で準備した場合は、必要に応じて[PATH]セクションshared_folder_rootの設定値を変更してください。</p>
-<h1 id="4-シミュレーション管理ジョブの起動">4 シミュレーション管理ジョブの起動</h1>
-<h2 id="41-crontabの設定">4.1. crontabの設定</h2>
+<pre><code>user = [シミュレーション用マシン接続時のユーザー名]
+host = シミュレーションマシンのホスト名 or IPアドレス
+key_filename = 秘密鍵ファイルのパス（相対パスを入力する場合は、/opt/Fluid-dynamics-simulator/src/srcBatchからの相対パスを設定する）
+</code></pre>
+<p>完了後、Ctrl+DなどでWrapperコンテナから出ます。</p>
+<h1 id="5-シミュレーション管理ジョブの起動">5 シミュレーション管理ジョブの起動</h1>
+<h2 id="51-crontabの設定">5.1. crontabの設定</h2>
 <p>コンテナ管理用マシンで、1分おきにシミュレーション管理ジョブ(wrapper_organize.py)を実行させるための設定をcrontabに入力します。<br>
 コンテナ管理用マシン上でcrontab を編集します。下記コマンドを実行したとき、Select an editorと出たら開くEditorを設定してください。</p>
 <pre><code>sudo crontab -e
@@ -547,14 +642,15 @@ sudo git clone https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git s
 sudo install cron
 </code></pre>
 <p>crontabに下記を追記して保存します。</p>
-<pre><code>* * * * * docker exec -w /bridge-plateau-cfd &lt;WrapperのContainer ID&gt; sh -c &quot;/usr/bin/python3 /bridge-plateau-cfd/wrapper_organize.py &gt;&gt; /bridge-plateau-cfd/log/wrapper.log 2&gt;&amp;1&quot;
+<pre><code>* * * * * docker exec -w /opt/Fluid-dynamics-simulator/src/srcBatch &lt;WrapperのContainer ID&gt; sh -c &quot;/usr/bin/python3 /opt/Fluid-dynamics-simulator/src/srcBatch/wrapper_organize.py &gt;&gt; /opt/Fluid-dynamics-simulator/src/srcBatch/log/wrapper.log 2&gt;&amp;1&quot;
 </code></pre>
+<h2 id="52-crontab起動中の確認">5.2. crontab起動中の確認</h2>
 <p>crontabがサービス起動中であることを確認します。もし、正常に起動していない場合は再起動します。</p>
 <pre><code>service cron status　　（起動確認）
 service cron restart　　（再起動）
 </code></pre>
-<p>上記手順を終えたあとに、Wrapperコンテナへログインし、ログが1分おきに出力されていることを確認します。</p>
-<pre><code>tail bridge-plateau-cfd/tail log/wrapper.log
+<p>上記手順を終えたあとに、Wrapperコンテナへ入り、ログが1分おきに出力されていることを確認します。</p>
+<pre><code>tail /opt/Fluid-dynamics-simulator/src/srcBatch/wrapper.log
 </code></pre>
 <ul>
 <li>INFO      2024-02-14 02:46:02,109 [wrapper_organize.py:184] Start wrapper_organize.py</li>
@@ -562,30 +658,37 @@ service cron restart　　（再起動）
 <li>INFO      2024-02-14 02:47:02,052 [wrapper_organize.py:184] Start wrapper_organize.py</li>
 <li>INFO      2024-02-14 02:47:02,108 [wrapper_organize.py:204] Complete wrapper_organize.py</li>
 </ul>
-<h1 id="5-プリセットデータの登録と疎通確認">5 プリセットデータの登録と疎通確認</h1>
+<h1 id="6-プリセットデータの登録と疎通確認">6 プリセットデータの登録と疎通確認</h1>
 <p>プリセットデータの登録を、環境構築後の疎通確認も兼ねてクライアントPC上のブラウザからウェブアプリにアクセスして実施します。</p>
 <ol>
-<li><p>クライアントPC上のブラウザから、[3.2. Webコンテナ 3. 設定ファイルの作成]で設定した[.env]の&quot;APP_URL&quot;にアクセスします。</p>
+<li><p>クライアントPC上のブラウザから、http://[ コンテナ管理用マシンへのFQDN ]/srcWeb/public/ にアクセスします。</p>
 </li>
-<li><p>DML（データ投入）で登録したユーザーIDおよびパスワードで、本システムにログインします。</p>
+<li><p>登録したユーザーIDおよびパスワードで、本システムにログインします。</p>
 </li>
-<li><p>操作マニュアル[4-2 都市モデルの登録]を参考に、
-(examples/input)にある<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/input">こちらの</a>
-STLファイルをアップロードします。</p>
+<li><p>操作マニュアル[3-2 都市モデルの登録]を参考に、3D都市モデルを登録します。
+(examples/input)<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/input">こちら</a>
+からサンプル自治体（朝来市）の3D都市モデルがダウンロードできます。
+サンプル自治体名（朝来市）を3D Tilesを登録時に選択し、ダウンロードしたSTLファイルを本システムにアップロードします。</p>
 </li>
-<li><p>操作マニュアル[4-3 シミュレーションモデルの作成]を参考に、シミュレーションモデルの作成およびシミュレーション実行します。</p>
+<li><p>操作マニュアル[4-1 シミュレーションモデルの作成]を参考に、シミュレーションモデルの作成およびシミュレーション実行します。<br>
+※朝来市のサンプルデータにおける緯度経度・高度は以下の通りです。<br>
+南端緯度：35.33918373486737<br>
+北端緯度：35.33991298963914<br>
+西端経度：134.84927817801656<br>
+東端経度：134.85159301437136<br>
+地面高度：65<br>
+上空高度：125</p>
 </li>
 <li><p>シミュレーションの実行ステータスが「正常終了」となったら、シミュレーション結果を閲覧します。</p>
 </li>
-<li><p>ダウンロードボタンからGeoJSONファイルをダウンロードし、(examples/output)にある
-<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/output">こちらの</a>
-ファイルと内容が同一であることを確認します。</p>
+<li><p>ダウンロードボタンからGeoJSONファイルをダウンロードします。<br>
+GeoJSONファイルのサンプルは(examples/output)<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/output">こちら</a>になります。</p>
 </li>
-<li><p>pgAdmin 4などのRDBMSからデータベースに接続し、都市モデルおよびシミュレーションモデルのプリセットフラグを有効化します。</p>
+<li><p>pgAdmin 4などのRDBMSからデータベースに接続し、プリセットする都市モデルおよびシミュレーションモデルのプリセットフラグを有効化します。</p>
 </li>
 </ol>
-<pre><code>UPDATE public.city_model SET preset_flag = TRUE;
-UPDATE public.simulation_model SET preset_flag = TRUE;
+<pre><code>UPDATE public.city_model SET preset_flag = TRUE WHERE city_model_id = '[対象のcity_model_id]';
+UPDATE public.simulation_model SET preset_flag = TRUE WHERE simulation_model_id = '[対象のsimulation_model_id]';
 </code></pre>
 
 </article>
