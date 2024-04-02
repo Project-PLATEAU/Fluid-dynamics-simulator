@@ -16,7 +16,7 @@
 ![image](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/assets/79615787/cf946688-9c61-46e3-8a69-3eef5e08a012)
 
 ## 3.利用手順
-本システムの構築手順及び利用手順は[利用チュートリアル](https://plateau-acn.github.io/Fluid-dynamics-simulator/)を参照してください。
+本システムの構築手順及び利用手順は[利用チュートリアル](https://project-plateau.github.io/Fluid-dynamics-simulator/)を参照してください。
 
 ## 4.システム概要
 
