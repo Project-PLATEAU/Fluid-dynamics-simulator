@@ -1,0 +1,12 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       IOobject;
+}
+
+        localStandardMeridian   +9;    // GMT offset (hours)
+        startDay               200;    // day of the year
+        startTime               14;    // time of the day (hours decimal)
+        longitude               135.243683;  // longitude (degrees)
+        latitude                34.052235;   // latitude (degrees)

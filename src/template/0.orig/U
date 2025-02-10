@@ -16,8 +16,7 @@ FoamFile
 
 dimensions      [0 1 -1 0 0 0 0];
 
-#include "userU_1"
-//internalField   uniform (2 0 0);
+#include "inc/userU_1"
 
 boundaryField
 {
@@ -30,7 +29,7 @@ boundaryField
     }
 
 
-    #include "userU_2"
+    #include "inc/userU_2"
 
 }
 

@@ -30,16 +30,16 @@
                 <div class="offcanvas-body">
                     <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                         <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="{{ route('home.index') }}"><i class="bi bi-house-door"></i><span class="ps-2">Home</span></a>
+                            <a class="nav-link active" aria-current="page" href="{{ route('home.index') }}"><i class="bi bi-house-door"></i><span class="ps-2">ホーム</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('city_model.index') }}"><i class="bi-globe-americas"></i><span class="ps-2">3D city models</span></a>
+                            <a class="nav-link" href="{{ route('simulation_model.index') }}"> <i class="bi bi-calculator"></i><span class="ps-2">シミュレーションモデル<span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('simulation_model.index') }}"> <i class="bi bi-calculator"></i><span class="ps-2">Simulation models<span></a>
+                            <a class="nav-link" href="{{ route('city_model.index') }}"><i class="bi-globe-americas"></i><span class="ps-2">3D都市モデル</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('solver.index') }}"><i class="bi bi-gear"></i><span class="ps-2">Solvers</span></a>
+                            <a class="nav-link" href="{{ route('solver.index') }}"><i class="bi bi-gear"></i><span class="ps-2">熱流体解析ソルバ</span></a>
                         </li>
                     </ul>
                 </div>
@@ -52,6 +52,7 @@
                 </button>
 
                 <div class="d-flex flex-row">
+                    @yield('display-info-left-area')
                     <div class="p-2">@yield('model-kind-display-area')</div>
                     <div class="p-2" style="margin-left: 150px;">@yield('city-model-display-area')</div>
                 </div>

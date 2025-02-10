@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Collection;
  * @property Uuid $region_id
  * @property Uuid $city_model_id
  * @property string|null $region_name
+ * @property string $user_id
  * @property int $coordinate_id
  * @property float|null $south_latitude
  * @property float|null $north_latitude
@@ -54,6 +55,7 @@ class Region extends DbModel
 	protected $fillable = [
 		'city_model_id',
 		'region_name',
+        'user_id',
 		'coordinate_id',
 		'south_latitude',
 		'north_latitude',
@@ -73,6 +75,11 @@ class Region extends DbModel
 		return $this->belongsTo(Coordinate::class);
 	}
 
+    public function user_account()
+    {
+        return $this->belongsTo(UserAccount::class, 'user_id');
+    }
+
 	public function stl_models()
 	{
 		return $this->hasMany(StlModel::class, 'region_id')->orderBy('region_id', 'asc');;
@@ -80,6 +87,6 @@ class Region extends DbModel
 
 	public function simulation_models()
 	{
-		return $this->hasMany(SimulationModel::class);
+		return $this->hasMany(SimulationModel::class, 'region_id');
 	}
 }

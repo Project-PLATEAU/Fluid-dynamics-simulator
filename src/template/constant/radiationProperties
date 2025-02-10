@@ -22,19 +22,10 @@ solarLoadCoeffs
 {
     sunDirectionModel       constant;
 
-        #include "userRadiationProperties"
-/*
-        sunDirection            (-1 0.7 -1.5);
-        localStandardMeridian   -8;    // GMT offset (hours)
-        startDay                22;    // day of the year
-        startTime               10;    // time of the day (hours decimal)
-        longitude               -118.243683; // longitude (degrees)
-        latitude                34.052235;   // latitude (degrees)
-*/
+        #include "inc/userRadiationProperties"
+
         gridUp                  (0 0 1);     // grid orientation
         gridEast                (1 0 0);
-
-
 
     sunLoadModel            fairWeather;
 
@@ -42,10 +33,10 @@ solarLoadCoeffs
         // Calculate beta from the Solar calculator or input
         skyCloudCoverFraction   0;
         groundReflectivity      0.2;
-        A       2229.78119355;   // Apparent solar irradiation at air mass m = 0
-        B       0.142064516129;  // Atmospheric extinction coefficient
-        C       0.058064516129;  // Solar diffusivity constant
-        //beta    45;    // Solar altitude (in degrees) above the horizontal
+        A       1107.261;   // Apparent solar irradiation at air mass m = 0
+        B       0.201;      // Atmospheric extinction coefficient
+        C       0.122;      // Solar diffusivity constant
+        //beta    45;       // Solar altitude (in degrees) above the horizontal
 
 
     // see solarCalculator.H for other model examples and details

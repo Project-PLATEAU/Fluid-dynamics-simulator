@@ -1,0 +1,20 @@
+miny -73190.000000;
+minx 46900.000000;
+minz 65.000000;
+maxy -73108.000000;
+maxx 47110.000000;
+maxz 125.000000;
+ang   -45.0;        // deg
+
+x1 $minx;
+y1 $miny;
+x2 $maxx;
+y2 $miny;
+x3 $maxx;
+y3 $maxy;
+x4 $minx; 
+y4 $maxy;
+
+nx 16;
+ny 42;
+nz 12;

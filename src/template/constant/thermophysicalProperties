@@ -32,6 +32,7 @@ mixture
     {
         molWeight       28.96;
     }
+
 //  Boussinesq
     equationOfState
     {
@@ -40,11 +41,13 @@ mixture
         T0              300;
     }
 //
+
     thermodynamics
     {
         Cp              1004.4;
         Hf              0;
     }
+
     transport
     {
         mu              1.831e-00;

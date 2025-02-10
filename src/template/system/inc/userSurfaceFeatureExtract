@@ -1,0 +1,35 @@
+building.stl                            // Set User stl
+{
+    extractionMethod    extractFromSurface;
+    includedAngle       150;
+
+    subsetFeatures
+    {
+        nonManifoldEdges       no;
+        openEdges       yes;
+    }
+}
+
+land.stl                            // Set User stl
+{
+    extractionMethod    extractFromSurface;
+    includedAngle       150;
+
+    subsetFeatures
+    {
+        nonManifoldEdges       no;
+        openEdges       yes;
+    }
+}
+
+green.stl                            // Set User stl
+{
+    extractionMethod    extractFromSurface;
+    includedAngle       150;
+
+    subsetFeatures
+    {
+        nonManifoldEdges       no;
+        openEdges       yes;
+    }
+}

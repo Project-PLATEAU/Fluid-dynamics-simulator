@@ -1,0 +1,20 @@
+    features
+    (
+
+        {
+            file "building.eMesh";
+            level $mlevel;
+        }    
+
+
+        {
+            file "land.eMesh";
+            level $mlevel;
+        }    
+
+        {
+            file "green.eMesh";
+            level $mlevel;
+        }    
+
+    );

@@ -14,7 +14,10 @@ use App\Models\Db\SolarAbsorptivity;
 use App\Models\Db\Solver;
 use App\Models\Db\StlModel;
 use App\Models\Db\Visualization;
+use App\Utils\ArrayUtil;
 use App\Utils\DatetimeUtil;
+use App\Utils\FileUtil;
+use Exception;
 use Faker\Core\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
@@ -170,6 +173,9 @@ class SimulationModelService extends BaseService
                         } else if (!is_numeric($request->wind_speed)) {
                             $isNumber = false;
                             $item = "風速";
+                        } else if (!is_numeric($request->humidity)) {
+                            $isNumber = false;
+                            $item = "湿度";
                         }
                         // === E19のチェック //====
                         if (!$isNumber) {
@@ -180,7 +186,7 @@ class SimulationModelService extends BaseService
                             } else {
                                 // 「保存に続けてシミュレーションを開始する」をチェックした場合では、実行ステータスが「1 開始処理中」か「5 中止処理中」であれば、E5エラーを表示する。
                                 if ($request->isStart && ($simulationModel->run_status == Constants::RUN_STATUS_CODE_START_PROCESSING || $simulationModel->run_status == Constants::RUN_STATUS_CODE_CANCEL_PROCESSING)) {
-                                    $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NONE)];
+                                    $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NONE, $simulationModel->identification_name)];
                                 }
                             }
                         }
@@ -213,6 +219,7 @@ class SimulationModelService extends BaseService
             $simulationModel->temperature = $request->temperature; // 外気温
             $simulationModel->wind_speed = $request->wind_speed; // 風速
             $simulationModel->wind_direction = $request->wind_direction; // 風向き
+            $simulationModel->humidity = $request->humidity; // 湿度
             $simulationModel->solar_altitude_date = $request->solar_altitude_date; // 日付
             $simulationModel->solar_altitude_time = $request->solar_altitude_time; // 時間帯
 
@@ -470,16 +477,18 @@ class SimulationModelService extends BaseService
     /**
      * 可視化ファイルを取得
      * @param Uuid $simulation_model_id シミュレーションモデルID
-     * @param integer $visualization_type 可視化種別:1(風況)、2(温度)、3(暑さ指数)
-     * @param integer $height_id 相対高さID
+     * @param int $visualization_type 可視化種別:1(風況)、2(温度)、3(暑さ指数)
+     * @param int $height_id 相対高さID
+     * @param int $legend_type 凡例種別: 1(変動)、2(固定)
      *
      * @return \App\Models\Db\Visualization 可視化ファイル
      */
-    public static function getVisualization($simulation_model_id, $visualization_type, $height_id)
+    public static function getVisualization($simulation_model_id, $visualization_type, $height_id, $legend_type = Constants::LEGENF_TYPE_FLUCTUATION)
     {
         $visualization =  Visualization::where([
             "simulation_model_id" => $simulation_model_id,
-            "visualization_type" => $visualization_type]);
+            "visualization_type" => $visualization_type,
+            "legend_type" => $legend_type]);
 
         // 可視化種別は「3(暑さ指数)」の場合では、高さを無視にする。
         if ($visualization_type != Constants::VISUALIZATION_TYPE_HEAT_INDEX) {
@@ -593,13 +602,14 @@ class SimulationModelService extends BaseService
      * @param SimulationModel $simulation_model 編集対象のシミュレーション
      * @param integer $stl_type_id 追加しようとする対象
      * @param integer $policy_id 追加しようとする施設
+     * @param string $sm_policy_session_key セッションキー
      *
      * @return Collection SimulationModelPolicy シミュレーションモデル実施施策
      */
-    public static function addNewSmPolicy($request, $simulation_model, $stl_type_id, $policy_id)
+    public static function addNewSmPolicy($request, $simulation_model, $stl_type_id, $policy_id, $sm_policy_session_key)
     {
         // 現状のシミュレーションモデル実施施策の各レコードを取得
-        $smPoliciesSession = $request->session()->get(Constants::SM_POLICY_SESSION_KEY);
+        $smPoliciesSession = $request->session()->get($sm_policy_session_key);
         $smPolicies = $smPoliciesSession ? $smPoliciesSession : $simulation_model->simulation_model_policies()->get();
 
         // 新規追加しようとするデータが既に存在しているかチェック
@@ -611,7 +621,7 @@ class SimulationModelService extends BaseService
         if (!$newSmPolicyIsExist) {
             $smPolicy = new SimulationModelPolicy(['simulation_model_id' => $simulation_model->simulation_model_id, 'stl_type_id' => $stl_type_id, 'policy_id' => $policy_id]);
             $smPolicies->put($smPolicies->count(), $smPolicy);
-            $request->session()->put(Constants::SM_POLICY_SESSION_KEY, $smPolicies);
+            $request->session()->put($sm_policy_session_key, $smPolicies);
         }
 
         return $smPolicies;
@@ -623,13 +633,14 @@ class SimulationModelService extends BaseService
      * @param SimulationModel $simulation_model 編集対象のシミュレーション
      * @param integer $stl_type_id 削除しようとする対象
      * @param integer $policy_id 削除しようとする施設
+     * @param string $sm_policy_session_key セッションキー
      *
      * @return Collection SimulationModelPolicy シミュレーションモデル実施施策
      */
-    public static function deleteSmPolicy($request, $simulation_model, $stl_type_id, $policy_id)
+    public static function deleteSmPolicy($request, $simulation_model, $stl_type_id, $policy_id, $sm_policy_session_key)
     {
         // 現状のシミュレーションモデル実施施策の各レコードを取得
-        $smPoliciesSession = $request->session()->get(Constants::SM_POLICY_SESSION_KEY);
+        $smPoliciesSession = $request->session()->get($sm_policy_session_key);
         $smPolicies = $smPoliciesSession ? $smPoliciesSession : $simulation_model->simulation_model_policies()->get();
 
         // 選択中の「施策」と「対象」を実施施策一覧より削除
@@ -637,7 +648,7 @@ class SimulationModelService extends BaseService
             return !(($item->stl_type_id == intval($stl_type_id)) && ($item->policy_id == intval($policy_id)));
         });
 
-        $request->session()->put(Constants::SM_POLICY_SESSION_KEY, $smPolicies);
+        $request->session()->put($sm_policy_session_key, $smPolicies);
 
         return $smPolicies;
     }
@@ -667,6 +678,8 @@ class SimulationModelService extends BaseService
         if ($result && $new_simulation_model_policies) {
             foreach ($new_simulation_model_policies as $smPolicy) {
                 $simulationModelPolicy = new SimulationModelPolicy($smPolicy);
+                // シミュレーション結果閲覧画面でシミュレーション再作成を行う際でも使うため、レコード挿入前にシミュレーションモデルIDを再設定する。
+                $simulationModelPolicy->simulation_model_id = $simulation_model_id;
                 if (!$simulationModelPolicy->save()) {
                     $result = false;
                     break;
@@ -674,5 +687,196 @@ class SimulationModelService extends BaseService
             }
         }
         return $result;
+    }
+
+    /**
+     * シミュレーションモデルの建物データ(czmlファイルパス)を取得する。
+     *  nullのczmlファイルは対象外です。
+     * @param mixed $simulationModel シミュレーションモデル
+     *
+     * @return array
+     */
+    public static function getCzmlFileWithoutNull($simulationModel)
+    {
+        // 建物などのSTLファイル
+        $stlFiles = $simulationModel->region->stl_models()->get();
+        // 3D地図表示のため、特定の解析対象地域に紐づいていたczmlファイルを取得する。
+        // 「解析対象地域ID」に紐づいた複数の「STLファイル種別ID」ですが、すべてczmlファイル表示対象となる。
+        $czmlFiles = $stlFiles->filter(function ($stl_model) {
+            // 表示対象はSTLファイル種別テーブル.地表面フラグ=0(false) （すなわち建物）のSTLファイルよりレコードを取得します
+            if (!$stl_model->stl_type->ground_flag) {
+                // 念のため（こちらで閲覧出来る状態となるため、czml_fileがないケースはあり得ない。）
+                if ($stl_model->czml_file) {
+                    return $stl_model;
+                }
+            }
+        })
+        ->map(function ($stl_model) {
+            return FileUtil::referenceStorageFile($stl_model->czml_file);
+        })->values()->toArray();
+
+        return $czmlFiles;
+    }
+
+    /**
+     * シミュレーションモデル再作成に異常があったかどうかバリエーション
+     *  E9, E19, E20 のエラーチェック
+     * @param Request $request リクエスト
+     *
+     * @return array エラーメッセージ
+     */
+    public static function recreateIsOk(Request $request)
+    {
+        $errorMessage = [];
+
+        if (!$request->identification_name) {
+            // === E9のチェック //====
+            $errorMessage = ["type" => "E", "code" => "E9", "msg" => Message::$E9];
+        } else {
+            // === E19のチェック ====
+            $isNumber = true;
+            $item = "";
+            if (!is_numeric($request->temperature)) {
+                $isNumber = false;
+                $item = "外気温";
+            } else if (!is_numeric($request->wind_speed)) {
+                $isNumber = false;
+                $item = "風速";
+            } else if (!is_numeric($request->humidity)) {
+                $isNumber = false;
+                $item = "湿度";
+            }
+            // === E19のチェック //====
+            if (!$isNumber) {
+                $errorMessage = ["type" => "E", "code" => "E19", "msg" => sprintf(Message::$E19, $item)];
+            } else {
+                // === E20のチェック //====
+                if (!(0 <= intval($request->solar_altitude_time) && intval($request->solar_altitude_time) <= 23)) {
+                    $errorMessage = ["type" => "E", "code" => "E20", "msg" => Message::$E20];
+                }
+            }
+        }
+
+        return $errorMessage;
+    }
+
+
+    /**
+     * シミュレーションモデルの再作成を行う。
+     * @param Request $request リクエスト
+     * @param string $loginUserId ログイン中のユーザ
+     * @param Uuid $simulation_model_id_src 作成元のシミュレーションモデルID
+     *
+     * @return array シミュレーションモデルの再作成結果(log含む)
+     */
+    public static function recreateSimulation(Request $request, $loginUserId, $simulation_model_id_src)
+    {
+        $result = true;
+        $logInfos = [];
+        $logInfo = "";
+
+        // == シミュレーションモデルのレコードを挿入 ==
+        // 作成元のシミュレーションモデルのレコードを取得
+        $srcSimulationModel = self::getSimulationModelById($simulation_model_id_src);
+
+        $simulationModel = new SimulationModel();
+        foreach ($srcSimulationModel->getFillable() as $attribute) {
+            if ($attribute == 'registered_user_id') {
+                // 複製したレコードの登録者をログインユーザとする
+                $simulationModel->{$attribute} = $loginUserId;
+            } else if ($attribute != 'simulation_model_id') {
+                $simulationModel->{$attribute} = $srcSimulationModel->{$attribute};
+            }
+        }
+
+        // 識別名
+        $simulationModel->identification_name = $request->identification_name;
+        // 最終更新日時を現在日時にする。
+        $simulationModel->last_update_datetime = DatetimeUtil::getNOW(DatetimeUtil::DATE_TIME_FORMAT);
+        // 外気温
+        $simulationModel->temperature = $request->temperature;
+        // 風速
+        $simulationModel->wind_speed = $request->wind_speed;
+        // 風向き
+        $simulationModel->wind_direction = $request->wind_direction;
+        // 湿度
+        $simulationModel->humidity = $request->humidity;
+        // 日付
+        $simulationModel->solar_altitude_date = $request->solar_altitude_date;
+        // 時間帯
+        $simulationModel->solar_altitude_time = $request->solar_altitude_time;
+
+        // SM7プリセットフラグを0(無効)、SM21実行ステータスを0（未）、SM22実行ステータス詳細を未入力、SM26一般公開フラグを0(無効)とする。
+        $simulationModel->preset_flag = false;
+        $simulationModel->run_status = Constants::RUN_STATUS_CODE_NONE;
+        $simulationModel->run_status_details = null;
+        $simulationModel->disclosure_flag = false;
+        // == シミュレーションモデルのレコードを挿入 //==
+
+        if ($simulationModel->save()) {
+            $logInfo = "[simulation_model] [insert] [ simulation_model_id: {$simulationModel->simulation_model_id}] [recreate from simulation: {$simulation_model_id_src}]";
+            array_push($logInfos, $logInfo);
+
+            // == シミュレーションモデル熱効率のレコードを挿入 ==
+            $result = self::addNewSolarAbsorptivity($simulationModel->simulation_model_id, $simulationModel->region->region_id);
+            if ($result) {
+                $logInfo = "[solar_absorptivity] [insert] [ simulation_model_id: {$simulationModel->simulation_model_id}] [recreate from simulation: {$simulation_model_id_src}]";
+                array_push($logInfos, $logInfo);
+
+                // == シミュレーションモデル実施施策にレコードを挿入 ==
+                $smPolicies = $request->simulationModelPolicy;
+                if (self::updateSimulationModelPolicy($simulationModel->simulation_model_id, $smPolicies)) {
+                    $logInfo = "[simulation_model_policy] [insert] [ simulation_model_id: {$simulationModel->simulation_model_id}] [recreate from simulation: {$simulation_model_id_src}]";
+                    array_push($logInfos, $logInfo);
+                } else {
+                    $result = false;
+                }
+            }
+        } else {
+            $result = false;
+        }
+
+        // シミュレーション開始するかどうか
+        $isStart = $request->isStart;
+        if ($isStart) {
+            $startResult = self::startSimulation($simulationModel->simulation_model_id);
+            if ($startResult['result']) {
+                $logInfos = array_merge($logInfos, $startResult['log_infos']);
+            } else {
+                $result = false;
+            }
+        }
+
+        return ["result" => $result, "log_infos" => $logInfos];
+    }
+
+    /**
+     * 風向表示設定ファイル(json)を読み込んで、プルダウン表示ようのデータを作成
+     * @return array プルダウン表示ようのデータ
+     */
+    public static function createWindirectionDropdown()
+    {
+        $windDirections = [];
+        $windirectionSettingFilePath = FileUtil::SETTING_FOLDER . "/" . FileUtil::WIND_DIRECTION_FILE;
+
+        if (FileUtil::isExists($windirectionSettingFilePath)) {
+            // 風向表示設定用のJSONファイルを読み込む
+            $windDirectionJsonData = FileUtil::getStorageFile($windirectionSettingFilePath);
+            if ($windDirectionJsonData) {
+                $windDirections = json_decode($windDirectionJsonData, true);
+                if ($windDirections) {
+                    // 選択肢(display_order)の表示順番に基づいてプルダウンメニューを生成
+                    $windDirections = ArrayUtil::sortArrayBykey($windDirections, 'display_order');
+                } else {
+                    throw new Exception("風向表示設定用のJSONファイルは正しく定義されていません。");
+                }
+            } else {
+                throw new Exception("風向表示設定用のJSONファイルは空ファイルです。");
+            }
+        } else {
+            throw new Exception("風向表示設定用のJSONファイルが存在しません。{$windirectionSettingFilePath}");
+        }
+
+        return $windDirections;
     }
 }

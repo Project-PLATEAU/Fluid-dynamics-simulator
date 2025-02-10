@@ -1,0 +1,40 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       IOobject;
+}
+    
+building                                    // building or ground surface
+{
+    type    opaqueDiffusive;
+    wallAbsorptionEmissionModel
+    {
+        type            multiBandAbsorption;
+        absorptivity    (0.30 0.70);     // (Fix) (UserInput)
+        emissivity      (0.30 0.70);     // (Fix) (UserInput)
+    };
+}
+    
+land                                     // building or ground surface
+{
+    type    opaqueDiffusive;
+    wallAbsorptionEmissionModel
+    {
+        type            multiBandAbsorption;
+        absorptivity    (0.30 0.70);     // (Fix) (UserInput)
+        emissivity      (0.30 0.70);     // (Fix) (UserInput)
+    };
+}
+
+green                                     // building or ground surface
+{
+    type    opaqueDiffusive;
+    wallAbsorptionEmissionModel
+    {
+        type            multiBandAbsorption;
+        absorptivity    (0.30 0.70);     // (Fix) (UserInput)
+        emissivity      (0.30 0.70);     // (Fix) (UserInput)
+    };
+}
+    

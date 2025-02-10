@@ -71,9 +71,9 @@ Route::middleware(['log'])->group(function () {
         Route::get('/city_model/share/{id}', 'App\Http\Controllers\CityModelController@share')->name('city_model.share');
 
         /**
-         * 都市モデル画面(シミュレーションモデル作成)
+         * 都市モデルに紐づく解析対象地域を取得する
          */
-        Route::get('/city_model/simulationCreate/{id}', 'App\Http\Controllers\CityModelController@simulationCreate')->name('city_model.simulationCreate');
+        Route::get('/city_model/getRegionsByCityModelId', 'App\Http\Controllers\CityModelController@getRegionsByCityModelId')->name('city_model.getRegionsByCityModelId');
 
         /**
          * 都市モデル付帯情報編集画面
@@ -84,17 +84,23 @@ Route::middleware(['log'])->group(function () {
         Route::post('/city_model/delete/gml_file/{id}', 'App\Http\Controllers\CityModelController@deleteGmlFile')->name('city_model.deleteGmlFile');
 
         Route::post('/region/create/{city_model_id}', 'App\Http\Controllers\RegionController@store')->name('region.addnew');
+        Route::post('/region/copy/{city_model_id}/{region_id}', 'App\Http\Controllers\RegionController@copy')->name('region.copy');
         Route::post('/region/delete/{city_model_id}/{region_id}', 'App\Http\Controllers\RegionController@destroy')->name('region.delete');
         Route::post('/region/stl/upload/{city_model_id}/{region_id}', 'App\Http\Controllers\RegionController@uploadStlFile')->name('region.upload_stl');
         Route::post('/region/stl/load/{region_id}', 'App\Http\Controllers\RegionController@updateStlInfo')->name('region.update_stl_info');
         Route::post('/region/stl/delete/{city_model_id}/{region_id}', 'App\Http\Controllers\RegionController@destroyStlFile')->name('region.delete_stl_file');
-        Route::post('/region/update/{city_model_id}/{region_id}', 'App\Http\Controllers\RegionController@update')->name('region.update');
         Route::post('/on_change_stl_type', 'App\Http\Controllers\RegionController@onChangeStlType')->name('stl_type.change');
+        Route::get('/region/stl/czml_file/{region_id}', 'App\Http\Controllers\RegionController@longPollingWaitCzmlFile')->name('region.wait_czml_file');
+
+        //架空建物の新規作成
+        Route::post('/building/create', 'App\Http\Controllers\BuildingController@create')->name('building.create');
+        //架空建物の削除
+        Route::post('/building/delete', 'App\Http\Controllers\BuildingController@destroy')->name('building.delete');
 
         /**
          * シミュレーションモデル作成画面(index)
          */
-        Route::get('/simulation_model/create/{city_model_id}', 'App\Http\Controllers\SimulationModelController@create')->name('simulation_model.create');
+        Route::get('/simulation_model/create', 'App\Http\Controllers\SimulationModelController@create')->name('simulation_model.create');
 
         /**
          * シミュレーションモデル作成画面(追加)
@@ -164,7 +170,15 @@ Route::middleware(['log'])->group(function () {
         /**
          * シミュレーション結果閲覧画面(ダウンロード)
          */
-        Route::get('/simulation_model/show/download/{id}', 'App\Http\Controllers\SimulationModelController@download')->name('simulation_model.download');
+        Route::get('/simulation_model/show/download/{id}/{map_id}', 'App\Http\Controllers\SimulationModelController@download')->name('simulation_model.download');
+        /**
+         * シミュレーション結果閲覧画面(凡例種別値変更)
+         */
+        Route::get('/simulation_model/show/change_legend_type/{id}', 'App\Http\Controllers\SimulationModelController@changeLegendType')->name('simulation_model.changeLegendType');
+        /**
+         * シミュレーション結果閲覧画面(シミュレーションモデル再作成用の保存処理)
+         */
+        Route::post('/simulation_model/show/recreate', 'App\Http\Controllers\SimulationModelController@recreateSimulationModel')->name('simulation_model.recreate');
 
         /*
          * モデル共有画面

@@ -29,7 +29,7 @@ boundaryField
         value           $internalField;
     }
 
-    #include "userPrgh"
+    #include "inc/userPrgh"
 
 }
 

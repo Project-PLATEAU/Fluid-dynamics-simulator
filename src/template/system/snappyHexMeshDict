@@ -24,7 +24,7 @@ addLayers       false;
 // Geometry. Definition of all surfaces. All surfaces are of class
 
 // ***  Include User Data  ***
-#include "userSnappyHexMesh_1"
+#include "inc/userSnappyHexMesh_1"
 // 
 
 
@@ -40,7 +40,7 @@ castellatedMeshControls
 
     // Explicit feature edge refinement
 
-    #include "userSnappyHexMesh_2"
+    #include "inc/userSnappyHexMesh_2"
 
     refinementSurfaces
     {
@@ -59,7 +59,7 @@ castellatedMeshControls
 
 
     // Mesh selection
-    #include "userSnappyHexMesh_3"
+    #include "inc/userSnappyHexMesh_3"
 
     allowFreeStandingZoneFaces true;
 }

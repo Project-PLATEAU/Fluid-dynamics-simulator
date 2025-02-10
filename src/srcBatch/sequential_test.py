@@ -18,16 +18,15 @@ import output_data_convert
 logger = log_writer.getLogger()
 
 def main():
-    # model_id = "c8e0972d-3786-4bc9-8cda-ccc6da25c923"
-    # model_id = "5bfa32c2-baf0-43f8-aa6d-fd585287f6b5"
-    model_id = "f0070edd-91be-4462-90a4-4c5ca509cccc"
-    # input_data_convert.convert(model_id)
+    model_id = "a2024f10-6558-43b5-9b2f-17f8bc58356c"
+
+    input_data_convert.convert(model_id)
     # input_data_transfer.transfer(model_id)
     # simulation_exec.execute(model_id)
     # simulation_monitor.monitor(model_id)
-    output_data_transfer.transfer(model_id)
+    # output_data_transfer.transfer(model_id)
     # output_data_convert.convert(model_id)
-    
+
     # input
     # status_db_connection.check('c8e0972d-3786-4bc9-8cda-ccc6da25c923', 3, 1)
     # status_db_connection.insert_model('a1e0972d-3786-4bc9-8cda-ccc6da25c932', 1, 1)
@@ -39,7 +38,6 @@ if __name__ == "__main__":
     # shell_controller.launch("/tmp/")
     # bool = shell_controller.monitor("/tmp/")
     # out = shell_controller.abort("/tmp/")
-    # file_controller.copy_file_fs("test.txt","C:/Users/HarukaNakanose/Documents/prj/BRIDGE_PLATEAU/git/srcBatch/log")
     #file_controller.put_folder("./test.txt", "/tmp/test.txt")
 
     # models = webapp_db_connection.fetch_height()

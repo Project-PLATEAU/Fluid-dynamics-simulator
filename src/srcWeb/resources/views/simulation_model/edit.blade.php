@@ -17,7 +17,7 @@
 @endsection
 
 @section('city-model-display-area')
-<span>{{ $simulationModel->identification_name }}</span>
+<span>{{ App\Commons\Constants::MODEL_IDENTIFICATE_NAME_DISPLAY_EDIT }}</span>
 @endsection
 
 @section('content')
@@ -25,24 +25,23 @@
     <form id="frmSimulation" method="POST" action="{{ request()->fullUrl() }}">
         {{ csrf_field() }}
         <div class="row">
-            <div class="col-sm-7">
+            <div class="col-12">
                 <div class="mb-3 row">
-                    <label for="identification_name" class="col-sm-2 col-form-label">3D都市モデル</label>
-                    <div class="col-sm-9">
-                        <label for="identification_name" class="col-form-label">{{ $simulationModel->city_model->identification_name }}</label>
-                    </div>
-                </div>
-                <div class="mb-3 row">
-                    <label for="identification_name" class="col-sm-2 col-form-label">モデル識別名</label>
-                    <div class="col-sm-9">
+                    <label for="identification_name" class="col-sm-2 col-form-label">シミュレーションモデル名</label>
+                    <div class="col-sm-3">
                         <input type="text" class="form-control" name="identification_name" id="identification_name" value="{{ $simulationModel->identification_name }}">
                     </div>
                 </div>
-            </div>
-
-            <div class="col-sm-5">
-                <label class="col-sm-3 col-form-label">対象地域</label>
-                <label class="col-sm-8 col-form-label">{{ $simulationModel->region->region_name }}</label>
+                <div class="mb-3 row">
+                    <label for="city_model" class="col-sm-2 col-form-label">3D都市モデル</label>
+                    <div class="col-sm-5">
+                        <label class="col-form-label">{{ $simulationModel->city_model->identification_name }}</label>
+                    </div>
+                    <label class="col-sm-2 col-form-label">解析対象地域</label>
+                    <div class="col-sm-3">
+                        <label class="col-form-label">{{ $simulationModel->region->region_name }}</label>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -191,58 +190,57 @@
             </summary>
             <div class="row px-2 mb-2 ms-3">
                 <div class="col-sm-6">
-                    <div class="d-flex flex-row">
-                        <label for="temperature" class="col-form-label me-2 col-sm-2">外気温</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" name="temperature" id="temperature" value="{{ $simulationModel->temperature }}">
+                    <div class="ms-5 ps-5">
+                        <div class="d-flex flex-row mb-2">
+                            <label for="solar_altitude_date_view" class="col-form-label me-3 col-sm-2">日付</label>
+                            <div class="col-sm-5">
+                                <input type="text" class="form-control" name="solar_altitude_date_view" id="solar_altitude_date_view" value="{{ App\Utils\DatetimeUtil::changeFormat($simulationModel->solar_altitude_date, 'm月d日') }}">
+                                <input type="hidden" name="solar_altitude_date" id="solar_altitude_date" value="{{ App\Utils\DatetimeUtil::changeFormat($simulationModel->solar_altitude_date, App\Utils\DatetimeUtil::DATE_FORMAT) }}">
+                            </div>
                         </div>
-                        <label for="temperature" class="col-form-label px-2 col-sm-2">(°C)</label>
-                    </div>
-                    <div class="d-flex flex-row mt-2">
-                        <label for="wind_speed" class="col-form-label me-2 col-sm-2">風速</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control update-region" name="wind_speed" id="wind_speed" value="{{ $simulationModel->wind_speed }}">
+                        <div class="d-flex flex-row mb-2">
+                            <label for="temperature" class="col-form-label me-3 col-sm-2">外気温</label>
+                            <div class="col-sm-5">
+                                <input type="text" class="form-control" name="temperature" id="temperature" value="{{ $simulationModel->temperature }}">
+                            </div>
+                            <label for="temperature" class="col-form-label px-2 col-sm-2">(°C)</label>
                         </div>
-                        <label for="wind_speed" class="col-form-label px-2 col-sm-2">(m/s)</label>
-                    </div>
-                    <div class="d-flex flex-row mt-2">
-                        <label class="col-form-label me-2 col-sm-2">風向</label>
-                        <div class="col-sm-4">
-                            <input class="form-check-input" type="radio" name="wind_direction" id="wind_direction_1" @if ($simulationModel->wind_direction == 1 ) checked @endif value="1">
-                            <label class="form-check-label" for="wind_direction_1">南→北</label>
-                        </div>
-                        <div class="col-sm-4">
-                            <input class="form-check-input" type="radio" name="wind_direction" id="wind_direction_2" @if ($simulationModel->wind_direction == 2 ) checked @endif value="2">
-                            <label class="form-check-label" for="wind_direction_2">北→南</label>
-                        </div>
-                    </div>
-                    <div class="d-flex flex-row mt-2">
-                        <label class="col-form-label me-2 col-sm-2"></label>
-                        <div class="col-sm-4">
-                            <input class="form-check-input" type="radio" name="wind_direction" id="wind_direction_3" @if ($simulationModel->wind_direction == 3 ) checked @endif value="3">
-                            <label class="form-check-label" for="wind_direction_3">西→東</label>
-                        </div>
-                        <div class="col-sm-4">
-                            <input class="form-check-input" type="radio" name="wind_direction" id="wind_direction_4" @if ($simulationModel->wind_direction == 4 ) checked @endif value="4">
-                            <label class="form-check-label" for="wind_direction_4">東→西</label>
+                        <div class="d-flex flex-row mb-2">
+                            <label class="col-form-label me-3 col-sm-2">風向</label>
+                            <div class="col-sm-5">
+                                <select class="form-select" id="wind_direction" name="wind_direction">
+                                    @foreach ($windDirections as $windDirection)
+                                        <option value="{{ $windDirection['database_order'] }}" @if($simulationModel->wind_direction == $windDirection['database_order']) selected @endif>
+                                            {{ $windDirection['display_name'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-sm-6">
-                    <div class="d-flex flex-row mt-2">
-                        <label for="solar_altitude_date_view" class="col-form-label me-2 col-sm-2">日付</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" name="solar_altitude_date_view" id="solar_altitude_date_view" value="{{ App\Utils\DatetimeUtil::changeFormat($simulationModel->solar_altitude_date, 'm月d日') }}">
-                            <input type="hidden" class="form-control" name="solar_altitude_date" id="solar_altitude_date" value="{{ App\Utils\DatetimeUtil::changeFormat($simulationModel->solar_altitude_date, App\Utils\DatetimeUtil::DATE_FORMAT) }}">
-                        </div>
-                    </div>
-                    <div class="d-flex flex-row mt-2">
+                    <div class="d-flex flex-row mb-2">
                         <label for="solar_altitude_time" class="col-form-label me-2 col-sm-2">時間帯</label>
-                        <div class="col-sm-7">
+                        <div class="col-sm-5">
                             <input type="text" class="form-control" name="solar_altitude_time" id="solar_altitude_time" value="{{ $simulationModel->solar_altitude_time }}">
                         </div>
                         <label for="solar_altitude_time" class="col-form-label px-2 col-sm-2">(時)</label>
+                    </div>
+                    <div class="d-flex flex-row mb-2">
+                        <label for="wind_speed" class="col-form-label me-2 col-sm-2">風速</label>
+                        <div class="col-sm-5">
+                            <input type="text" class="form-control update-region" name="wind_speed" id="wind_speed" value="{{ $simulationModel->wind_speed }}">
+                        </div>
+                        <label for="wind_speed" class="col-form-label px-2 col-sm-2">(m/s)</label>
+                    </div>
+                    <div class="d-flex flex-row mb-2">
+                        <label for="humidity" class="col-form-label me-2 col-sm-2">湿度</label>
+                        <div class="col-sm-5">
+                            <input type="text" class="form-control" name="humidity" id="humidity" value="{{ $simulationModel->humidity }}">
+                        </div>
+                        <label for="humidity" class="col-form-label px-2 col-sm-2">(%)</label>
                     </div>
                 </div>
             </div>
@@ -298,15 +296,15 @@
             </div>
         </details>
 
-        <div class="form-check {{ ($message && $message['code'] == 'I5') ? 'd-none' : '' }}">
-            <input class="form-check-input" type="checkbox" value="1" id="CheckboxSimulationStart" name="isStart">
-            <label class="form-check-label" for="CheckboxSimulationStart">保存に続けてシミュレーションを開始する</label>
-        </div>
-
-        <div class="button-area mt-3">
-            <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ route('simulation_model.index') }}'">キャンセル</button>
-            <button type="submit" class="btn btn-outline-secondary {{ ($message && $message['code'] == 'I5') ? 'd-none' : '' }}" id="ButtonUpdate">保存</button>
-
+        <div class="d-flex justify-content-end align-items-center mt-3">
+            <div class="form-check me-3 {{ ($message && $message['code'] == 'I5') ? 'd-none' : '' }}">
+                <input class="form-check-input" type="checkbox" value="1" id="CheckboxSimulationStart" name="isStart">
+                <label class="form-check-label" for="CheckboxSimulationStart">保存に続けてシミュレーションを開始する</label>
+            </div>
+            <div class="button-area d-flex">
+                <button type="submit" class="btn btn-outline-secondary me-2 {{ ($message && $message['code'] == 'I5') ? 'd-none' : '' }}" id="ButtonUpdate">保存</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ route('simulation_model.index') }}'">キャンセル</button>
+            </div>
         </div>
 
         {{-- 隠し項目設定のエリア--}}

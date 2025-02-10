@@ -19,26 +19,27 @@
 @endsection
 
 @section('city-model-display-area')
-    <span>{{ $model->identification_name }}</span>
+<span>{{ App\Commons\Constants::MODEL_IDENTIFICATE_NAME_DISPLAY_SHARE }}</span>
 @endsection
 
 @section('content')
-<div class="d-flex flex-column container">
+<div class="container d-flex flex-column">
     <form id="frmShareMode" method="POST" action="{{ route('share.addnew', ['share_mode' => $shareMode, 'model_id' => $modelId]) }}">
         {{ csrf_field() }}
-        <div class="mb-3 row">
-            <label for="identification_name" class="col-sm-2 col-form-label"></label>
-            <div class="col-sm-5">
-            </div>
-            <div class="col-sm-2">
+        <div class="mb-3 row align-items-center">
+            <label for="modelName" class="col-sm-2 col-form-label">
                 @if ($shareMode == App\Commons\Constants::SHARE_MODE_CITY_MODEL)
-                    <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ route('city_model.index') }}'">一覧に戻る</button>
+                    <span>{{ App\Commons\Constants::MODEL_KIND_CITY }}</span>
                 @else
-                    <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ route('simulation_model.index') }}'">一覧に戻る</button>
+                    <span>{{ App\Commons\Constants::MODEL_KIND_SIMULATION }}</span>
                 @endif
+            </label>
+            <div class="col-sm-5">
+                <span>{{ $model->identification_name }} </span>
             </div>
         </div>
-        <div class="mb-3 row">
+
+        <div class="mb-3 row align-items-center">
             <label for="identification_name" class="col-sm-2 col-form-label">共有ユーザID</label>
             <div class="col-sm-5">
                 <input type="text" pattern="^[a-zA-Z0-9]+$" class="form-control" name="identification_name" id="identification_name" value="">
@@ -47,20 +48,26 @@
                 <button type="submit" class="btn btn-outline-secondary" id="ButtonShare">共有</button>
             </div>
         </div>
-        <div class="mb-3 row">
+        <div class="mb-3 row align-items-center">
             <label for="identification_name" class="col-sm-2 col-form-label">共有済ユーザ</label>
-        </div>
-        <div class="mb-3 row">
-            {{-- <label for="identification_name" class="col-sm-2 col-form-label">モデル識別名</label> --}}
-            <div class="col-sm-7">
-                <div class="d-flex flex-column border p-2" style="height: 100px;" id = "sharedUser">
-                @foreach($userList as $user)
-                <span data-user-id="{{ $user->user_id }}" onclick="togglebgTr(this)">{{ $user->user_account->display_name }} ({{ $user->user_id }})</span>
-                @endforeach
+            <div class="col-sm-5">
+                <div class="d-flex flex-column border p-2 rounded" style="height: 100px;" id="sharedUser">
+                    @foreach($userList as $user)
+                        <span data-user-id="{{ $user->user_id }}" onclick="togglebgTr(this)">{{ $user->user_account->display_name }} ({{ $user->user_id }})</span>
+                    @endforeach
                 </div>
             </div>
-            <div class="col-sm-2">
+            <div class="col-sm-2 align-self-start">
                 <button type="button" class="btn btn-outline-secondary" id="ButtonCancel">解除</button>
+            </div>
+        </div>
+        <div class="mb-3 row align-items-end">
+            <div class="col-sm-2">
+                @if ($shareMode == App\Commons\Constants::SHARE_MODE_CITY_MODEL)
+                    <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ route('city_model.index') }}'">戻る</button>
+                @else
+                    <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ route('simulation_model.index') }}'">戻る</button>
+                @endif
             </div>
         </div>
     </form>

@@ -33,13 +33,15 @@ class StringUtil
     public static function stringToArray($str, $separate = self::SEPARATE_COMMA)
     {
         $initArr = explode($separate, $str);
-        $arr = [];
         if (count($initArr) > 1) {
+            $arr = [];
             foreach($initArr as $element) {
                 // スペースの削除
                 $arr[] = trim($element);
             }
+            return $arr;
+        } else {
+            return $initArr;
         }
-        return $arr;
     }
 }

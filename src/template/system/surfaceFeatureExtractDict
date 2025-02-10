@@ -15,6 +15,6 @@ FoamFile
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // ***  Include User Data  ***
-#include "userSurfaceFeatureExtract"
+#include "inc/userSurfaceFeatureExtract"
 
 // ************************************************************************* //

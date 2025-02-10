@@ -29,7 +29,7 @@ boundaryField
     }
 
 
-    #include "userNut"
+    #include "inc/userNut"
 
  }
 

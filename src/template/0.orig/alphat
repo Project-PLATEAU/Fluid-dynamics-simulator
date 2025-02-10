@@ -27,7 +27,7 @@ boundaryField
     }
 
 
-    #include "userAlphat"
+    #include "inc/userAlphat"
 
 }
 

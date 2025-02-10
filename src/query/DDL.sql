@@ -105,6 +105,8 @@ CREATE TABLE REGION
 	city_model_id uuid NOT NULL,
 	-- 対象地域識別名
 	region_name varchar(32),
+	-- ユーザID
+	user_id varchar(32) NOT NULL,
 	-- 平面直角座標系ID
 	coordinate_id smallint NOT NULL,
 	-- 南端緯度
@@ -146,6 +148,8 @@ CREATE TABLE SIMULATION_MODEL
 	wind_speed float,
 	-- 風向き
 	wind_direction smallint,
+	-- 湿度
+	humidity float,
 	-- 日付
 	solar_altitude_date date,
 	-- 時間帯
@@ -261,6 +265,8 @@ CREATE TABLE STL_MODEL
 	solar_absorptivity float,
 	-- 排熱量
 	heat_removal float,
+	-- czmlファイル
+	czml_file varchar(256),
 	PRIMARY KEY (region_id, stl_type_id)
 ) WITHOUT OIDS;
 
@@ -310,6 +316,8 @@ CREATE TABLE VISUALIZATION
 	visualization_type smallint NOT NULL,
 	-- 相対高さID
 	height_id smallint NOT NULL,
+	-- 凡例種別
+	legend_type smallint NOT NULL,
 	-- 可視化ファイル
 	visualization_file varchar(256),
 	-- シミュレーション結果（GeoJSON）ファイル
@@ -318,7 +326,7 @@ CREATE TABLE VISUALIZATION
 	legend_label_higher varchar(16),
 	-- 凡例下端値
 	legend_label_lower varchar(16),
-	PRIMARY KEY (simulation_model_id, visualization_type, height_id)
+	PRIMARY KEY (simulation_model_id, visualization_type, height_id, legend_type)
 ) WITHOUT OIDS;
 
 
@@ -469,6 +477,14 @@ ALTER TABLE CITY_MODEL_REFERENCE_AUTHORITY
 ;
 
 
+ALTER TABLE REGION
+	ADD FOREIGN KEY (user_id)
+	REFERENCES USER_ACCOUNT (user_id)
+	ON UPDATE RESTRICT
+	ON DELETE RESTRICT
+;
+
+
 ALTER TABLE SIMULATION_MODEL
 	ADD FOREIGN KEY (registered_user_id)
 	REFERENCES USER_ACCOUNT (user_id)
@@ -524,6 +540,7 @@ COMMENT ON TABLE REGION IS '(CA) 解析対象地域';
 COMMENT ON COLUMN REGION.region_id IS '解析対象地域ID';
 COMMENT ON COLUMN REGION.city_model_id IS '都市モデルID';
 COMMENT ON COLUMN REGION.region_name IS '対象地域識別名';
+COMMENT ON COLUMN REGION.user_id IS 'ユーザID';
 COMMENT ON COLUMN REGION.coordinate_id IS '平面直角座標系ID';
 COMMENT ON COLUMN REGION.south_latitude IS '南端緯度';
 COMMENT ON COLUMN REGION.north_latitude IS '北端緯度';
@@ -542,6 +559,7 @@ COMMENT ON COLUMN SIMULATION_MODEL.preset_flag IS 'プリセットフラグ';
 COMMENT ON COLUMN SIMULATION_MODEL.temperature IS '外気温';
 COMMENT ON COLUMN SIMULATION_MODEL.wind_speed IS '風速';
 COMMENT ON COLUMN SIMULATION_MODEL.wind_direction IS '風向き';
+COMMENT ON COLUMN SIMULATION_MODEL.humidity IS '湿度';
 COMMENT ON COLUMN SIMULATION_MODEL.solar_altitude_date IS '日付';
 COMMENT ON COLUMN SIMULATION_MODEL.solar_altitude_time IS '時間帯';
 COMMENT ON COLUMN SIMULATION_MODEL.south_latitude IS '南端緯度';
@@ -587,6 +605,7 @@ COMMENT ON COLUMN STL_MODEL.stl_file IS 'STLファイル';
 COMMENT ON COLUMN STL_MODEL.upload_datetime IS 'アップロード日時';
 COMMENT ON COLUMN STL_MODEL.solar_absorptivity IS '日射吸収率';
 COMMENT ON COLUMN STL_MODEL.heat_removal IS '排熱量';
+COMMENT ON COLUMN STL_MODEL.czml_file IS 'czmlファイル';
 COMMENT ON TABLE STL_TYPE IS '(PT) STLファイル種別';
 COMMENT ON COLUMN STL_TYPE.stl_type_id IS 'STLファイル種別ID';
 COMMENT ON COLUMN STL_TYPE.stl_type_name IS '種別名';
@@ -604,6 +623,7 @@ COMMENT ON TABLE VISUALIZATION IS '(SV) 可視化ファイル';
 COMMENT ON COLUMN VISUALIZATION.simulation_model_id IS 'シミュレーションモデルID';
 COMMENT ON COLUMN VISUALIZATION.visualization_type IS '可視化種別';
 COMMENT ON COLUMN VISUALIZATION.height_id IS '相対高さID';
+COMMENT ON COLUMN VISUALIZATION.legend_type IS '凡例種別';
 COMMENT ON COLUMN VISUALIZATION.visualization_file IS '可視化ファイル';
 COMMENT ON COLUMN VISUALIZATION.geojson_file IS 'シミュレーション結果（GeoJSON）ファイル';
 COMMENT ON COLUMN VISUALIZATION.legend_label_higher IS '凡例上端値';

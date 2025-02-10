@@ -105,9 +105,9 @@ class StlTypeSeeder extends Seeder
             'stl_type_id'           =>  12,
             'stl_type_name'         =>  '地表面(水面)',
             'required_flag'         =>  false,
-            'ground_flag'           =>  false,
+            'ground_flag'           =>  true,
             'solar_absorptivity'    =>  0,
-            'heat_removal'          =>  0
+            'heat_removal'          =>  -230
         ]);
         StlType::create([
             'stl_type_id'           =>  13,
@@ -122,8 +122,8 @@ class StlTypeSeeder extends Seeder
             'stl_type_name'         =>  '地表面(緑地)',
             'required_flag'         =>  false,
             'ground_flag'           =>  true,
-            'solar_absorptivity'    =>  0.5,
-            'heat_removal'          =>  0
+            'solar_absorptivity'    =>  0.3,
+            'heat_removal'          =>  -100
         ]);
         StlType::create([
             'stl_type_id'           =>  15,

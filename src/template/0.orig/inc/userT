@@ -1,0 +1,4 @@
+300                          // Inlet Temperature (K)
+building       0.7           // user input STL & emissivity
+land           0.7           // user input STL & emissivity
+green          0.3           // user input STL & emissivity
