@@ -12,12 +12,12 @@
 上記に伴い、本書では２台のサーバマシンを以下のように定義し、構築手順を記載します。
 
 - コンテナ管理用マシン
-    - Webコンテナ、DBコンテナ、Wrapperコンテナを管理するマシン
+    - Webコンテナ、DBコンテナ、Wrapperコンテナ、APIコンテナを管理するマシン
     - パブリックIPアドレスとホスト名（必要であればドメイン、SSL証明書）を取得し、FQDNでアクセスできるようにする。\
   ※任意のドメインプロバイダ、またはAWS等パブリッククラウドサービスからパブリックIPアドレス、ドメイン、ホスト名等を取得してください。本書での取得手順の詳細は省略します。
 
 - コンテナ管理用マシンに接続されたファイルストレージ
-    - Webコンテナ、DBコンテナ、Wrapperコンテナから参照できるファイルサーバーやストレージ\
+    - Webコンテナ、DBコンテナ、Wrapperコンテナ、APIコンテナから参照できるファイルサーバーやストレージ\
   ※本システムのファイルストレージは、コンテナ管理用マシンにアクセスできる環境であれば、コンテナ管理用マシンに接続したハードディスク、または別のNASやパブリッククラウドサービス（Amazon EFS等）のいずれを利用しても問題ございません。そのため、本書でのインストール手順の詳細は省略します。
 
 - シミュレータ用マシン
@@ -141,7 +141,14 @@ docker compose version
 | OS | Ubuntu | Dockerファイルに依り立ち上げた仮想環境 |
 | ネットワーク | DBコンテナ、ファイルストレージ、シミュレーショタ用マシンとのネットワーク接続 | サーバマシン内でのVPN |
 
-## 2.6. シミュレータ用マシン
+## 2.6. コンテナ管理用マシン - APIコンテナ
+
+| 項目 | 最小動作環境 | 推奨動作環境 |
+| - | - | - |
+| OS | Ubuntu | Dockerファイルに依り立ち上げた仮想環境 |
+| ネットワーク | Webコンテナ、Wrapperコンテナ、ファイルストレージとのネットワーク接続 | サーバマシン内でのVPN |
+
+## 2.7. シミュレータ用マシン
 
 | 項目 | 最小動作環境 | 推奨動作環境 |
 | - | - | - |
@@ -154,7 +161,7 @@ docker compose version
 
 # 3 コンテナ管理用マシン - Webコンテナ・DBコンテナのセットアップ
 ## 3.1. Dockerコンテナの作成と起動
-コンテナ管理用マシン上に、３つのコンテナの作成から起動までを実施します。\
+コンテナ管理用マシン上に、4つのコンテナの作成から起動までを実施します。\
 まずは、自身でソースファイルを実行することで、コンテナを作成することができます。作成に必要なソースファイル一式は
 [こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/container)
 からダウンロード可能です。
@@ -202,15 +209,15 @@ sudo docker compose up
 ```
 sudo docker ps -a
 ```
-出力結果より、container-web、container-db、container-wrapperの3つのコンテナに対して、数字12桁で1番左側に出力されている [ CONTAINER ID ] を記録しておきます。
+出力結果より、container-web、container-db、container-wrapper、container-apiの4つのコンテナに対して、数字12桁で1番左側に出力されている [ CONTAINER ID ] を記録しておきます。
 
 5. コンテナのスタート
-container-web、container-db、container-wrapperの3つのコンテナを起動します。
+container-web、container-db、container-wrapper、container-apiの4つのコンテナを起動します。
 以下のコマンドをそれぞれの [ CONTAINER ID ] に対して実行します。
 ```
 sudo docker start [ CONTAINER ID ]
 ```
-以下のコマンドを実行し、Webコンテナ(container-web)/DBコンテナ(container-db)/Wrapperコンテナ(container-wrapper)の [ STATUS ] がUPになっていることを確認します。
+以下のコマンドを実行し、Webコンテナ(container-web)/DBコンテナ(container-db)/Wrapperコンテナ(container-wrapper)/APIコンテナ(container-api)の [ STATUS ] がUPになっていることを確認します。
 ```
 sudo docker ps -a
 ```
@@ -382,7 +389,7 @@ deb [arch=arm64 allow-insecure=yes trusted=yes] https://dl.openfoam.com/repos/de
 ```
 のように修正する。
 
-# 5 コンテナ管理用マシン - Wrapperコンテナのセットアップ
+# 5 コンテナ管理用マシン - Wrapperコンテナ・APIコンテナのセットアップ
 ## 5.1. Wrapperコンテナ
 作成したWrapperコンテナへアクセスし、必要な設定を実施します。\
 Wrapperコンテナで利用するソースファイル一式は
@@ -450,8 +457,58 @@ key_filename = 秘密鍵ファイルのパス（相対パスを入力する場�
 ```
 完了後、Ctrl+DなどでWrapperコンテナから出ます。
 
-# 5 シミュレーション管理ジョブの起動
-## 5.1. crontabの設定
+## 5.2. APIコンテナ
+作成したAPIコンテナへアクセスし、必要な設定を実施します。\
+APIコンテナで利用するソースファイル一式は
+[こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcAPI)
+からダウンロード可能です。
+
+1. APIコンテナへアクセス\
+コンテナ管理用マシン上で、APIコンテナに入ります。
+```
+sudo docker  exec -it  [API-CONTAINER ID] /bin/bash
+```
+
+2. GitHub mainブランチからsrcAPIのソースコードをダウンロードします。
+[src/srcAPI](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcAPI)
+をコピーします。
+```
+cd /opt/
+git clone --no-checkout https://github.com/Project-PLATEAU/Fluid-dynamics-simulator.git
+cd Fluid-dynamics-simulator/
+git sparse-checkout init --cone
+git sparse-checkout add srcAPI/
+git checkout main
+cd srcAPI/
+```
+/opt/Fluid-dynamics-simulator/srcAPI/ が作成され、その直下にconvert_to_czml.pyなどのpythonプログラム群が配置されていることを確認します。
+
+【要編集】
+3. API起動
+ダウンロードしたソースコードmain.pyを実行して、APIを起動します。
+```
+cd /opt/Fluid-dynamics-simulator/srcAPI/
+uvicorn main:app --host=0.0.0.0 --reload &
+```
+【削除予定】
+3. APIコンテナとシミュレーション用マシン間のSSH接続のセットアップ\
+本システムでは、WrapperコンテナからSSHでシミュレーション用マシンに接続します。\
+WrapperコンテナからSSHでシミュレーション用マシンとのSSH接続をセットアップします。\
+※環境によってセットアップ手順が異なるため、本書ではセットアップ手順は省略します。\
+秘密鍵ファイルをWrapperコンテナ内に配置し、シミュレーション用マシンのホスト名 or IPアドレスと併せて記録しておきます。
+
+4. 設定ファイルの編集\
+連携するデータベースの情報とシミュレーションマシンの情報を、設定ファイルに追記します。
+以下のコマンドで/opt/Fluid-dynamics-simulator/src/srcBatch/common/config.iniを開きます。
+```
+vi common/config.ini
+```
+
+config.iniを編集します。
+
+
+# 6 シミュレーション管理ジョブの起動
+## 6.1. crontabの設定
 コンテナ管理用マシンで、1分おきにシミュレーション管理ジョブ(wrapper_organize.py)を実行させるための設定をcrontabに入力します。\
 コンテナ管理用マシン上でcrontab を編集します。下記コマンドを実行したとき、Select an editorと出たら開くEditorを設定してください。
 ```
@@ -468,7 +525,7 @@ crontabに下記を追記して保存します。
 * * * * * docker exec -w /opt/Fluid-dynamics-simulator/src/srcBatch <WrapperのContainer ID> sh -c "/usr/bin/python3 /opt/Fluid-dynamics-simulator/src/srcBatch/wrapper_organize.py >> /opt/Fluid-dynamics-simulator/src/srcBatch/log/wrapper.log 2>&1"
 ```
 
-## 5.2. crontab起動中の確認
+## 6.2. crontab起動中の確認
 crontabがサービス起動中であることを確認します。もし、正常に起動していない場合は再起動します。
 ```
 service cron status　　（起動確認）
@@ -485,7 +542,7 @@ tail /opt/Fluid-dynamics-simulator/src/srcBatch/wrapper.log
 - INFO      2024-02-14 02:47:02,108 [wrapper_organize.py:204] Complete wrapper_organize.py
 
 
-# 6 プリセットデータの登録と疎通確認
+# 7 プリセットデータの登録と疎通確認
 
 プリセットデータの登録を、環境構築後の疎通確認も兼ねてクライアントPC上のブラウザからウェブアプリにアクセスして実施します。
 
@@ -495,17 +552,17 @@ tail /opt/Fluid-dynamics-simulator/src/srcBatch/wrapper.log
 
 3. 操作マニュアル[3-2 都市モデルの登録]を参考に、3D都市モデルを登録します。
 (examples/input)[こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/input)
-からサンプル自治体（朝来市）の3D都市モデルがダウンロードできます。
-サンプル自治体名（朝来市）を3D Tilesを登録時に選択し、ダウンロードしたSTLファイルを本システムにアップロードします。
+からサンプル自治体（横須賀市）の3D都市モデルがダウンロードできます。
+サンプル自治体名（横須賀市）を3D Tilesを登録時に選択し、ダウンロードしたSTLファイルを本システムにアップロードします。
 
 4. 操作マニュアル[4-1 シミュレーションモデルの作成]を参考に、シミュレーションモデルの作成およびシミュレーション実行します。\
-※朝来市のサンプルデータにおける緯度経度・高度は以下の通りです。\
-南端緯度：35.33918373486737\
-北端緯度：35.33991298963914\
-西端経度：134.84927817801656\
-東端経度：134.85159301437136\
-地面高度：65\
-上空高度：125
+※横須賀市のサンプルデータにおける緯度経度・高度は以下の通りです。\
+南端緯度：35.27833206\
+北端緯度：35.284304708\
+西端経度：139.6668301\
+東端経度：139.6776585\
+地面高度：-1\
+上空高度：300
 
 5. シミュレーションの実行ステータスが「正常終了」となったら、シミュレーション結果を閲覧します。
 
