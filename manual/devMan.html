@@ -176,7 +176,7 @@ sudo apt-get update
 </code></pre>
 <h1 id="2-動作環境">2. 動作環境</h1>
 <p>本システムは、利用者端末であるクライアントPCおよびネットワーク接続するサーバマシンの各ハードウェアより構成されます。サーバマシンでは複数のマシン（コンテナ）から構成され、うちWebコンテナがクライアントPC上のブラウザに対してウェブアプリをホストし、他のコンテナはWebコンテナと結合して諸機能を提供します。</p>
-<p><img src="../resources/devMan/devMan00-fig33.png" alt="ハードウェアアーキテクチャ図"></p>
+<p><img src="../resources/devMan/devMan-fig21.png" alt="ハードウェアアーキテクチャ図"></p>
 <p>動作環境は以下のとおりです。</p>
 <h2 id="21-クライアントpc">2.1. クライアントPC</h2>
 <table>
@@ -227,7 +227,7 @@ sudo apt-get update
 </tr>
 <tr>
 <td>ネットワーク</td>
-<td>DBコンテナ、ファイルストレージとのネットワーク接続</td>
+<td>DBコンテナ、APIコンテナ、ファイルストレージとのネットワーク接続</td>
 <td>サーバマシン内でのVPN</td>
 </tr>
 </tbody>
@@ -249,7 +249,7 @@ sudo apt-get update
 </tr>
 <tr>
 <td>ネットワーク</td>
-<td>Webコンテナ、Wrapperコンテナとのネットワーク接続</td>
+<td>Webコンテナ、Wrapperコンテナ、APIコンテナとのネットワーク接続</td>
 <td>サーバマシン内でのVPN</td>
 </tr>
 </tbody>
@@ -271,7 +271,7 @@ sudo apt-get update
 </tr>
 <tr>
 <td>ネットワーク</td>
-<td>Webコンテナ、Wrapperコンテナとのネットワーク接続</td>
+<td>Webコンテナ、Wrapperコンテナ、APIコンテナ、とのネットワーク接続</td>
 <td>サーバマシン内でのVPN</td>
 </tr>
 </tbody>
@@ -315,7 +315,7 @@ sudo apt-get update
 </tr>
 <tr>
 <td>ネットワーク</td>
-<td>Webコンテナ、Wrapperコンテナ、ファイルストレージとのネットワーク接続</td>
+<td>Webコンテナ、DBコンテナ、ファイルストレージとのネットワーク接続</td>
 <td>サーバマシン内でのVPN</td>
 </tr>
 </tbody>
@@ -499,6 +499,7 @@ vi database/seeders/UserAccountSeeder.php
 </ol>
 <pre><code># データベースの作成
 php artisan migrate --path=/database/migrations/2023_11_01_172302_init_db_ver01.php
+php artisan migrate --path=/database/migrations/2024_07_08_135208_ver02.php
 
 # 初期データの投入
 php artisan db:seed
@@ -678,19 +679,7 @@ git checkout main
 cd srcAPI/
 </code></pre>
 <p>/opt/Fluid-dynamics-simulator/srcAPI/ が作成され、その直下にconvert_to_czml.pyなどのpythonプログラム群が配置されていることを確認します。</p>
-<p>【要編集】
-3. API起動
-ダウンロードしたソースコードmain.pyを実行して、APIを起動します。</p>
-<pre><code>cd /opt/Fluid-dynamics-simulator/srcAPI/
-uvicorn main:app --host=0.0.0.0 --reload &amp;
-</code></pre>
-<p>【削除予定】
-3. APIコンテナとシミュレーション用マシン間のSSH接続のセットアップ<br>
-本システムでは、WrapperコンテナからSSHでシミュレーション用マシンに接続します。<br>
-WrapperコンテナからSSHでシミュレーション用マシンとのSSH接続をセットアップします。<br>
-※環境によってセットアップ手順が異なるため、本書ではセットアップ手順は省略します。<br>
-秘密鍵ファイルをWrapperコンテナ内に配置し、シミュレーション用マシンのホスト名 or IPアドレスと併せて記録しておきます。</p>
-<ol start="4">
+<ol start="3">
 <li>設定ファイルの編集<br>
 連携するデータベースの情報とシミュレーションマシンの情報を、設定ファイルに追記します。
 以下のコマンドで/opt/Fluid-dynamics-simulator/src/srcBatch/common/config.iniを開きます。</li>
@@ -698,6 +687,34 @@ WrapperコンテナからSSHでシミュレーション用マシンとのSSH接�
 <pre><code>vi common/config.ini
 </code></pre>
 <p>config.iniを編集します。</p>
+<ul>
+<li>コンテナ管理用マシンに接続されたファイルストレージへのパスを設定します。
+今回は、docker-compose.ymlにおいて自動でAPIコンテナの/mnt/にマウントしているので、以下のように設定します。</li>
+</ul>
+<pre><code>shared_folder_root = /mnt/
+</code></pre>
+<ul>
+<li>シミュレーション用マシンにログインした際のホームディレクトリのパスを設定します。</li>
+</ul>
+<pre><code>shared_folder_root = [シミュレーション用マシンにログインした際のホームディレクトリ]
+</code></pre>
+<ul>
+<li>事前準備にて検討していたデータベース情報を[WebappDB]セクション以降の下記項目に入力します。</li>
+</ul>
+<pre><code>type = postgresql
+user = [DB_USER]
+password = [DB_PASSWORD]
+host = db
+port = 5432
+dbname = [DB_NAME]
+</code></pre>
+<ol start="4">
+<li>API起動
+ダウンロードしたソースコードmain.pyを実行して、APIを起動します。</li>
+</ol>
+<pre><code>cd /opt/Fluid-dynamics-simulator/srcAPI/
+uvicorn main:app --host=0.0.0.0 --reload &amp;
+</code></pre>
 <h1 id="6-シミュレーション管理ジョブの起動">6 シミュレーション管理ジョブの起動</h1>
 <h2 id="61-crontabの設定">6.1. crontabの設定</h2>
 <p>コンテナ管理用マシンで、1分おきにシミュレーション管理ジョブ(wrapper_organize.py)を実行させるための設定をcrontabに入力します。<br>

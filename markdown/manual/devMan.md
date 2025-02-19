@@ -100,7 +100,7 @@ docker compose version
 
 本システムは、利用者端末であるクライアントPCおよびネットワーク接続するサーバマシンの各ハードウェアより構成されます。サーバマシンでは複数のマシン（コンテナ）から構成され、うちWebコンテナがクライアントPC上のブラウザに対してウェブアプリをホストし、他のコンテナはWebコンテナと結合して諸機能を提供します。
 
-![ハードウェアアーキテクチャ図](../resources/devMan/devMan00-fig33.png)
+![ハードウェアアーキテクチャ図](../resources/devMan/devMan-fig21.png)
 
 動作環境は以下のとおりです。
 
@@ -118,21 +118,21 @@ docker compose version
 | - | - | - |
 | OS | Ubuntu | Dockerファイルに依り立ち上げた仮想環境 |
 | ネットワーク | クライアントPCとHTTPSでのネットワーク接続 | インターネット接続、ファイアウォール設置 |
-| ネットワーク | DBコンテナ、ファイルストレージとのネットワーク接続 | サーバマシン内でのVPN |
+| ネットワーク | DBコンテナ、APIコンテナ、ファイルストレージとのネットワーク接続 | サーバマシン内でのVPN |
 
 ## 2.3. コンテナ管理用マシン - DBコンテナ
 
 | 項目 | 最小動作環境 | 推奨動作環境 |
 | - | - | - |
 | DBMS | PostgresSQL | 同左 |
-| ネットワーク | Webコンテナ、Wrapperコンテナとのネットワーク接続 | サーバマシン内でのVPN |
+| ネットワーク | Webコンテナ、Wrapperコンテナ、APIコンテナとのネットワーク接続 | サーバマシン内でのVPN |
 
 ## 2.4. コンテナ管理用マシン - ファイルストレージ
 
 | 項目 | 最小動作環境 | 推奨動作環境 |
 | - | - | - |
 | ファイルシステム | Ubuntu（Webコンテナ、Wrapperコンテナ）がマウント可能なファイルシステム | Amazon EFSやsamba |
-| ネットワーク | Webコンテナ、Wrapperコンテナとのネットワーク接続 | サーバマシン内でのVPN |
+| ネットワーク | Webコンテナ、Wrapperコンテナ、APIコンテナ、とのネットワーク接続 | サーバマシン内でのVPN |
 
 ## 2.5. コンテナ管理用マシン - Wrapperコンテナ
 
@@ -146,7 +146,7 @@ docker compose version
 | 項目 | 最小動作環境 | 推奨動作環境 |
 | - | - | - |
 | OS | Ubuntu | Dockerファイルに依り立ち上げた仮想環境 |
-| ネットワーク | Webコンテナ、Wrapperコンテナ、ファイルストレージとのネットワーク接続 | サーバマシン内でのVPN |
+| ネットワーク | Webコンテナ、DBコンテナ、ファイルストレージとのネットワーク接続 | サーバマシン内でのVPN |
 
 ## 2.7. シミュレータ用マシン
 
@@ -309,6 +309,7 @@ vi database/seeders/UserAccountSeeder.php
 ```
 # データベースの作成
 php artisan migrate --path=/database/migrations/2023_11_01_172302_init_db_ver01.php
+php artisan migrate --path=/database/migrations/2024_07_08_135208_ver02.php
 
 # 初期データの投入
 php artisan db:seed
@@ -483,21 +484,7 @@ cd srcAPI/
 ```
 /opt/Fluid-dynamics-simulator/srcAPI/ が作成され、その直下にconvert_to_czml.pyなどのpythonプログラム群が配置されていることを確認します。
 
-【要編集】
-3. API起動
-ダウンロードしたソースコードmain.pyを実行して、APIを起動します。
-```
-cd /opt/Fluid-dynamics-simulator/srcAPI/
-uvicorn main:app --host=0.0.0.0 --reload &
-```
-【削除予定】
-3. APIコンテナとシミュレーション用マシン間のSSH接続のセットアップ\
-本システムでは、WrapperコンテナからSSHでシミュレーション用マシンに接続します。\
-WrapperコンテナからSSHでシミュレーション用マシンとのSSH接続をセットアップします。\
-※環境によってセットアップ手順が異なるため、本書ではセットアップ手順は省略します。\
-秘密鍵ファイルをWrapperコンテナ内に配置し、シミュレーション用マシンのホスト名 or IPアドレスと併せて記録しておきます。
-
-4. 設定ファイルの編集\
+3. 設定ファイルの編集\
 連携するデータベースの情報とシミュレーションマシンの情報を、設定ファイルに追記します。
 以下のコマンドで/opt/Fluid-dynamics-simulator/src/srcBatch/common/config.iniを開きます。
 ```
@@ -505,6 +492,32 @@ vi common/config.ini
 ```
 
 config.iniを編集します。
+
+- コンテナ管理用マシンに接続されたファイルストレージへのパスを設定します。
+今回は、docker-compose.ymlにおいて自動でAPIコンテナの/mnt/にマウントしているので、以下のように設定します。
+```
+shared_folder_root = /mnt/
+```
+- シミュレーション用マシンにログインした際のホームディレクトリのパスを設定します。
+```
+shared_folder_root = [シミュレーション用マシンにログインした際のホームディレクトリ]
+```
+- 事前準備にて検討していたデータベース情報を[WebappDB]セクション以降の下記項目に入力します。
+```
+type = postgresql
+user = [DB_USER]
+password = [DB_PASSWORD]
+host = db
+port = 5432
+dbname = [DB_NAME]
+```
+
+4. API起動
+ダウンロードしたソースコードmain.pyを実行して、APIを起動します。
+```
+cd /opt/Fluid-dynamics-simulator/srcAPI/
+uvicorn main:app --host=0.0.0.0 --reload &
+```
 
 
 # 6 シミュレーション管理ジョブの起動
