@@ -90,7 +90,7 @@
 <li><p>コンテナ管理用マシン</p>
 <ul>
 <li>Webコンテナ、DBコンテナ、Wrapperコンテナ、APIコンテナを管理するマシン</li>
-<li>パブリックIPアドレスとホスト名（必要であればドメイン、SSL証明書）を取得し、FQDNでアクセスできるようにする。<br>
+<li>パブリックIPアドレスとホスト名（必要であればドメイン、SSL証明書）を取得し、FQDNでアクセスできるようにします。<br>
 ※任意のドメインプロバイダ、またはAWS等パブリッククラウドサービスからパブリックIPアドレス、ドメイン、ホスト名等を取得してください。本書での取得手順の詳細は省略します。</li>
 </ul>
 </li>
@@ -468,13 +468,13 @@ DB_PASSWORD=[DB_PASSWORD]
 </code></pre>
 <ol start="4">
 <li>storageフォルダの権限設定<br>
-以下のコマンドでsrcWebフォルダ以下のstorageフォルダの所有者を変更する。</li>
+以下のコマンドでsrcWebフォルダ以下のstorageフォルダの所有者を変更します。</li>
 </ol>
 <pre><code>chown www-data storage/ -R
 </code></pre>
 <ol start="5">
 <li>リンクの設定<br>
-以下のコマンドでsrcWeb/publicフォルダ以下に/var/www/html/srcWeb/storage/app/public/フォルダへのリンクをstorageという名前で作成する。</li>
+以下のコマンドでsrcWeb/publicフォルダ以下に/var/www/html/srcWeb/storage/app/public/フォルダへのリンクをstorageという名前で作成します。</li>
 </ol>
 <pre><code>cd public
 ln -s /var/www/html/srcWeb/storage/app/public/ storage
@@ -516,9 +516,9 @@ mainブランチの
 にあるINSERT_USER_ACCOUNT.sql を参考にして、必要なユーザアカウントがあればUSER_ACCOUNTテーブルに追加します。</p>
 </li>
 <li><p>STATUS DBの作成<br>
-Wrapperコンテナで使用するstatusdb_simulation_modelテーブルを作成したデータベース[DB_NAME]に作成する。
+Wrapperコンテナで使用するstatusdb_simulation_modelテーブルを作成したデータベース[DB_NAME]に作成します。
 DDL_STATUSDB.sql(<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query">https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query</a>)
-のクエリを実行し、statusdb_simulation_modelテーブルを作成する。</p>
+のクエリを実行し、statusdb_simulation_modelテーブルを作成します。</p>
 </li>
 </ol>
 <h2 id="34-共有フォルダの権限設定と標準ソルバーの登録">3.4. 共有フォルダの権限設定と標準ソルバーの登録</h2>
@@ -526,7 +526,7 @@ DDL_STATUSDB.sql(<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simu
 <li>共有フォルダの権限設定<br>
 sudo chown www-data /mnt -R</li>
 <li>フォルダを作成<br>
-コンテナ管理用マシン上で以下のコマンドで3D都市モデル、シミュレーションのインプットとアウトプット、標準ソルバー用のフォルダを作成する。</li>
+コンテナ管理用マシン上で以下のコマンドで3D都市モデル、シミュレーションのインプットとアウトプット、標準ソルバー用のフォルダを作成します。</li>
 </ol>
 <pre><code>sudo mkdir /mnt/city_model
 sudo chown www-data /mnt/city_model -R
@@ -539,15 +539,15 @@ sudo mkdir /mnt/converted_output
 </code></pre>
 <ol start="3">
 <li><p>標準ソルバーのダウンロード<br>
-<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/input/template.tar">こちら</a>から標準ソルバーをダウンロードする。</p>
+<a href="https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/input/template.tar">こちら</a>から標準ソルバーをダウンロードします。</p>
 </li>
-<li><p>SCPコマンド等で2で作成した/mnt/compressed_solver/default以下に3からダウンロードしたtemplate.tarを配置する。</p>
+<li><p>SCPコマンド等で2で作成した/mnt/compressed_solver/default以下に3からダウンロードしたtemplate.tarを配置します。</p>
 </li>
 </ol>
 <h2 id="35-webアプリ接続の確認">3.5. Webアプリ接続の確認</h2>
 <ol>
 <li><p>Webアプリへの接続<br>
-事前準備で用意したFQDNを使用してWebコンテナ上のWebアプリにアクセスする。
+事前準備で用意したFQDNを使用してWebコンテナ上のWebアプリにアクセスします。
 http://[ コンテナ管理用マシンへのFQDN ]/srcWeb/public/ にアクセスし、熱流体シミュレーションシステムのログイン画面が表示されることを確認します。</p>
 </li>
 <li><p>ログイン
@@ -583,7 +583,7 @@ source /usr/lib/openfoam/openfoam2306/etc/bashrc
 <p>の行を</p>
 <pre><code>deb [arch=arm64 allow-insecure=yes trusted=yes] https://dl.openfoam.com/repos/deb jammy main
 </code></pre>
-<p>のように修正する。</p>
+<p>のように修正してください。</p>
 <h1 id="5-コンテナ管理用マシン---wrapperコンテナapiコンテナのセットアップ">5 コンテナ管理用マシン - Wrapperコンテナ・APIコンテナのセットアップ</h1>
 <h2 id="51-wrapperコンテナ">5.1. Wrapperコンテナ</h2>
 <p>作成したWrapperコンテナへアクセスし、必要な設定を実施します。<br>

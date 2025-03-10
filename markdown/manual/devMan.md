@@ -13,7 +13,7 @@
 
 - コンテナ管理用マシン
     - Webコンテナ、DBコンテナ、Wrapperコンテナ、APIコンテナを管理するマシン
-    - パブリックIPアドレスとホスト名（必要であればドメイン、SSL証明書）を取得し、FQDNでアクセスできるようにする。\
+    - パブリックIPアドレスとホスト名（必要であればドメイン、SSL証明書）を取得し、FQDNでアクセスできるようにします。\
   ※任意のドメインプロバイダ、またはAWS等パブリッククラウドサービスからパブリックIPアドレス、ドメイン、ホスト名等を取得してください。本書での取得手順の詳細は省略します。
 
 - コンテナ管理用マシンに接続されたファイルストレージ
@@ -275,13 +275,13 @@ sudo view .env
 ```
 
 4. storageフォルダの権限設定\
-以下のコマンドでsrcWebフォルダ以下のstorageフォルダの所有者を変更する。
+以下のコマンドでsrcWebフォルダ以下のstorageフォルダの所有者を変更します。
 ```
 chown www-data storage/ -R
 ```
 
 5. リンクの設定\
-以下のコマンドでsrcWeb/publicフォルダ以下に/var/www/html/srcWeb/storage/app/public/フォルダへのリンクをstorageという名前で作成する。
+以下のコマンドでsrcWeb/publicフォルダ以下に/var/www/html/srcWeb/storage/app/public/フォルダへのリンクをstorageという名前で作成します。
 ```
 cd public
 ln -s /var/www/html/srcWeb/storage/app/public/ storage
@@ -327,15 +327,15 @@ mainブランチの
 にあるINSERT_USER_ACCOUNT.sql を参考にして、必要なユーザアカウントがあればUSER_ACCOUNTテーブルに追加します。
 
 4. STATUS DBの作成\
-Wrapperコンテナで使用するstatusdb_simulation_modelテーブルを作成したデータベース[DB_NAME]に作成する。
+Wrapperコンテナで使用するstatusdb_simulation_modelテーブルを作成したデータベース[DB_NAME]に作成します。
 DDL_STATUSDB.sql(https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query)
-のクエリを実行し、statusdb_simulation_modelテーブルを作成する。
+のクエリを実行し、statusdb_simulation_modelテーブルを作成します。
 
 ## 3.4. 共有フォルダの権限設定と標準ソルバーの登録
 1. 共有フォルダの権限設定\
 sudo chown www-data /mnt -R
 2. フォルダを作成\
-コンテナ管理用マシン上で以下のコマンドで3D都市モデル、シミュレーションのインプットとアウトプット、標準ソルバー用のフォルダを作成する。
+コンテナ管理用マシン上で以下のコマンドで3D都市モデル、シミュレーションのインプットとアウトプット、標準ソルバー用のフォルダを作成します。
 ```
 sudo mkdir /mnt/city_model
 sudo chown www-data /mnt/city_model -R
@@ -347,13 +347,13 @@ sudo mkdir /mnt/simulation_output
 sudo mkdir /mnt/converted_output
 ```
 3. 標準ソルバーのダウンロード\
-[こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/input/template.tar)から標準ソルバーをダウンロードする。
+[こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/input/template.tar)から標準ソルバーをダウンロードします。
 
-4. SCPコマンド等で2で作成した/mnt/compressed_solver/default以下に3からダウンロードしたtemplate.tarを配置する。
+4. SCPコマンド等で2で作成した/mnt/compressed_solver/default以下に3からダウンロードしたtemplate.tarを配置します。
 
 ## 3.5. Webアプリ接続の確認
 1. Webアプリへの接続\
-事前準備で用意したFQDNを使用してWebコンテナ上のWebアプリにアクセスする。
+事前準備で用意したFQDNを使用してWebコンテナ上のWebアプリにアクセスします。
 http://[ コンテナ管理用マシンへのFQDN ]/srcWeb/public/ にアクセスし、熱流体シミュレーションシステムのログイン画面が表示されることを確認します。
 
 2. ログイン
@@ -388,7 +388,7 @@ deb [arch=arm64] https://dl.openfoam.com/repos/deb jammy main
 ```
 deb [arch=arm64 allow-insecure=yes trusted=yes] https://dl.openfoam.com/repos/deb jammy main
 ```
-のように修正する。
+のように修正してください。
 
 # 5 コンテナ管理用マシン - Wrapperコンテナ・APIコンテナのセットアップ
 ## 5.1. Wrapperコンテナ
