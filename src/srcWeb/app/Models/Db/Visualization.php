@@ -14,6 +14,7 @@ use App\Models\DbModel;
  * @property int $simulation_model_id
  * @property int $visualization_type
  * @property int $height_id
+ * @property int $legend_type
  * @property string|null $visualization_file
  * @property string|null $geojson_file
  * @property string|null $legend_label_higher
@@ -27,20 +28,22 @@ use App\Models\DbModel;
 class Visualization extends DbModel
 {
 	protected $table = 'visualization';
-    protected $primaryKey = ['simulation_model_id', 'visualization_type', 'height_id'];
+    protected $primaryKey = ['simulation_model_id', 'visualization_type', 'height_id', 'legend_type'];
 	public $incrementing = false;
 	public $timestamps = false;
 
 	protected $casts = [
 		'simulation_model_id' => 'int',
 		'visualization_type' => 'int',
-		'height_id' => 'int'
+		'height_id' => 'int',
+        'legend_type' => 'int'
 	];
 
 	protected $fillable = [
         'simulation_model_id',
         'visualization_type',
         'height_id',
+        'legend_type',
 		'visualization_file',
 		'geojson_file',
         'legend_label_higher',

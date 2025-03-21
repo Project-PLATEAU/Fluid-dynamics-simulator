@@ -1,0 +1,24 @@
+mlevel  1;            // Mesh Refine Level 1 - 3
+
+// Add User STL File
+geometry
+{
+    building.stl
+    {
+        type triSurfaceMesh;
+        name building;
+    }
+    
+    land.stl
+    {
+        type triSurfaceMesh;
+        name land;
+    }
+
+    green.stl
+    {
+        type triSurfaceMesh;
+        name green;
+    }
+    
+}

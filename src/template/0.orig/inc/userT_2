@@ -1,0 +1,55 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       IOobject;
+}
+
+    Wwall               // inlet 
+    {
+        type            fixedValue;
+        value           $internalField;
+    }
+
+    Ewall               // outlet
+    {
+        type            inletOutlet;
+        inletValue      $internalField;
+        value           $internalField;
+    }
+
+    building
+    {
+        type            externalWallHeatFluxTemperature;
+        mode            coefficient;
+        kappaMethod     fluidThermo;
+        h               10;                     // W/m2 K
+        Ta              $refT;                  // Ref. Temperature
+        qr              qr;
+        q               100;                    // User input Heat Flux W/m2
+        value           $internalField;
+    }
+
+    land
+    {
+        type            externalWallHeatFluxTemperature;
+        mode            coefficient;
+        kappaMethod     fluidThermo;
+        h               10;                     // W/m2 K
+        Ta              $refT;                  // Ref. Temperature
+        qr              qr;
+        q               0;                      // User input Heat Flux W/m2
+        value           $internalField;
+    }
+
+    green
+    {
+        type            externalWallHeatFluxTemperature;
+        mode            coefficient;
+        kappaMethod     fluidThermo;
+        h               10;                     // W/m2 K
+        Ta              $refT;                  // Ref. Temperature
+        qr              qr;
+        q               -100;                   // User input Heat Flux W/m2
+        value           $internalField;
+    }

@@ -20,38 +20,41 @@
 
 @section('content')
 <div class="d-flex flex-column container">
-    <form id="frmSimulation" method="POST" action="">
+    <form id="frmSimulation" method="POST" action="{{ route('simulation_model.addnew', ['city_model_id' => 0]) }}">
         {{ csrf_field() }}
         <div class="row">
             <div class="col-sm-7">
                 <div class="mb-3 row">
-                    <label for="identification_name" class="col-sm-2 col-form-label">3D都市モデル</label>
-                    <div class="col-sm-8">
-                        <label for="identification_name" class="col-form-label">{{ $cityModel->identification_name }}</label>
-                    </div>
-                </div>
-                <div class="mb-3 row">
-                    <label for="identification_name" class="col-sm-2 col-form-label">モデル識別名</label>
-                    <div class="col-sm-8">
+                    <label for="identification_name" class="col-sm-4 col-form-label">シミュレーションモデル名</label>
+                    <div class="col-sm-6">
                         <input type="text" class="form-control" name="identification_name" id="identification_name">
                     </div>
                 </div>
-            </div>
-
-             <div class="col-sm-5">
-                <label for="identification_name" class="col-sm-8 col-form-label">解析対象地域</label>
-                <div class="form-control d-flex flex-column border mx-4" style="height: 100px;" id="region-list">
-                    @foreach($cityModel->regions()->get() as $region)
-                        <span class="region" data-region-id="{{ $region->region_id }}" onclick="setbgColor(this)">{{ $region->region_name }}</span>
-                    @endforeach
+                <div class="mb-3 row">
+                    <label for="city_model_id" class="col-sm-4 col-form-label">3D都市モデル</label>
+                    <div class="col-sm-6">
+                        <select class="form-select" name="city_model_id" id="city_model_id" onchange="updateRegions()">
+                            <option value="0">未選択</option>
+                            @foreach ($cityModelList as $cityModel)
+                                <option value="{{ $cityModel->city_model_id }}">{{ $cityModel->identification_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="button-area mt-5">
-            <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ route('city_model.index') }}'">戻る</button>
-            <button type="button" class="btn btn-outline-secondary" id="ButtonAddNew" onclick="submitFrmAddNewSimulation()">追加</button>
-
+            <div class="col-sm-4">
+                <div class="d-flex flex-column">
+                    <label for="identification_name" class="col-form-label mb-2">解析対象地域選択</label>
+                    <div class="form-control d-flex flex-column border" style="height: 250px; overflow: auto;" id="region-list">
+                        <!-- 選択された3D都市モデルによって表示される -->
+                    </div>
+                </div>
+                <div class="button-area mt-3 d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary me-2" id="ButtonAddNew" onclick="submitFrmAddNewSimulation()">作成</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ route('simulation_model.index') }}'">キャンセル</button>
+                </div>
+            </div>
         </div>
     </form>
 </div>
@@ -128,17 +131,40 @@
         function submitFrmAddNewSimulation()
         {
             const frmId = "#frmSimulation";
-            let action = "{{route('simulation_model.addnew', ['city_model_id' => $cityModel->city_model_id])}}";
+            const cityModelId = $('#city_model_id').val();
+            let action = "{{ route('simulation_model.addnew', ['city_model_id' => ':city_model_id']) }}".replace(':city_model_id', cityModelId);
 
-            //選択した解析対象地域
             let regionId = $("#region-list span.bg-cyan").data('region-id');
-            if (regionId)
-            {
+            if (regionId) {
                 action += '?region_id=' + regionId;
             }
 
-            // フォームサブミット
             submitFrm(frmId, action);
+        }
+
+        /**
+         * 3D都市モデルより解析対象地域を取得
+         * @return
+         */
+        function updateRegions()
+        {
+            const cityModelId = $('#city_model_id').val();
+            $.ajax({
+                url: '{{ route("city_model.getRegionsByCityModelId") }}',
+                type: 'GET',
+                data: { city_model_id: cityModelId },
+                success: function(response) {
+                    $('#region-list').html('');
+                    response.regions.forEach(function(region) {
+                        $('#region-list').append(
+                            `<span class="region" data-region-id="${region.region_id}" onclick="setbgColor(this)">${region.region_name}</span>`
+                        );
+                    });
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                }
+            });
         }
     </script>
 @endsection

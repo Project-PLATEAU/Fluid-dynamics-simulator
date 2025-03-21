@@ -6,12 +6,16 @@
 <link href="https://cesium.com/downloads/cesiumjs/releases/1.104/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 @endsection
 
+@section('display-info-left-area')
+<div class="p-2" style="margin-right: 150px;"><span>{{ $cityModel->identification_name }}<span></div>
+@endsection
+
 @section('model-kind-display-area')
 <span>{{ App\Commons\Constants::MODEL_KIND_CITY }}</span>
 @endsection
 
 @section('city-model-display-area')
-<span>{{ $cityModel->identification_name }}</span>
+<span>{{ App\Commons\Constants::MODEL_IDENTIFICATE_NAME_DISPLAY_VIEW }}</span>
 @endsection
 
 @section('content')

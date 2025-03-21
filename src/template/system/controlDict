@@ -17,31 +17,38 @@ FoamFile
 application     buoyantSimpleFoam;
 
 startFrom       startTime;
-
 startTime       0;
-
 stopAt          endTime;
-
 endTime         1000;
 //endTime         2500;
 
 deltaT          1;
 
 writeControl    timeStep;
-
 writeInterval   100;
-
 purgeWrite      0;
 
 writeFormat     ascii;
-
 writePrecision  6;
-
 writeCompression off;
 
 timeFormat      general;
-
 timePrecision   6;
 
+// Passive Scalar
+functions{
+    scalar1{
+       type scalarTransport;
+       libs            (solverFunctionObjects);
+       fields s;        // name of scalar 
+//       region air; //
+       nCorr  0;         // number of corrector loop
+       D      1;     // diffussion coefficient
+       writeControl    timeStep;
+//       writeControl    adjustable;
+       writeInterval   100;
+       purgeWrite 0;
+    }
+}
 
 // ************************************************************************* //

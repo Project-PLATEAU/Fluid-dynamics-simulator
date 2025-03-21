@@ -168,9 +168,9 @@ def fetch_and_delete_visualization(model_id):
                     session.delete(del_record)
             else:
                 return
-        except NoResultFound :
-            logger.error(f'No records found for solver_id: {model_id}')
-            raise Exception(f'No records found for solver_id: {model_id}')
+        except Exception as e:
+            logger.error(f"Database error: {str(e)}")
+            raise Exception(f"Database error: {str(e)}")
     return
 # VISUALIZATIONテーブルにリストに含まれるすべてのレコードを挿入する
 def insert_visualization(visualizations):
@@ -186,5 +186,5 @@ def insert_visualization(visualizations):
 def get_ground_stl_type_ids():
     initialize()
     with session_con() as session:
-        records = session.query(StlType).filter(StlType.ground_flag==True).all()
+        records = session.query(StlType).filter(StlType.ground_flag==True, StlType.solar_absorptivity!=0).all()
     return records

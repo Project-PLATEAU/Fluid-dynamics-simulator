@@ -2,7 +2,6 @@
 
 namespace App\Utils;
 
-use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -34,9 +33,17 @@ class FileUtil extends \Eloquent
      */
     const CONVERTED_OUTPUT_FOLDER = "converted_output";
     /**
+     * 設定ファイルの格納先
+     */
+    const SETTING_FOLDER = "setting";
+    /**
      * 熱流体解析エラーログファイル
      */
     const LOG_ZIP_FILE = "log.zip";
+    /**
+     * 風向表示設定用のJSONファイル
+     */
+    const WIND_DIRECTION_FILE = "wind_direction.json";
 
     /**
      * ファイル存在チェック
@@ -101,5 +108,47 @@ class FileUtil extends \Eloquent
         // publicフォルダからstorage/app/publicへのシンボリックリンクが作成したため、
         // publicフォルダからstorageフォルダのファイルを参照することができる。
         return asset('storage/' . $relativePath);
+    }
+
+    /**
+     * 特定のフォルダをコピーする。
+     * @param string $relativeSrc 相対パスのコピー元
+     * @param string $relativeDes 相対パスのコピー先
+     *
+     * @return
+     */
+    public static function copyFolder($relativeSrc, $relativeDes)
+    {
+        $result = true;
+
+        $source = "public/" . $relativeSrc;
+        $destination = "public/" .$relativeDes;
+
+        // ディレクトリ内のすべてのファイルとフォルダをコピー
+        foreach (Storage::allFiles($source) as $file) {
+            $relativePath = str_replace($source, '', $file);
+            $newPath = $destination . $relativePath;
+            $result = Storage::copy($file, $newPath);
+            if(!$result) {
+                return false;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * ファイルパスの末尾部分（ファイル名）を取得する。
+     * @param string $path ファイルパス
+     * @return string ファイル名
+     * 　例：test.txt
+     */
+    public static function getFileName($path)
+    {
+        $fileName = "";
+        if (self::isExists($path))
+        {
+            $fileName = basename($path);
+        }
+        return $fileName;
     }
 }

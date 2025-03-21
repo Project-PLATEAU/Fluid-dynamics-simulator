@@ -17,52 +17,52 @@ from numpy import ndarray
 
 logger = log_writer.getLogger()
 
-#region OpenFOAM出力ファイル（このスクリプトで読み込むファイル）に関する定数
-CELL_CENTRES_FILENAME : str = "C"
-WIND_VECTORS_FILENAME : str = "U"
-TEMPERATURES_FILENAME : str = "T"
-SOLAR_IRRADIANCE_FILENAME : str = "qr"
-BOUNDARY : str = "boundary" # OpenFOAM内のboundaryファイル
-OWNER : str = "owner" # OpenFOAM内のownerファイル
-N_FACES = "nFaces" # グループに属する面の数のキー
-START_FACE = "startFace" # グループに属する面の最初の面番号のキー
+#region OpenFOAM出力ファイルに関する定数
+FNAME_CELL_CENTRES : str = "C"
+FNAME_WIND_VECTORS : str = "U"
+FNAME_TEMPERATURES : str = "T"
+FNAME_HUMIDITIES : str = "s"
+FNAME_SOLAR_IRRADIANCE : str = "qr"
+BOUNDARY : str = "boundary"             # OpenFOAM内のboundaryファイル
+OWNER : str = "owner"                   # OpenFOAM内のownerファイル
+N_FACES = "nFaces"                      # グループに属する面の数のキー
+START_FACE = "startFace"                # グループに属する面の最初の面番号のキー
 #endregion
-#region 可視化種別
-RESULT_TYPE_WIND = 1
-RESULT_TYPE_TEMPERATURE = 2
-RESULT_TYPE_WBGT = 3
-#endregion
-#region 出力ファイル名、拡張子
-FILE_TYPE_VISUALIZATION = "czml"
-FILE_TYPE_DOWNLOAD = "geojson"
-WBGT_FILENAME = "wbgt"
-#endregion
+#region 出力フォルダ
+## 可変性 [variability]
+VARIABLE = 1        # 変動凡例値
+FIXED = 2           # 固定凡例値
+FIXED_MAX_WIND = 10 # 固定最大風速
+FIXED_MIN_WIND = 0  # 固定最小風速
+FIXED_MAX_TEMP = 36 # 固定最大温度
+FIXED_MIN_TEMP = 29 # 固定最低温度
+## 出力ファイル名、拡張子
+FTYPE_VISUALIZATION = "czml"
+FTYPE_DOWNLOAD = "geojson"
+FNAME_WBGT = "wbgt"
+## 可視化種別 [RESULT_TYPE]
+WIND = 1
+TEMPERATURE = 2
+WBGT = 3
+# endregion
 #region 結果の図示における描画用パラメータ
-NORMALIZED_VECTOR_LENGTH = 3 # 風のベクトルの長さ
-VECTOR_WIDTH = 10 # 風のベクトルの太さ
-TRIANGLE_BOTTOM_DIVIDE = 6 # 風の向きを示す三角形で、底辺に対する単位ベクトルの長さ
-HIGHT_BUFFER = 0.5 # 地上n mのデータを取得するときの誤差範囲、例えば、地上1.5m だったら、地上1.5 プラスマイナスHIGHT_BUFFERのデータを取得する
-WIND_NUM_OF_COLER_FROM_INT = 10 # 中間～最高または最低風速の色の段階数
-TEMP_NUM_OF_COLER_FROM_INT = 10 # 中間～最高または最低温度の色の段階数
-WIND_1_STEP = 0.2 # 表示される色の1段階分の風速(m/s)
-TEMP_1_STEP = 0.35 # 表示される色の1段階分の温度(度)
-HIGHTEST_COLOR = (255, 0, 0, 255) # Red
-INTERMEDIATE_COLOR = (0, 255, 0, 255) # Green
-LOWEST_COLOR = (0, 0, 255, 255) # Blue
-POINT_PIXEL_SIZE = 10 # 点のピクセルサイズ
+NORMALIZED_VECTOR_LENGTH = 3            # 風のベクトルの長さ
+VECTOR_WIDTH = 10                       # 風のベクトルの太さ
+TRIANGLE_BOTTOM_DIVIDE = 6              # 風の向きを示す三角形で、底辺に対する単位ベクトルの長さ
+HIGHT_BUFFER = 0.5                      # 地上n mのデータを取得するときの誤差範囲、例えば、地上1.5m だったら、地上1.5 プラスマイナスHIGHT_BUFFERのデータを取得する
+WIND_NUM_OF_COLER_FROM_INT = 10         # 中間～最高または最低風速の色の段階数
+TEMP_NUM_OF_COLER_FROM_INT = 10         # 中間～最高または最低温度の色の段階数
+WIND_1_STEP = 0.2                       # 表示される色の1段階分の風速(m/s)
+TEMP_1_STEP = 0.35                      # 表示される色の1段階分の温度(度)
+HIGHTEST_COLOR = (255, 0, 0, 255)       # Red
+INTERMEDIATE_COLOR = (0, 255, 0, 255)   # Green
+LOWEST_COLOR = (0, 0, 255, 255)         # Blue
+POINT_PIXEL_SIZE = 10                   # 点のピクセルサイズ
 WBGT_COLOR_DEFINITION = [
-    {
-        "threshold" : 25, "rgba" : [0, 192, 255, 255] # 25未満：水色
-    },
-    {
-        "threshold" : 28, "rgba" : [255, 255, 0, 255] # 25 - 28 : 黄色
-    },
-    {
-        "threshold" : 31, "rgba" : [255, 165, 0, 255] # 28 - 31 : オレンジ色
-    },
-    {
-        "threshold" : None, "rgba" : [255, 0, 0, 255] # 31以上 : 赤色
-    }
+    { "threshold" : 25, "rgba" : [0, 192, 255, 255] },  # 25未満：水色
+    { "threshold" : 28, "rgba" : [255, 255, 0, 255] },  # 25 - 28 : 黄色
+    { "threshold" : 31, "rgba" : [255, 165, 0, 255] },  # 28 - 31 : オレンジ色
+    { "threshold" : None, "rgba" : [255, 0, 0, 255]}   # 31以上 : 赤色
 ]
 #endregion
 #region ジオイド高、楕円体高計算パラメータ
@@ -70,27 +70,18 @@ GEOID_HEIGHT = 36.7071
 #endregion
 #region 暑さ指数(WBGT)計算パラメータ
 HUMIDITY = 50 # WBGT計算時の湿度（％）
-def get_wbgt(ta : float, rh : float, sr : float, ws : float) -> float:
-    wbgt = 0.735 * ta + 0.0374 * rh + 0.00292 * ta * rh + 7.619 * sr - 4.557 * sr ** 2 - 0.0572 * ws - 4.064
+def get_wbgt(ta : float, hd : float, sr : float, ws : float) -> float:
+    wbgt = 0.735 * ta + 0.0374 * hd + 0.00292 * ta * hd + 7.619 * sr - 4.557 * sr ** 2 - 0.0572 * ws - 4.064
     return wbgt
 #endregion
 
-def create_converted_output_model_id_folder(model_id : str) -> str:
-    file_path = file_path_generator.get_converted_output_model_id_folder_fs(model_id)
-    file_controller.create_or_recreate_folder_fs(file_path)
-    return file_path
-
-def create_folder_by_type(model_id_folder : str, file_type : str, result_type : int) -> str:
-    file_path = file_path_generator.combine(file_path_generator.combine(model_id_folder, file_type), str(result_type))
-    file_controller.create_or_recreate_folder_fs(file_path)
-    return file_path
-
+# <model_id>フォルダ作成
 def get_result_folder(model_id : str) -> str:
     parentResultFilePath = file_path_generator.get_simulation_output_model_id_folder_fs(model_id)
     if not file_controller.exist_folder_fs(parentResultFilePath):
         logger.error(log_writer.format_str(model_id,"結果フォルダが取得できませんでした"))
         raise Exception
-         
+
     resultFolderNames = file_controller.get_subfolder_name_list(parentResultFilePath)
     numberFolderNameList = [s for s in resultFolderNames if s.isdigit()]
     if (len(numberFolderNameList) == 0):
@@ -99,17 +90,14 @@ def get_result_folder(model_id : str) -> str:
     # 結果フォルダのうち、最大の数値のフォルダ名を取得する
     resultFolderName = max(numberFolderNameList, key=lambda x: int(x))
     return file_path_generator.combine(parentResultFilePath, resultFolderName)
-    
+
+# 中心座標の一覧取得
 def get_cell_centres(resultFolderName : str) -> []:
     try:
-        # ファイルからテキストを読み込む
-        with open(file_path_generator.combine(resultFolderName, CELL_CENTRES_FILENAME), "r") as file:
+        with open(file_path_generator.combine(resultFolderName, FNAME_CELL_CENTRES), "r") as file:
             text = file.read()
-            # 正規表現パターンを定義
             pattern = re.compile(r"internalField\s+nonuniform\s+List<vector>\s+\d+\s*\(\s*(\([^)]+\)\s)*\)", re.DOTALL)
-            # パターンに一致する部分を検索
             match = pattern.search(text)
-            # マッチした部分があれば取得
             cell_centre_list = []
             if match:
                 matched_all_str = match.group(0)
@@ -119,49 +107,35 @@ def get_cell_centres(resultFolderName : str) -> []:
     except Exception as e:
         logger.error(f"セル中心取得時にエラーが発生しました: {e}")
 
-def convert_lonlat_3d(convert_to_latlon : Type[coordinate_converter.Convert_To_LatLon], xyz : tuple) -> tuple:
-    # x, yはそれぞれ基準点からの東西方向の距離（東が正）、南北方向の距離（北が正）になる。
-    x, y, z = xyz
-    # Transformerのtransformでは、平面直角座標系のx, yを渡す必要がある
-    # 平面直角座標系だとxとyが逆転する。南北方向の距離（北が正）を先、東西方向の距離（東が正）を後に渡す
-    lat, lon = convert_to_latlon.convert(y, x)
-    # czml, geojson形式は経度、緯度、高さの順に記述するので、その順で格納する
-    return (lon, lat, z)
+def get_boundary_cell_centres(cell_centres : List[Tuple[float, float, float]],
+                              solar_irradiances_and_cell_nums : List[Dict[str, int | float]]) -> List[Tuple[float, float, float]]:
+    boundary_cell_centres = []
+    for solar_irradiance_and_cell_num in solar_irradiances_and_cell_nums:
+        boundary_cell_centres.append(cell_centres[solar_irradiance_and_cell_num["cell_num"]])
+    return np.array(boundary_cell_centres)
 
-def convert_coordinates_to_lonlat(coordinate_id : int, coordinates : ndarray):
-    convert_to_latlon = coordinate_converter.Convert_To_LatLon(coordinate_id)
-    converted_list = np.array([convert_lonlat_3d(convert_to_latlon, tuple_xyz) for tuple_xyz in coordinates])
-    return converted_list
-
-def get_wind_vectors(resultFolderName : str):
+# region データ取得
+def get_wind_vectors(resultFolderName : str): # 風況
     try:
-        # ファイルからテキストを読み込む
-        with open(file_path_generator.combine(resultFolderName, WIND_VECTORS_FILENAME), "r") as file:
+        with open(file_path_generator.combine(resultFolderName, FNAME_WIND_VECTORS), "r") as file:               # 1.ファイルからテキストを読み込む
             text = file.read()
-        # 正規表現パターンを定義
-        pattern = re.compile(r"internalField\s+nonuniform\s+List<vector>\s+\d+\s*\(\s*(\([^)]+\)\s)*\)", re.DOTALL)
-        # パターンに一致する部分を検索
-        match = pattern.search(text)
-        # マッチした部分があれば取得
+        pattern = re.compile(r"internalField\s+nonuniform\s+List<vector>\s+\d+\s*\(\s*(\([^)]+\)\s)*\)", re.DOTALL) # 2.正規表現パターンを定義
+        match = pattern.search(text)                                                                                # 3.パターンに一致する部分を検索
         wind_vector_list = None
-        if match:
+        if match:                                                                                                   # 4.マッチした部分があれば取得
             matched_all_str = match.group(0)
             coordinate_str_list = re.findall("\([0-9\.\- e]+\)", matched_all_str)
-            wind_vector_list = np.array([tuple(map(float, s.strip("()").split())) for s in coordinate_str_list])  # 文字列を各座標の風向・風速の二次元配列に変換
+            wind_vector_list = np.array([tuple(map(float, s.strip("()").split())) for s in coordinate_str_list])    # 文字列を各座標の風向・風速の二次元配列に変換
         return wind_vector_list
     except Exception as e:
         logger.error(f"風況データ取得時にエラーが発生しました: {e}")
 
-def get_temperatures(resultFolderName : str):
+def get_temperatures(resultFolderName : str): # 温度
     try:
-        # ファイルからテキストを読み込む
-        with open(file_path_generator.combine(resultFolderName, TEMPERATURES_FILENAME), "r") as file:
+        with open(file_path_generator.combine(resultFolderName, FNAME_TEMPERATURES), "r") as file:
             text = file.read()
-        # 正規表現パターンを定義
         pattern = re.compile(r"internalField\s+nonuniform\s+List<scalar>\s+\d+\s*\(\s*([0-9\.e]+\s)*\)", re.DOTALL)
-        # パターンに一致する部分を検索
         match = pattern.search(text)
-        # マッチした部分があれば取得
         temperature_list = None
         if match:
             matched_all_str = match.group(0)
@@ -171,19 +145,29 @@ def get_temperatures(resultFolderName : str):
     except Exception as e:
         logger.error(f"温度データ取得時にエラーが発生しました: {e}")
 
-def get_nFaces_and_startFace(file_type_id : str, model_id : str) -> Dict[str, int]:
+def get_humidities(resultFolderName : str): # 湿度
     try:
-        # boundaryファイルを読み込む
-        with open(file_path_generator.combine(
-            file_path_generator.get_simulation_output_model_id_poly_mesh_folder_fs(model_id),
-            BOUNDARY), "r") as file:
+        with open(file_path_generator.combine(resultFolderName, FNAME_HUMIDITIES), "r") as file:
             text = file.read()
-        # 正規表現パターンを定義
+        pattern = re.compile(r"internalField\s+nonuniform\s+List<scalar>\s+\d+\s*\(\s*([0-9\.e]+\s)*\)", re.DOTALL)
+        match = pattern.search(text)
+        humidity_list = None
+        if match:
+            matched_all_str = match.group(0)
+            matched_temp_str = re.search(r"\(\s([0-9\.e\s]*?)\)", matched_all_str)
+            humidity_list = np.array([float(s) for s in matched_temp_str.group(1).split()])
+        return humidity_list
+    except Exception as e:
+        logger.error(f"湿度データ取得時にエラーが発生しました: {e}")
+
+def get_nFaces_and_startFace(file_type_id : str, model_id : str) -> Dict[str, int]: # 境界ファイルからnFacesとstartFaceを取得
+    try:
+        with open(file_path_generator.combine(
+            file_path_generator.get_simulation_output_model_id_poly_mesh_folder_fs(model_id),BOUNDARY), "r") as file:
+            text = file.read()
         pattern = re.compile(fr"\s+{file_type_id}\s+{{.*?{N_FACES}\s+([\d]+);\s+{START_FACE}\s+([\d]+);\s+}}", re.DOTALL)
         #pattern = re.compile(fr"\s+{file_type_id}\s+{{", re.DOTALL)
-        # パターンに一致する部分を検索
         match = pattern.search(text)
-        # マッチした部分があれば取得
         nFaces_and_startFace = None
         if match:
             nFaces = match.group(1)
@@ -193,16 +177,12 @@ def get_nFaces_and_startFace(file_type_id : str, model_id : str) -> Dict[str, in
     except Exception as e:
         logger.error(f"boundaryデータ取得時にエラーが発生しました: {e}")
 
-def get_solar_irradiances(file_type_id : str, result_folder_name : str)  -> ndarray:
+def get_solar_irradiances(file_type_id : str, result_folder_name : str)  -> ndarray: # 日射量
     try:
-        # ファイルからテキストを読み込む
-        with open(file_path_generator.combine(result_folder_name, SOLAR_IRRADIANCE_FILENAME), "r") as file:
+        with open(file_path_generator.combine(result_folder_name, FNAME_SOLAR_IRRADIANCE), "r") as file:
             text = file.read()
-        # 正規表現パターンを定義
         pattern = re.compile(fr"\s+{file_type_id}\s+{{[^}}]*?[\d]+\s*\(\s*([0-9\.e\s]*?)\s*\)\s*;\s+}}", re.DOTALL)
-        # パターンに一致する部分を検索
         match = pattern.search(text)
-        # マッチした部分があれば取得
         solar_irradiances = None
         if match:
             solar_irradiances_str = match.group(1)
@@ -211,17 +191,13 @@ def get_solar_irradiances(file_type_id : str, result_folder_name : str)  -> ndar
     except Exception as e:
         logger.error(f"qrデータ取得時にエラーが発生しました: {e}")
 
-def get_boundary_cell_numbers_and_solar_irradiances(
+def get_boundary_cell_numbers_and_solar_irradiances( # 境界セル番号に対応する日射量を取得
         boundary : Dict[str, int], result_folder_name : str, model_id : str, file_type_id : str) -> List[Dict[str, int | float]]:
     try:
-        # ownerファイルを読み込む
         with open(file_path_generator.combine(
-            file_path_generator.get_simulation_output_model_id_poly_mesh_folder_fs(model_id),
-            OWNER), "r") as file:
+            file_path_generator.get_simulation_output_model_id_poly_mesh_folder_fs(model_id), OWNER), "r") as file:
             text = file.read()
-        # 正規表現パターンを定義
         pattern = re.compile(r"[\d]+\s+\(\s([\d\s]+?)\)", re.DOTALL)
-        # パターンに一致する部分を検索
         match = pattern.search(text)
         face_owners = np.array([int(s) for s in match.group(1).split()])
         boundary_cell_numbers = face_owners[boundary[START_FACE]:boundary[START_FACE] + boundary[N_FACES]]
@@ -234,8 +210,7 @@ def get_boundary_cell_numbers_and_solar_irradiances(
     except Exception as e:
         logger.error(f"ownerデータ取得時にエラーが発生しました: {e}")
 
-def get_solar_irradiance_and_cell_num(model_id : str, result_folder_name : str)  -> List[List[Dict[str, int | float]]]:
-    # boundaryファイルからnFacesとstartFaceの値を取得する
+def get_solar_irradiance_and_cell_num(model_id : str, result_folder_name : str)  -> List[List[Dict[str, int | float]]]: # # 地面接地面と日射量
     ground_cell_numbers_and_solar_irradiances = []
     records = webapp_db_connection.get_ground_stl_type_ids()
 
@@ -247,52 +222,111 @@ def get_solar_irradiance_and_cell_num(model_id : str, result_folder_name : str) 
                 ground_nFace_startFace, result_folder_name, model_id, stl_type_id)
 
     return ground_cell_numbers_and_solar_irradiances
+# endregion
 
-def get_wbgts(solar_irradiances_and_cell_nums : List[Dict[str, int | float]],
-              wind_strengths : List[float], temperatures : List[float]) -> ndarray:
-    wbgts = []
-    for i in range(len(solar_irradiances_and_cell_nums)):
-        wbgts.append(get_wbgt(temperatures[i], HUMIDITY, solar_irradiances_and_cell_nums[i]["solar_irradiance"] * 0.001, wind_strengths[i]))
-    return np.array(wbgts)
+## CZML/GeoJson作成処理 ##
+# converted_outputフォルダ作成
+def create_converted_output_model_id_folder(model_id : str) -> str:
+    file_path = file_path_generator.get_converted_output_model_id_folder_fs(model_id)
+    file_controller.create_or_recreate_folder_fs(file_path)
+    return file_path
+# タイプ別 可視化フォルダ作成
+def create_vi_folder(model_id_folder:str, variability:int, result_type:int) -> str:
+    file_path = file_path_generator.combine(file_path_generator.combine(file_path_generator.combine(model_id_folder, str(variability)), FTYPE_VISUALIZATION), str(result_type))
+    file_controller.create_or_recreate_folder_fs(file_path)
+    return file_path
+# タイプ別 DLフォルダ作成
+def create_dl_folder(model_id_folder:str, variability:int, result_type:int) -> str:
+    file_path = file_path_generator.combine(file_path_generator.combine(file_path_generator.combine(model_id_folder, str(variability)), FTYPE_DOWNLOAD), str(result_type))
+    file_controller.create_or_recreate_folder_fs(file_path)
+    return file_path
 
-def get_wind_strength(wind_vectors : List[Tuple[float, float, float]]) -> ndarray:
-    return np.array([math.sqrt(x**2 + y**2 + z**2) for x, y, z in wind_vectors])
+# 凡例範囲リスト作成
+def create_gradient_colors(num_steps: int) -> List[Tuple[int, int, int, int]]:
+    """
+    赤～緑、緑～青で指定されたステップ数に基づいて色のグラデーションを生成します。
+    """
+    def get_interpolate_color(start_color, end_color, fraction) -> Tuple[int, int, int, int]:
+        return tuple(int(start + fraction * (end - start)) for start, end in zip(start_color, end_color))
 
-def get_interpolate_color(start_color, end_color, fraction) -> Tuple[int, int, int, int]:
-    # start_color から end_color までのRGBをfractionに基づいて補間
-    interpolated_color = [
-        int(start + fraction * (end - start)) for start, end in zip(start_color, end_color)
-    ]
-    return tuple(interpolated_color)
+    front_part_colors = [get_interpolate_color(LOWEST_COLOR, INTERMEDIATE_COLOR, fraction / num_steps)
+                         for fraction in range(num_steps + 1)]
+    later_part_colors = [get_interpolate_color(INTERMEDIATE_COLOR, HIGHTEST_COLOR, fraction / num_steps)
+                         for fraction in range(num_steps + 1)]
+    gradient_colors = front_part_colors + later_part_colors[1:]
 
+    return gradient_colors
+
+# 風速：変動
 def create_wind_range_list(mid_val : float) -> List[Dict[str, float | Tuple[int, int, int, int]]]:
-    # 風速の場合、基準風速を中間とする
+    """
+    基準風速を中間値として、風速の凡例リストを作成します。
+    """
     min_val = mid_val - (WIND_NUM_OF_COLER_FROM_INT * WIND_1_STEP)
-    if min_val < 0:
-        min_val = 0
-    low_to_int_gradient_colors = [get_interpolate_color(
-        LOWEST_COLOR, INTERMEDIATE_COLOR, i / (WIND_NUM_OF_COLER_FROM_INT - 1)) for i in range(WIND_NUM_OF_COLER_FROM_INT)]
-    int_to_high_gradient_colors = [get_interpolate_color(
-        INTERMEDIATE_COLOR, HIGHTEST_COLOR, i / (WIND_NUM_OF_COLER_FROM_INT - 1)) for i in range(WIND_NUM_OF_COLER_FROM_INT)]
-    gradient_colors = low_to_int_gradient_colors + int_to_high_gradient_colors[1:]
+    gradient_colors = create_gradient_colors(WIND_NUM_OF_COLER_FROM_INT)
+
     range_list = []
     for i in range(len(gradient_colors)):
         range_list.append({"threshold": min_val + (WIND_1_STEP * i), "rgba" : gradient_colors[i]})
     return range_list
 
-def create_temp_range_list(mid_val : float) -> List[Dict[str, float | Tuple[int, int, int, int]]]:
-    # 温度の場合、基準温度を最低とする
-    low_to_int_gradient_colors = [get_interpolate_color(
-        LOWEST_COLOR, INTERMEDIATE_COLOR, i / (TEMP_NUM_OF_COLER_FROM_INT - 1)) for i in range(TEMP_NUM_OF_COLER_FROM_INT)]
-    int_to_high_gradient_colors = [get_interpolate_color(
-        INTERMEDIATE_COLOR, HIGHTEST_COLOR, i / (TEMP_NUM_OF_COLER_FROM_INT - 1)) for i in range(TEMP_NUM_OF_COLER_FROM_INT)]
-    gradient_colors = low_to_int_gradient_colors + int_to_high_gradient_colors[1:]
+# 風速：固定
+def create_fixed_wind_range_list() -> List[Dict[str, float | Tuple[int, int, int, int]]]:
+    """
+    固定最小風速を基に、風速の凡例リストを作成します。
+    """
+    gradient_colors = create_gradient_colors(WIND_NUM_OF_COLER_FROM_INT)
+
+    range_list = []
+    for i in range(len(gradient_colors)):
+        range_list.append({"threshold": FIXED_MIN_WIND + (WIND_1_STEP * i), "rgba" : gradient_colors[i]})
+    return range_list
+
+# 温度：変動
+def create_temp_range_list(mid_val: float) -> List[Dict[str, float | Tuple[int, int, int, int]]]:
+    """
+    基準温度を最低値として、温度の凡例リストを作成します。
+    """
+    gradient_colors = create_gradient_colors(TEMP_NUM_OF_COLER_FROM_INT)
+
     range_list = []
     for i in range(len(gradient_colors)):
         range_list.append({"threshold": mid_val + (TEMP_1_STEP * i), "rgba" : gradient_colors[i]})
     return range_list
 
+# 温度：固定
+def create_fixed_temp_range_list() -> List[Dict[str, float | Tuple[int, int, int, int]]]:
+    """
+    固定最小温度を基に、温度の凡例リストを作成します。
+    """
+    gradient_colors = create_gradient_colors(TEMP_NUM_OF_COLER_FROM_INT)
 
+    range_list = []
+    for i in range(len(gradient_colors)):
+        range_list.append({"threshold": FIXED_MIN_TEMP + (TEMP_1_STEP * i), "rgba" : gradient_colors[i]})
+    return range_list
+
+# 指定高さのセルとインデックスを取得
+def get_filterd_cell_centres_and_indexes(cell_centres : List[Tuple[float, float, float]], hight : float):
+    min_hight = get_min_hight(cell_centres)
+    cells_in_hight = np.array([t for t in cell_centres if min_hight + hight - HIGHT_BUFFER <= t[2] <= min_hight + hight + HIGHT_BUFFER])
+    indexes_in_hight = np.array([i for i, t in enumerate(cell_centres) if min_hight + hight - HIGHT_BUFFER <= t[2] <= min_hight + hight + HIGHT_BUFFER])
+    return cells_in_hight, indexes_in_hight
+
+def get_min_hight(cell_centres : ndarray) -> float:
+    return min(cell_centre[2] for cell_centre in cell_centres)
+
+def get_filterd_list(original_list : List[Tuple[float, float, float]], indexes : ndarray):
+    filtered_list = []
+    for i in indexes:
+        filtered_list.append(original_list[i])
+    return np.array(filtered_list)
+
+# 風況 #
+def get_wind_strength(wind_vectors : List[Tuple[float, float, float]]) -> ndarray:
+    return np.array([math.sqrt(x**2 + y**2 + z**2) for x, y, z in wind_vectors])
+
+# 色設定#
 def get_color_from_range_list(
         range_list : List[Dict[str, float | Tuple[int, int, int, int]]], val : float) -> Tuple[int, int, int, int]:
     range_num = len(range_list)
@@ -325,6 +359,23 @@ def get_wbgt_color(wbgt : float) -> List[int]:
 def get_wbgt_colors(wbgts : List[float]):
     return [get_wbgt_color(wbgt) for wbgt in wbgts]
 
+def get_wbgts(solar_irradiances_and_cell_nums:List[Dict[str, int | float]],  wind_strengths:List[float], temperatures:List[float], humidities:List[float]) -> ndarray:
+    wbgts = []
+    for i in range(len(solar_irradiances_and_cell_nums)):
+        wbgts.append(get_wbgt(temperatures[i], humidities[i], solar_irradiances_and_cell_nums[i]["solar_irradiance"] * 0.001, wind_strengths[i])) #HUMIDITY→humidity
+    return np.array(wbgts)
+
+# region ベクトル&座標
+def convert_lonlat_3d(convert_to_latlon : Type[coordinate_converter.Convert_To_LatLon], xyz : tuple) -> tuple:
+    x, y, z = xyz                                   # x, yは基準点からの東西方向の距離（東が正）南北方向の距離（北が正）
+    lat, lon = convert_to_latlon.convert(y, x)      # 平面直角座標系ではx,yが逆転。南北を先、東西を後に渡す
+    return (lon, lat, z)                            # czml, geojson形式では経度、緯度、高さの順に記述するため、その順で格納
+
+def convert_coordinates_to_lonlat(coordinate_id : int, coordinates : ndarray):
+    convert_to_latlon = coordinate_converter.Convert_To_LatLon(coordinate_id)
+    converted_list = np.array([convert_lonlat_3d(convert_to_latlon, tuple_xyz) for tuple_xyz in coordinates])
+    return converted_list
+
 def normalize_vector(xyz : tuple) -> Tuple[float, float, float]:
     x, y, z = xyz
     magnitude = math.sqrt(x**2 + y**2 + z**2)
@@ -335,7 +386,6 @@ def normalize_vector(xyz : tuple) -> Tuple[float, float, float]:
 def get_normalized_vectors(vectors : List[Tuple[float, float, float]]) -> ndarray:
     return np.array([normalize_vector(xyz) for xyz in vectors])
 
-# ベクトルを三角形で表示する場合の底辺の頂点を求める
 def get_vector_triangle_bottom(
         wind_normalized_vectors : List[Tuple[float, float, float]]) -> Tuple[List[Tuple[float, float, float]], List[Tuple[float, float, float]]]:
     vector_triangle_bottom1 = []
@@ -355,34 +405,14 @@ def get_endpoints(start_points, normalized_vectors) -> List[Tuple[float, float, 
         endpoints.append(endpoint)
     return np.array(endpoints)
 
-def get_filterd_list(original_list : List[Tuple[float, float, float]], indexes : ndarray):
-    filtered_list = []
-    for i in indexes:
-        filtered_list.append(original_list[i])
-    return np.array(filtered_list)
-
+# 未使用
 def get_filterd_colors_list(original_list : List[Tuple[int, int, int, int]], indexes : ndarray):
     filtered_list = []
     for i in indexes:
         filtered_list.append(original_list[i])
     return filtered_list
 
-def get_min_hight(cell_centres : ndarray) -> float:
-    return min(cell_centre[2] for cell_centre in cell_centres)
-
-def get_filterd_cell_centres_and_indexes(cell_centres : List[Tuple[float, float, float]], hight : float):
-    min_hight = get_min_hight(cell_centres)
-    cells_in_hight = np.array([t for t in cell_centres if min_hight + hight - HIGHT_BUFFER <= t[2] <= min_hight + hight + HIGHT_BUFFER])
-    indexes_in_hight = np.array([i for i, t in enumerate(cell_centres) if min_hight + hight - HIGHT_BUFFER <= t[2] <= min_hight + hight + HIGHT_BUFFER])
-    return cells_in_hight, indexes_in_hight
-
-def get_boundary_cell_centres(cell_centres : List[Tuple[float, float, float]],
-                              solar_irradiances_and_cell_nums : List[Dict[str, int | float]]) -> List[Tuple[float, float, float]]:
-    boundary_cell_centres = []
-    for solar_irradiance_and_cell_num in solar_irradiances_and_cell_nums:
-        boundary_cell_centres.append(cell_centres[solar_irradiance_and_cell_num["cell_num"]])
-    return np.array(boundary_cell_centres)
-
+# region データ変換
 def export_wind_visualization_file(
         file_path : str, height : float, cell_centres : ndarray, 
         endpoints : ndarray, colors : List[Tuple[int, int, int, int]], wind_strengths : ndarray) -> str:
@@ -419,7 +449,7 @@ def export_wind_visualization_file(
             }
         )
     # ファイル出力
-    visualization_file = file_path_generator.combine(file_path, f"{str(height)}.{FILE_TYPE_VISUALIZATION}")
+    visualization_file = file_path_generator.combine(file_path, f"{str(height)}.{FTYPE_VISUALIZATION}")
     with open(visualization_file, "w") as f:
         json.dump(doc, f)
     return file_path_generator.get_folder_name_without_shared_folder_fs(visualization_file)
@@ -458,7 +488,7 @@ def export_wind_download_file(
         "features":features
     }
     # ファイル出力
-    download_file = file_path_generator.combine(file_path, f"{str(height)}.{FILE_TYPE_DOWNLOAD}")
+    download_file = file_path_generator.combine(file_path, f"{str(height)}.{FTYPE_DOWNLOAD}")
     with open(download_file, "w") as f:
         json.dump(doc, f)
     return file_path_generator.get_folder_name_without_shared_folder_fs(download_file)
@@ -490,7 +520,7 @@ def export_temp_visualization_file(file_path : str,
             }
         )
     # ファイル出力
-    visualization_file = file_path_generator.combine(file_path, f"{str(height)}.{FILE_TYPE_VISUALIZATION}")
+    visualization_file = file_path_generator.combine(file_path, f"{str(height)}.{FTYPE_VISUALIZATION}")
     with open(visualization_file, "w") as f:
         json.dump(doc, f)
     return file_path_generator.get_folder_name_without_shared_folder_fs(visualization_file)
@@ -520,7 +550,7 @@ def export_temp_download_file(
         "features":features
     }
     # ファイル出力
-    download_file = file_path_generator.combine(file_path, f"{str(height)}.{FILE_TYPE_DOWNLOAD}")
+    download_file = file_path_generator.combine(file_path, f"{str(height)}.{FTYPE_DOWNLOAD}")
     with open(download_file, "w") as f:
         json.dump(doc, f)
     return file_path_generator.get_folder_name_without_shared_folder_fs(download_file)
@@ -551,7 +581,7 @@ def export_wbgt_visualization_file(file_path : str, cell_centres : ndarray,
             }
         )
     # ファイル出力
-    visualization_file = file_path_generator.combine(file_path, f"{WBGT_FILENAME}.{FILE_TYPE_VISUALIZATION}")
+    visualization_file = file_path_generator.combine(file_path, f"{FNAME_WBGT}.{FTYPE_VISUALIZATION}")
     with open(visualization_file, "w") as f:
         json.dump(doc, f)
     return file_path_generator.get_folder_name_without_shared_folder_fs(visualization_file)
@@ -581,166 +611,189 @@ def export_wbgt_download_file(
         "features":features
     }
     # ファイル出力
-    download_file = file_path_generator.combine(file_path, f"{WBGT_FILENAME}.{FILE_TYPE_DOWNLOAD}")
+    download_file = file_path_generator.combine(file_path, f"{FNAME_WBGT}.{FTYPE_DOWNLOAD}")
     with open(download_file, "w") as f:
         json.dump(doc, f)
     return file_path_generator.get_folder_name_without_shared_folder_fs(download_file)
+# endregion
 
+# CZML/GeoJson作成処理
 def create_output_data(
         model_id : str, coordinate_id : int, initial_wind_speed : float, initial_temp : float,
-        height_list : List[float], wind_vectors : ndarray,
-        temperatures : ndarray, cell_centres : ndarray,
-        solar_irradiances_and_cell_nums : List[Dict[str, int | float]]) -> List[Tuple[str, int, str, str, str]]:
-    # converted_outputフォルダを作成する
-    converted_output_model_id_folder = create_converted_output_model_id_folder(model_id)
-    wind_visualization_folder = create_folder_by_type(converted_output_model_id_folder, FILE_TYPE_VISUALIZATION, RESULT_TYPE_WIND)
-    wind_download_folder = create_folder_by_type(converted_output_model_id_folder, FILE_TYPE_DOWNLOAD, RESULT_TYPE_WIND)
-    temp_visualization_folder = create_folder_by_type(converted_output_model_id_folder, FILE_TYPE_VISUALIZATION, RESULT_TYPE_TEMPERATURE)
-    temp_download_folder = create_folder_by_type(converted_output_model_id_folder, FILE_TYPE_DOWNLOAD, RESULT_TYPE_TEMPERATURE)
-    wbgt_visualization_folder = create_folder_by_type(converted_output_model_id_folder, FILE_TYPE_VISUALIZATION, RESULT_TYPE_WBGT)
-    wbgt_download_folder = create_folder_by_type(converted_output_model_id_folder, FILE_TYPE_DOWNLOAD, RESULT_TYPE_WBGT)
-
-    wind_legend_range_list = create_wind_range_list(initial_wind_speed)
-    wind_legend_label_min_max = {"min" : wind_legend_range_list[0]["threshold"], "max" : wind_legend_range_list[-1]["threshold"] + WIND_1_STEP}
-    temp_legend_range_list = create_temp_range_list(initial_temp)
-    temp_legend_label_min_max = {"min" : temp_legend_range_list[0]["threshold"], "max" : temp_legend_range_list[-1]["threshold"] + TEMP_1_STEP}
+        height_list : List[float], wind_vectors : ndarray, temperatures : ndarray, humidities : ndarray,
+        cell_centres : ndarray, solar_irradiances_and_cell_nums : List[Dict[str, int | float]]) -> List[Tuple[str, int, str, str, str]]:
     visualizations = []
 
+    # converted_outputフォルダ作成
+    co_model_id_folder = create_converted_output_model_id_folder(model_id)
+    # タイプ別 可視化フォルダ作成
+    wind_va_vi_folder = create_vi_folder(co_model_id_folder, VARIABLE, WIND)          # 1/czml/1 (変動、可視化、風況)
+    temp_va_vi_folder = create_vi_folder(co_model_id_folder, VARIABLE, TEMPERATURE)   # 1/czml/2 (変動、可視化、温度)
+    wbgt_va_vi_folder = create_vi_folder(co_model_id_folder, VARIABLE, WBGT)          # 1/czml/3 (変動、可視化、暑さ指数)
+    wind_fi_vi_folder = create_vi_folder(co_model_id_folder, FIXED, WIND)             # 2/czml/1 (固定、可視化、風況)
+    temp_fi_vi_folder = create_vi_folder(co_model_id_folder, FIXED, TEMPERATURE)      # 2/czml/2 (固定、可視化、温度)
+    # タイプ別 DLフォルダ作成
+    wind_va_dl_folder = create_dl_folder(co_model_id_folder, VARIABLE, WIND)          # 1/download/1 (変動、DL、風況)
+    temp_va_dl_folder = create_dl_folder(co_model_id_folder, VARIABLE, TEMPERATURE)   # 1/download/2 (変動、DL、温度)
+    wbgt_va_dl_folder = create_dl_folder(co_model_id_folder, VARIABLE, WBGT)          # 1/download/3 (変動、DL、暑さ指数)
+    wind_fi_dl_folder = create_dl_folder(co_model_id_folder, FIXED, WIND)             # 2/download/1 (固定、DL、風況)
+    temp_fi_dl_folder = create_dl_folder(co_model_id_folder, FIXED, TEMPERATURE)      # 2/download/2 (固定、DL、温度)
+
+    # 凡例範囲リスト作成 #
+     # 風況
+    wind_va_legend_range_list = create_wind_range_list(initial_wind_speed)
+    wind_va_legend_label_min_max = {"min" : wind_va_legend_range_list[0]["threshold"], "max" : wind_va_legend_range_list[-1]["threshold"] + WIND_1_STEP}
+    wind_fi_legend_range_list = create_fixed_wind_range_list()
+    wind_fi_legend_label_min_max = {"min": wind_fi_legend_range_list[0]["threshold"], "max": wind_fi_legend_range_list[-1]["threshold"] + WIND_1_STEP}
+     # 温度
+    temp_va_legend_range_list = create_temp_range_list(initial_temp)
+    temp_va_legend_label_min_max = {"min" : temp_va_legend_range_list[0]["threshold"], "max" : temp_va_legend_range_list[-1]["threshold"] + TEMP_1_STEP}
+    temp_fi_legend_range_list = create_fixed_temp_range_list()
+    temp_fi_legend_label_min_max = {"min": temp_fi_legend_range_list[0]["threshold"], "max": temp_fi_legend_range_list[-1]["threshold"] + TEMP_1_STEP}
+
+    # 出力ファイルを作成 #
     for h in height_list:
         height = h.height
-        # 指定の高さのセルとそのインデックスを取得する
-        filtered_cell_centres, indexes = get_filterd_cell_centres_and_indexes(cell_centres, height)
-        filtered_wind_vectors = get_filterd_list(wind_vectors, indexes)
-        filtered_wind_strengths = get_wind_strength(filtered_wind_vectors)
-        # 風のベクトルの色を設定する
-        filtered_wind_colors = get_wind_colors(wind_legend_range_list, filtered_wind_strengths)
-        # 風の単位ベクトルの終点座標を求める
-        filtered_wind_normalized_vectors = get_normalized_vectors(filtered_wind_vectors)
-        filtered_wind_vector_endpoints = get_endpoints(filtered_cell_centres, filtered_wind_normalized_vectors)
-        # 三角形の底辺の二つの頂点座標を取得する
-        filtered_wind_vector_triangle_bottom1, filtered_wind_vector_triangle_bottom2  = get_vector_triangle_bottom(filtered_wind_normalized_vectors)
-        filtered_wind_vector_endpoint_triangle_bottom1 = get_endpoints(filtered_cell_centres, filtered_wind_vector_triangle_bottom1)
-        filtered_wind_vector_endpoint_triangle_bottom2 = get_endpoints(filtered_cell_centres, filtered_wind_vector_triangle_bottom2)
-        # 温度の色を設定する
-        filtered_temperatures = get_filterd_list(temperatures, indexes)
-        filtered_temp_colors = get_temp_colors(temp_legend_range_list, filtered_temperatures)
-      
-        # セル中心の緯度経度を求める
-        filtered_cell_centres_lonlat = convert_coordinates_to_lonlat(coordinate_id, filtered_cell_centres)
-        # 風のベクトルの終点緯度経度を求める
-        filtered_endpoints_lonlat = convert_coordinates_to_lonlat(coordinate_id, filtered_wind_vector_endpoints)
-        # 風のベクトルの三角形の二つの頂点の緯度経度を取得する
-        filtered_triangle_bottom1_lonlat = convert_coordinates_to_lonlat(coordinate_id, filtered_wind_vector_endpoint_triangle_bottom1)
-        filtered_triangle_bottom2_lonlat = convert_coordinates_to_lonlat(coordinate_id, filtered_wind_vector_endpoint_triangle_bottom2)
-        
-        # 指定の高さのセルとそのインデックスを取得する            
-        wind_visualization_filepath = export_wind_visualization_file(
-            wind_visualization_folder, height, filtered_cell_centres_lonlat, filtered_endpoints_lonlat, 
-            filtered_wind_colors, filtered_wind_strengths)
-        wind_download_filepath = export_wind_download_file(
-            wind_download_folder, height, filtered_cell_centres_lonlat, filtered_endpoints_lonlat, 
-            filtered_triangle_bottom1_lonlat, filtered_triangle_bottom2_lonlat, filtered_wind_vectors,
-            filtered_wind_colors, filtered_wind_strengths)
-        visualizations.append(
-            webapp_db_connection.Visualization(
-                simulation_model_id = model_id,
-                visualization_type = RESULT_TYPE_WIND,
-                height_id = h.height_id,
-                visualization_file = wind_visualization_filepath,
-                geojson_file = wind_download_filepath,
-                legend_label_higher = str(round(wind_legend_label_min_max["max"],1)),
-                legend_label_lower = str(round(wind_legend_label_min_max["min"],1))
-            )
-        )
-        
-        temp_visualization_filepath = export_temp_visualization_file(temp_visualization_folder,
-            height, filtered_cell_centres_lonlat, filtered_temp_colors, filtered_temperatures)
-        temp_download_filepath = export_temp_download_file(temp_download_folder,
-            height, filtered_cell_centres_lonlat, filtered_temperatures, filtered_temp_colors)
-        visualizations.append(
-            webapp_db_connection.Visualization(
-                simulation_model_id = model_id,
-                visualization_type = RESULT_TYPE_TEMPERATURE,
-                height_id = h.height_id,
-                visualization_file = temp_visualization_filepath,
-                geojson_file = temp_download_filepath,
-                legend_label_higher = str(round(temp_legend_label_min_max["max"],1)),
-                legend_label_lower = str(round(temp_legend_label_min_max["min"],1))
-            )
-        )
+        # 指定高さのセルとインデックスを取得
+        flt_cell_centres, indexes = get_filterd_cell_centres_and_indexes(cell_centres, height)
 
-    # WBGTを計算
-    # 境界面に接するセルの中心座標を取得する
+        ## 風況　##
+        flt_wind_vectors = get_filterd_list(wind_vectors, indexes)
+        flt_wind_strengths = get_wind_strength(flt_wind_vectors)
+        # 風のベクトルの色を設定
+        flt_wind_va_colors = get_wind_colors(wind_va_legend_range_list, flt_wind_strengths)     # 変動
+        flt_wind_fi_colors = get_wind_colors(wind_fi_legend_range_list, flt_wind_strengths)     # 凡例
+        # 風の単位ベクトルの終点座標
+        flt_wind_normalized_vectors = get_normalized_vectors(flt_wind_vectors)
+        flt_wind_vector_endpoints = get_endpoints(flt_cell_centres, flt_wind_normalized_vectors)
+        # 三角形の底辺の二つの頂点座標
+        flt_wind_vec_triangle_bottom1, flt_wind_vec_triangle_bottom2  = get_vector_triangle_bottom(flt_wind_normalized_vectors)
+        flt_wind_vec_endpoint_triangle_bottom1 = get_endpoints(flt_cell_centres, flt_wind_vec_triangle_bottom1)
+        flt_wind_vec_endpoint_triangle_bottom2 = get_endpoints(flt_cell_centres, flt_wind_vec_triangle_bottom2)
+
+        # セル中心の緯度経度
+        flt_cell_centres_lonlat = convert_coordinates_to_lonlat(coordinate_id, flt_cell_centres)
+        # 風のベクトルの終点緯度経度
+        flt_endpoints_lonlat = convert_coordinates_to_lonlat(coordinate_id, flt_wind_vector_endpoints)
+        # 風のベクトルの三角形の二つの頂点の緯度経度
+        flt_triangle_bot1_lonlat = convert_coordinates_to_lonlat(coordinate_id, flt_wind_vec_endpoint_triangle_bottom1)
+        flt_triangle_bot2_lonlat = convert_coordinates_to_lonlat(coordinate_id, flt_wind_vec_endpoint_triangle_bottom2)
+
+        # 出力ファイルパス&結果追加　-変動va-
+        wind_va_vi_filepath = export_wind_visualization_file(wind_va_vi_folder, height, flt_cell_centres_lonlat, flt_endpoints_lonlat, flt_wind_va_colors, flt_wind_strengths)
+        wind_va_dl_filepath = export_wind_download_file(wind_va_dl_folder, height, flt_cell_centres_lonlat, flt_endpoints_lonlat,
+            flt_triangle_bot1_lonlat, flt_triangle_bot2_lonlat, flt_wind_vectors, flt_wind_va_colors, flt_wind_strengths)
+        visualizations.append( webapp_db_connection.Visualization(
+                simulation_model_id = model_id, visualization_type = WIND, height_id = h.height_id, visualization_file = wind_va_vi_filepath, geojson_file = wind_va_dl_filepath,
+                legend_label_higher = str(round(wind_va_legend_label_min_max["max"],1)), legend_label_lower = str(round(wind_va_legend_label_min_max["min"],1)), legend_type = VARIABLE
+        ))
+        # 出力ファイルパス&結果追加　-固定fi-
+        wind_fi_vi_filepath = export_wind_visualization_file(wind_fi_vi_folder, height, flt_cell_centres_lonlat, flt_endpoints_lonlat, flt_wind_fi_colors, flt_wind_strengths)
+        wind_fi_dl_filepath = export_wind_download_file(wind_fi_dl_folder, height, flt_cell_centres_lonlat, flt_endpoints_lonlat,
+            flt_triangle_bot1_lonlat, flt_triangle_bot2_lonlat, flt_wind_vectors, flt_wind_fi_colors, flt_wind_strengths)
+        visualizations.append( webapp_db_connection.Visualization(
+                simulation_model_id = model_id, visualization_type = WIND, height_id = h.height_id, visualization_file = wind_fi_vi_filepath, geojson_file = wind_fi_dl_filepath,
+                legend_label_higher = str(round(wind_fi_legend_label_min_max["max"],1)), legend_label_lower = str(round(wind_fi_legend_label_min_max["min"],1)), legend_type = FIXED
+        ))
+
+        ## 温度 ##
+        # 温度の色を設定する
+        flt_temperatures = get_filterd_list(temperatures, indexes)
+        flt_temp_va_colors = get_temp_colors(temp_va_legend_range_list, flt_temperatures)     # 変動
+        flt_temp_fi_colors = get_temp_colors(temp_fi_legend_range_list, flt_temperatures)     # 凡例
+
+        # 出力ファイルパス&結果追加　-変動va-
+        temp_va_vi_filepath = export_temp_visualization_file(temp_va_vi_folder, height, flt_cell_centres_lonlat, flt_temp_va_colors, flt_temperatures)
+        temp_va_dl_filepath = export_temp_download_file(temp_va_dl_folder, height, flt_cell_centres_lonlat, flt_temperatures, flt_temp_va_colors)
+        visualizations.append( webapp_db_connection.Visualization(
+                simulation_model_id = model_id, visualization_type = TEMPERATURE, height_id = h.height_id,
+                visualization_file = temp_va_vi_filepath, geojson_file = temp_va_dl_filepath,
+                legend_label_higher = str(round(temp_va_legend_label_min_max["max"],1)), legend_label_lower = str(round(temp_va_legend_label_min_max["min"],1,)), legend_type = VARIABLE
+        ))
+        # 出力ファイルパス&結果追加　-固定fi-
+        temp_fi_vi_filepath = export_temp_visualization_file(temp_fi_vi_folder, height, flt_cell_centres_lonlat, flt_temp_fi_colors, flt_temperatures)
+        temp_fi_dl_filepath = export_temp_download_file(temp_fi_dl_folder, height, flt_cell_centres_lonlat, flt_temperatures, flt_temp_fi_colors)
+        visualizations.append( webapp_db_connection.Visualization(
+                simulation_model_id = model_id, visualization_type = TEMPERATURE, height_id = h.height_id,
+                visualization_file = temp_fi_vi_filepath, geojson_file = temp_fi_dl_filepath,
+                legend_label_higher = str(round(temp_fi_legend_label_min_max["max"],1)), legend_label_lower = str(round(temp_fi_legend_label_min_max["min"],1)), legend_type = FIXED
+        ))
+
+    ## WBGT ##
+    # 境界面に接するセルの中心座標を取得
     boundary_cell_centres = get_boundary_cell_centres(cell_centres, solar_irradiances_and_cell_nums)
     boundary_cell_centres_lonlat = convert_coordinates_to_lonlat(coordinate_id, boundary_cell_centres)
-    wbgts = get_wbgts(solar_irradiances_and_cell_nums, get_wind_strength(wind_vectors), temperatures)
+    # WBGTを計算
+    wbgts = get_wbgts(solar_irradiances_and_cell_nums, get_wind_strength(wind_vectors), temperatures, humidities)
     wbgt_colors = get_wbgt_colors(wbgts)
-    wbgt_visualization_filepath = export_wbgt_visualization_file(wbgt_visualization_folder, boundary_cell_centres_lonlat, wbgt_colors, wbgts)
-    wbgt_download_filepath = export_wbgt_download_file(wbgt_download_folder, boundary_cell_centres_lonlat, wbgts, wbgt_colors)
+    wbgt_visualization_filepath = export_wbgt_visualization_file(wbgt_va_vi_folder, boundary_cell_centres_lonlat, wbgt_colors, wbgts)
+    wbgt_download_filepath = export_wbgt_download_file(wbgt_va_dl_folder, boundary_cell_centres_lonlat, wbgts, wbgt_colors)
     # WBGTでは高さを表示しないが、height_idをNullにできないのでheightが最小のheight_idを代わりに代入する
     min_height = min(height_list, key=lambda x: x.height)
+    # CZML追加
     visualizations.append(
         webapp_db_connection.Visualization(
-            simulation_model_id = model_id,
-            visualization_type = RESULT_TYPE_WBGT,
-            height_id = min_height.height_id,
-            visualization_file = wbgt_visualization_filepath,
-            geojson_file = wbgt_download_filepath,
-            # WBGTは凡例画像内に最大、最小のが表示されるため、値は空白とする
-            legend_label_higher = "",
-            legend_label_lower = ""
+            simulation_model_id = model_id, visualization_type = WBGT, height_id = min_height.height_id,
+            visualization_file = wbgt_visualization_filepath, geojson_file = wbgt_download_filepath,
+            legend_label_higher = "", legend_label_lower = "" # WBGTは凡例画像内に最大、最小のが表示されるため、値は空白
         )
     )
     return visualizations
 
+# メイン変換処理
 def convert(model_id : str):
     logger.info('[%s] Start output data convert.'%model_id)
-    result_folder_name = get_result_folder(model_id)
-    cell_centres = get_cell_centres(result_folder_name)
-
+    result_folder_name = get_result_folder(model_id)        # <model_id>フォルダ作成
+    cell_centres = get_cell_centres(result_folder_name)     # 中心座標の一覧取得
     if (cell_centres is None or len(cell_centres) == 0):
         logger.error(log_writer.format_str(model_id,"セルの中心座標が取得できませんでした"))
         raise Exception
-    model = webapp_db_connection.fetch_model(model_id)
-    #initial_wind_speed/initial_temp/coordinate_idをmodelから取得
-    initial_wind_speed =  model.simulation_model.wind_speed
-    initial_temp = model.simulation_model.temperature
-    coordinate_id = model.region.coordinate_id
 
-    # 風況を取得する
-    wind_vectors = get_wind_vectors(result_folder_name)
+    model = webapp_db_connection.fetch_model(model_id)      # <model_id>よりデータ取得
+    coordinate_id = model.region.coordinate_id              # 平面直角座標系ID
+    initial_wind_speed =  model.simulation_model.wind_speed # 初期風速
+    initial_temp = model.simulation_model.temperature       # 初期温度
+
+    # データ取得
+    wind_vectors = get_wind_vectors(result_folder_name)     # 風況取得
     if (wind_vectors is None or len(wind_vectors) == 0):
         logger.error(log_writer.format_str(model_id,"風況データが取得できませんでした"))
         raise Exception
     logger.info('[%s] Complete to get wind data.'%model_id)
-    
-    # 温度を取得する
-    absolute_temperetures = get_temperatures(result_folder_name)
+
+    absolute_temperetures = get_temperatures(result_folder_name)    # 温度取得
     if (absolute_temperetures is None or len(absolute_temperetures) == 0):
         logger.error(log_writer.format_str(model_id,"温度データが取得できませんでした"))
         raise Exception
     temperetures = np.array([temperature_converter.convert_to_celsius(t) for t in absolute_temperetures])
     logger.info('[%s] Complete to get temperature data.'%model_id)
-    
-    # 地面接地面のセル番号と日射量を取得する
-    solar_irradiance_and_cell_num = get_solar_irradiance_and_cell_num(model_id, result_folder_name)
+
+    absolute_humidities = get_humidities(result_folder_name)         # 湿度取得
+    if (absolute_humidities is None or len(absolute_humidities) == 0):
+        logger.error(log_writer.format_str(model_id,"湿度データが取得できませんでした"))
+        raise Exception
+    humidities = np.array([temperature_converter.convert_to_relative_humidity(h, t) for h,t in zip(absolute_humidities, absolute_temperetures)])
+    logger.info('[%s] Complete to get humidity data.'%model_id)
+
+    solar_irradiance_and_cell_num = get_solar_irradiance_and_cell_num(model_id, result_folder_name) # 地面接地面と日射量を取得
     if (solar_irradiance_and_cell_num is None or len(solar_irradiance_and_cell_num) == 0):
         logger.error(log_writer.format_str(model_id,"日射量データが取得できませんでした"))
         raise Exception
     logger.info('[%s] Complete to get solar irriadiance data.'%model_id)
-    
-    visualizations = create_output_data(model_id, coordinate_id, initial_wind_speed, 
-                                            initial_temp, webapp_db_connection.fetch_height(), wind_vectors, temperetures, cell_centres, solar_irradiance_and_cell_num)
-    #VISUALIZATIONテーブルに挿入
+
+    # CZML/GeoJson作成処理
+    visualizations = create_output_data(model_id, coordinate_id, initial_wind_speed, initial_temp,
+                                            webapp_db_connection.fetch_height(), wind_vectors, temperetures, humidities, cell_centres, solar_irradiance_and_cell_num)
+    # レコード削除
     webapp_db_connection.fetch_and_delete_visualization(model_id)
-    webapp_db_connection.insert_visualization(visualizations)   
+    # リスト挿入
+    webapp_db_connection.insert_visualization(visualizations)
     logger.info('[%s] Complete output data convert.'%model_id)
- 
 
 def main(model_id : str):
     log_writer.fileConfig()
     task_id = status_db_connection.TASK_OUTPUT_DATA_CONVERT
-    #STATUS_DBのSIMULATION_MODEL.idに引数から取得したIDで、task_idがTASK_OUTPUT_DATA_TRANSFER、statusがIN_PROGRESSのレコードが存在する
+    # 対象レコード確認
     status_db_connection.check(model_id,task_id, status_db_connection.STATUS_IN_PROGRESS)
     try:
         convert(model_id)
@@ -751,10 +804,9 @@ def main(model_id : str):
     except Exception as e:
         #引数で取得したSIMULATION_MODEL.idのレコードのstatusをABNORMAL_ENDに更新する。
         status_db_connection.throw_error(model_id,task_id,"シミュレーション結果変換サービス実行時エラー", e)
-    
-
 
 if __name__ == "__main__":
     model_id=utils.get_args(1)[0] 
-    #model_id = sys.argv[1]
+    # model_id = sys.argv[1]
+    #model_id = "e67696cb-a690-4a90-befe-4265611a9cd2"
     main(model_id)

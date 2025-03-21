@@ -13,47 +13,56 @@
 @section('content')
 <div class="d-flex flex-column">
     {{-- ボタン配置のエリア --}}
-    <div class="button-area">
-        <button type="button" name="ButtonCopy" id="ButtonCopy" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.copy', ['id' => 0]) }}">複製</button>
-        <button type="button" name="ButtonEdit" id="ButtonEdit" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.edit', ['id' => 0]) }}">編集</button>
-        <button type="button" name="ButtonDelete" id="ButtonDelete" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.delete', ['id' => 0]) }}">削除</button>
-        <button type="button" name="ButtonShare" id="ButtonShare" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.share', ['id' => 0]) }}">共有</button>
-        <button type="button" name="ButtonPublish" id="ButtonPublish" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.publish', ['id' => 0]) }}">公開</button>
-		<button type="button" name="ButtonPublishStop" id="ButtonPublishStop" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.publish_stop', ['id' => 0]) }}">公開停止</button>
-        <button type="button" name="ButtonSimulationStart" id="ButtonSimulationStart" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.start', ['id' => 0]) }}">シミュレーション開始</button>
-        <button type="button" name="ButtonStatusDetail" id="ButtonStatusDetail" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.status_detail', ['id' => 0]) }}">ステータス詳細</button>
-        <button type="button" name="ButtonSimulationStop" id="ButtonSimulationStop" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.stop', ['id' => 0]) }}">中止</button>
-        <button type="button" name="ButtonSimulationResultShow" id="ButtonSimulationResultShow" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.show', ['id' => 0]) }}">シミュレーション結果閲覧</button>
+<div class="button-area d-flex justify-content-between">
+    <div>
+        <button type="button" name="ButtonSimulationCreate" id="ButtonSimulationCreate" class="btn btn-outline-secondary" onclick="location.href='{{ route('simulation_model.create') }}'">新規作成</button>
+        <button type="button" name="ButtonCopy" id="ButtonCopy" class="btn btn-outline-secondary button-href-with-id multi-line-not-support" data-href="{{ route('simulation_model.copy', ['id' => 0]) }}">複製</button>
+        <button type="button" name="ButtonEdit" id="ButtonEdit" class="btn btn-outline-secondary button-href-with-id multi-line-not-support" data-href="{{ route('simulation_model.edit', ['id' => 0]) }}">編集</button>
+        <button type="button" name="ButtonDelete" id="ButtonDelete" class="btn btn-outline-secondary button-href-with-id multi-line-not-support" data-href="{{ route('simulation_model.delete', ['id' => 0]) }}">削除</button>
     </div>
-
+    <div>
+        シミュレーション
+        <button type="button" name="ButtonSimulationStart" id="ButtonSimulationStart" class="btn btn-outline-secondary button-href-with-id multi-line-not-support" data-href="{{ route('simulation_model.start', ['id' => 0]) }}">実行</button>
+        <button type="button" name="ButtonSimulationStop" id="ButtonSimulationStop" class="btn btn-outline-secondary button-href-with-id multi-line-not-support" data-href="{{ route('simulation_model.stop', ['id' => 0]) }}">中止</button>
+        <button type="button" name="ButtonSimulationResultShow" id="ButtonSimulationResultShow" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('simulation_model.show', ['id' => 0]) }}">結果閲覧</button>
+        <button type="button" name="ButtonStatusDetail" id="ButtonStatusDetail" class="btn btn-outline-secondary button-href-with-id multi-line-not-support" data-href="{{ route('simulation_model.status_detail', ['id' => 0]) }}">詳細確認</button>
+    </div>
+    <div>
+        <button type="button" name="ButtonShare" id="ButtonShare" class="btn btn-outline-secondary button-href-with-id multi-line-not-support" data-href="{{ route('simulation_model.share', ['id' => 0]) }}">共有</button>
+        <button type="button" name="ButtonPublish" id="ButtonPublish" class="btn btn-outline-secondary button-href-with-id multi-line-not-support" data-href="{{ route('simulation_model.publish', ['id' => 0]) }}">公開</button>
+        <button type="button" name="ButtonPublishStop" id="ButtonPublishStop" class="btn btn-outline-secondary button-href-with-id multi-line-not-support" data-href="{{ route('simulation_model.publish_stop', ['id' => 0]) }}">公開停止</button>
+    </div>
+</div>
     {{-- 一覧のエリア --}}
     <div class="list-area mt-2">
         <table class="table table-hover" id="tblSimulationModel">
             <thead>
                 <tr>
-                    <th scope="col">3D都市モデル名</th>
                     <th scope="col">シミュレーションモデル名</th>
+                    <th scope="col">3D都市モデル名</th>
                     <th scope="col">最終更新日時</th>
+                    <th scope="col">最終実行開始日時</th>
+                    <th scope="col">実行ステータス</th>
                     <th scope="col">登録ユーザ</th>
                     <th scope="col">共有ユーザ</th>
                     <th scope="col">公開</th>
-                    <th scope="col">実行ステータス</th>
-                    <th scope="col">最終実行開始日時</th>
+
+
                 </tr>
             </thead>
             <tbody class="table-group-divider">
                 @foreach($simulationModelList as $simulationModel)
                 <tr>
                     <td class="d-none" id="hiddensimulationModelIdTd">{{ $simulationModel->simulation_model_id}}</td>
-                    <td>{{ $simulationModel->city_model->identification_name }}</td>
                     <td>{{ $simulationModel->identification_name }}</td>
+                    <td>{{ $simulationModel->city_model->identification_name }}</td>
                     <td>{{ App\Utils\DatetimeUtil::changeFormat($simulationModel->last_update_datetime) }}</td>
+                    <td>{{ $simulationModel->last_sim_start_datetime ? App\Utils\DatetimeUtil::changeFormat($simulationModel->last_sim_start_datetime) : "" }}</td>
+                    <td class="{{ $simulationModel->setTableTdColorByRunStatus() }}">{{ $simulationModel->getRunStatusName() }}</td>
                     <td class="d-none" id="hiddenRegisteredUserIdTd">{{ $simulationModel->registered_user_id }}</td>
                     <td>{{ $simulationModel->user_account->display_name }}</td>
                     <td>{{ $simulationModel->getUpdateUser(App\Commons\Constants::SHARE_MODE_SIMULATION_MODEL, $simulationModel->simulation_model_id) }}</td>
                     <td>{{ $simulationModel->getPublishStatus() }}</td>
-                    <td class="{{ $simulationModel->setTableTdColorByRunStatus() }}">{{ $simulationModel->getRunStatusName() }}</td>
-                    <td>{{ $simulationModel->last_sim_start_datetime ? App\Utils\DatetimeUtil::changeFormat($simulationModel->last_sim_start_datetime) : "" }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -132,20 +141,54 @@
                 $('#messageModal').modal('show');
             @endif
 
-            // テーブルの行を選択
+            // テーブルの行を選択(最大2行選択可能とする。)
             $("#tblSimulationModel tr").click(function(){
 
-                // 行の背景色を設定
-                resetBgTr('#tblSimulationModel');
-                setBgTr(this);
+                if (!isHeader(this)) {
+                    // 選択した行に背景色が設定されているかどうかを確認
+                    if(isSettingBgTr(this)) {
+                        removeBgTr(this);
+                        NUM_SELECTED_TR -= 1;
+
+                        // 複数行が選択されない限り、「複製、編集、削除、実行、中止、詳細確認、共有、公開、公開中止」ボタンを有効にする。
+                        if ($(".multi-line-not-support").prop("disabled")) {
+                            $(".multi-line-not-support").prop("disabled", false);
+                        }
+                    } else {
+                        // 最大2行まで選択可能とする
+                        if (NUM_SELECTED_TR < MAX_SELECT_TR) {
+                            // 行の背景色を設定
+                            setBgTr(this);
+                            NUM_SELECTED_TR += 1;
+
+                            if (NUM_SELECTED_TR == MAX_SELECT_TR) {
+                                // 複数行(最大2行まで)が選択されている状態になった場合、「結果閲覧」と「新規作成」ボタンのみ有効にする。
+                                // つまり、「複製、編集、削除、実行、中止、詳細確認、共有、公開、公開中止」ボタンを無効にする。
+                                $(".multi-line-not-support").prop("disabled", true);
+                            }
+                        }
+                    }
+                }
             });
 
 
-            // 「複製」「編集」「削除」「共有」「シミュレーション開始」「ステータス詳細」「中止」「シミュレーション結果閲覧」ボタンは押下後
+            // 「複製」「編集」「削除」「実行」「中止」「結果閲覧」「詳細確認」「共有」「公開」「公開停止」ボタンは押下後
             $("button.button-href-with-id").click(function(){
 
                 // シミュレーションモデルIDを取得
-                const $currentSimulationModelId = $("#tblSimulationModel tr.table-primary").find('td#hiddensimulationModelIdTd').html();
+                let $currentSimulationModelId = "";
+                const $hiddensimulationModelIdTd = $("#tblSimulationModel tr.table-primary").find('td#hiddensimulationModelIdTd');
+                if ($hiddensimulationModelIdTd.length == 1) {
+                    // 一覧で1行のみを選択した場合
+                    $currentSimulationModelId = $("#tblSimulationModel tr.table-primary").find('td#hiddensimulationModelIdTd').html();
+                } else {
+                    // 一覧で複数行を選択した場合
+                    $hiddensimulationModelIdArr = [];
+                    $hiddensimulationModelIdTd.toArray().forEach(element => {
+                        $hiddensimulationModelIdArr.push($(element).html());
+                    });
+                    $currentSimulationModelId = $hiddensimulationModelIdArr.toString();
+                }
 
                 // 登録ユーザを取得する。
                 const $registeredUserId = $("#tblSimulationModel tr.table-primary").find('td#hiddenRegisteredUserIdTd').html();

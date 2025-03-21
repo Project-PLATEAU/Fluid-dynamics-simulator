@@ -11,37 +11,43 @@
 @endsection
 
 @section('content')
-<div class="d-flex flex-column container">
+<div class="container d-flex flex-column">
     <form id="frmSolver" method="POST" action="{{ route('solver.addnew') }}" enctype="multipart/form-data">
         {{ csrf_field() }}
-        <div class="mb-3 row">
-            <label for="solver_name" class="col-sm-2 col-form-label">ソルバ識別名</label>
-            <div class="col-sm-5">
-                <input type="text" class="form-control" name="solver_name" id="solver_name">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="mb-3 row">
+                        <label for="solver_name" class="col-sm-2 col-form-label">ソルバ識別名</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" name="solver_name" id="solver_name">
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="explanation" class="col-sm-2 col-form-label">説明</label>
+                        <div class="col-sm-9">
+                            <textarea class="form-control" name="explanation" id="explanation" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="solver_compressed_file" class="col-sm-2 col-form-label">ファイル選択</label>
+                        <div class="col-sm-9">
+                            <input class="form-control form-control-sm" id="solver_compressed_file" name="solver_compressed_file" type="file" accept=".tar">
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <div class="col-11 d-flex justify-content-end">
+                            <button type="submit" class="btn btn-outline-secondary me-2">新規登録</button>
+                            <button type="button" name="ButtonUpdate" id="ButtonUpdate" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('solver.update', ['id' => 0]) }}">更新</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="mb-3 row">
-            <label for="explanation" class="col-sm-2 col-form-label">説明</label>
-            <div class="col-sm-5">
-                <textarea class="form-control" name="explanation" id="explanation" rows="3"></textarea>
-            </div>
-        </div>
-        <div class="mb-3 row">
-            <label for="" class="col-sm-2 col-form-label"></label>
-            <div class="col-sm-5">
-                <input class="form-control form-control-sm" id="solver_compressed_file" name="solver_compressed_file" type="file" accept=".tar">
-            </div>
-        </div>
-
-        <div class="button-area mt-3 mb-3">
-            <button type="submit" class="btn btn-outline-secondary">追加</button>
-        </div>
-
         <div class="d-flex flex-column">
             {{-- ボタン配置のエリア --}}
             <div class="button-area">
-                <button type="button" name="ButtonUpdate" id="ButtonUpdate" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('solver.update', ['id' => 0]) }}">更新</button>
-                <button type="button" name="ButtonPublic" id="ButtonPublic" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('solver.public', ['id' => 0]) }}">公開</button>
+                <button type="button" name="ButtonPublic" id="ButtonPublic" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('solver.public', ['id' => 0]) }}">共有</button>
                 <button type="button" name="ButtonDelete" id="ButtonDelete" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('solver.delete', ['id' => 0]) }}">削除</button>
                 <button type="button" name="ButtonDownload" id="ButtonDownload" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('solver.download', ['id' => 0]) }}">ダウンロード</button>
             </div>
@@ -52,9 +58,9 @@
                     <thead>
                         <tr>
                             <th scope="col">識別名</th>
-                            <th scope="col">公開状況</th>
+                            <th scope="col">共有状況</th>
                             <th scope="col">登録ユーザ</th>
-                            <th scope="col">登録日時</th>
+                            <th scope="col">最終更新日時</th>
                             <th scope="col">説明</th>
                         </tr>
                     </thead>
@@ -78,8 +84,8 @@
         </div>
     </form>
 </div>
-
 @endsection
+
 
 {{-- 個別js --}}
 @section('js')

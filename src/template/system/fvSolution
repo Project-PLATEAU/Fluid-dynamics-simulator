@@ -24,7 +24,7 @@ solvers
         smoother         DICGaussSeidel;
     }
 
-    "(U|h|k|epsilon|omega)"
+    "(U|h|k|epsilon|omega|s)"
     {
         solver          PBiCGStab;
         preconditioner  DILU;
@@ -37,8 +37,9 @@ SIMPLE
 {
     momentumPredictor no;
     nNonOrthogonalCorrectors 0;
-    pRefCell        0;
-    pRefValue       0;
+//    pRefCell        0;
+//    pRefValue       0;
+//    pRefValue       101325;
 
     residualControl
     {
@@ -47,7 +48,7 @@ SIMPLE
         h               1e-4;
 
         // possibly check turbulence fields
-        "(k|epsilon|omega)" 5e-3;
+        "(k|epsilon|omega|s)" 5e-3;
     }
 }
 
@@ -57,7 +58,7 @@ relaxationFactors
     p_rgh           0.7;
     U               0.3;
     h               0.7;
-    "(k|epsilon|omega)" 0.3;
+    "(k|epsilon|omega|s)" 0.3;
 }
 
 

@@ -16,20 +16,35 @@ FoamFile
 
 scale   1;
 
-// ***  Include User Data  ***
-#include "userBlockMesh"
-// 
+#include "inc/userBlockMesh"
+
+// rotate 
+/*
+xc    #eval{ ($minx+$maxx)*0.5 };
+yc    #eval{ ($miny+$maxy)*0.5 };
+rad   #eval{ degToRad($ang) };
+
+x1    #eval{ cos($rad)*$minx - sin($rad)*$miny + $xc };
+y1    #eval{ cos($rad)*$minx + sin($rad)*$miny + $yc };
+x2    #eval{ cos($rad)*$maxx - sin($rad)*$miny + $xc };
+y2    #eval{ cos($rad)*$maxx + sin($rad)*$miny + $yc };
+x3    #eval{ cos($rad)*$maxx - sin($rad)*$maxy + $xc };
+y3    #eval{ cos($rad)*$maxx + sin($rad)*$maxy + $yc };
+x4    #eval{ cos($rad)*$minx - sin($rad)*$maxy + $xc };
+y4    #eval{ cos($rad)*$minx + sin($rad)*$maxy + $yc };
+*/
+
 
 vertices
 (
-    ($minx $miny $minz)
-    ($maxx $miny $minz)
-    ($maxx $maxy $minz)
-    ($minx $maxy $minz)
-    ($minx $miny $maxz)
-    ($maxx $miny $maxz)
-    ($maxx $maxy $maxz)
-    ($minx $maxy $maxz)
+    ($x1 $y1 $minz)
+    ($x2 $y2 $minz)
+    ($x3 $y3 $minz)
+    ($x4 $y4 $minz)
+    ($x1 $y1 $maxz)
+    ($x2 $y2 $maxz)
+    ($x3 $y3 $maxz)
+    ($x4 $y4 $maxz)
 );
 
 blocks

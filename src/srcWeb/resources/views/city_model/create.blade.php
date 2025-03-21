@@ -15,7 +15,7 @@
     <form method="POST" action="{{route('city_model.addnew')}}">
         {{ csrf_field() }}
         <div class="mb-3 row">
-            <label for="identification_name" class="col-sm-2 col-form-label">モデル識別名</label>
+            <label for="identification_name" class="col-sm-2 col-form-label">3D都市モデル名</label>
             <div class="col-sm-5">
                 <input type="text" class="form-control" name="identification_name" id="identification_name">
             </div>
@@ -31,10 +31,11 @@
             </div>
         </div>
 
-        <div class="button-area mt-5">
-            <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ route('city_model.index') }}'">戻る</button>
-            <button type="submit" class="btn btn-outline-secondary">追加</button>
-
+        <div class="d-flex justify-content-end mt-5">
+            <div class="button-area me-5">
+                <button type="submit" class="btn btn-outline-secondary">登録</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ route('city_model.index') }}'">キャンセル</button>
+            </div>
         </div>
     </form>
 </div>

@@ -1,0 +1,23 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+
+#-------------------- Serial Run Script ------------------
+
+runApplication surfaceFeatureExtract
+
+runApplication blockMesh
+
+runApplication snappyHexMesh -overwrite
+
+runApplication renumberMesh -overwrite
+
+restore0Dir
+
+runApplication $(getApplication)
+
+#------------------------------------------------------------------------------
+
+postProcess -func writeCellCentres -latestTime
+
+touch temp.foam

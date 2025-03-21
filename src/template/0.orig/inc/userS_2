@@ -1,0 +1,18 @@
+        Wwall               // inlet 
+        {
+            type            fixedValue;
+            value           $internalField;
+        }
+
+        Ewall               // outlet
+        {
+            type            inletOutlet;
+            inletValue      $internalField;
+            value           $internalField;
+        }
+
+        green               // vapor generation 
+        {
+            type            fixedGradient;
+            gradient        uniform 4.0e-5;
+        }

@@ -7,8 +7,10 @@ use App\Commons\CommonUtils;
 use App\Commons\Constants;
 use App\Models\Db\CityModel;
 use App\Models\Db\Coordinate;
+use App\Models\Db\StlModel;
 use App\Models\Db\StlType;
 use App\Utils\DatetimeUtil;
+use App\Utils\FileUtil;
 use App\Utils\LogUtil;
 use Faker\Core\Uuid;
 use Illuminate\Database\Eloquent\Collection;
@@ -151,14 +153,22 @@ class CityModelService extends BaseService
      *
      * @param string $identification_name 識別名
      * @param string $registered_user_id 登録ユーザID
+     * @param string $city_model_id 都市モデルID
      *
      * @return array App\Models\Db\CityModel
      */
-    public static function getCityModelByIdentificationNameAndUser($identification_name, $registered_user_id)
+    public static function getCityModelByIdentificationNameAndUser($identification_name, $registered_user_id, $city_model_id = null)
     {
-        $cityModel = CityModel::where('identification_name', $identification_name)
-            ->where('registered_user_id', $registered_user_id)
-            ->get();
+        if ($city_model_id == null) {
+            $cityModel = CityModel::where('identification_name', $identification_name)
+                ->where('registered_user_id', $registered_user_id)
+                ->get();
+        } else {
+            $cityModel = CityModel::where('identification_name', $identification_name)
+                ->where('registered_user_id', $registered_user_id)
+                ->where('city_model_id', '!=', $city_model_id)
+                ->get();
+        }
         return $cityModel->toArray();
     }
 
@@ -200,11 +210,27 @@ class CityModelService extends BaseService
 
     /**
      * STLファイル種別の選択欄を取得
-     * @return Collection 'App\Models\Db\StlType STLファイル種別の選択肢の配列
+     * @return Collection 'App\Models\Db\StlType STLファイル種別の選択肢のコレクション
      */
     public static function getStlTypeOptions()
     {
         // STLファイル種別
         return StlType::all();
+    }
+
+    /**
+     * 都市モデルの新規作成時のSTLファイル種別の選択欄を取得
+     * 地表面フラグが"0"のレコードをID昇順で取得する
+     * @return Collection 'App\Models\Db\StlType STLファイル種別の選択肢のコレクション
+     */
+    public static function getStlTypeOptionsByGroundFlagFalse()
+    {
+        // STLファイル種別
+        // 地表面フラグが"0"のレコードをID昇順で取得する
+        $stlType = StlType::where('ground_flag', false)
+            ->orderBy('stl_type_id', 'asc')
+            ->get();
+
+        return $stlType;
     }
 }

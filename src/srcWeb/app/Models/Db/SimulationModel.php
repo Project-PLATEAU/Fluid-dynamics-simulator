@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Collection;
  * @property float|null $temperature
  * @property float|null $wind_speed
  * @property int|null $wind_direction
+ * @property float|null $humidity
  * @property Carbon|null $solar_altitude_date
  * @property int|null $solar_altitude_time
  * @property float|null $south_latitude
@@ -68,6 +69,7 @@ class SimulationModel extends DbModel
 		'temperature' => 'float',
 		'wind_speed' => 'float',
 		'wind_direction' => 'int',
+        'humidity' => 'float',
 		'solar_altitude_date' => 'datetime',
 		'solar_altitude_time' => 'int',
 		// 'south_latitude' => 'float',
@@ -99,6 +101,7 @@ class SimulationModel extends DbModel
 		'temperature',
 		'wind_speed',
 		'wind_direction',
+        'humidity',
 		'solar_altitude_date',
 		'solar_altitude_time',
 		'south_latitude',

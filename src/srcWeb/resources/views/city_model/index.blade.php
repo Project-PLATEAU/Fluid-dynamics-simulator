@@ -13,15 +13,19 @@
 @section('content')
 <div class="d-flex flex-column">
     {{-- ボタン配置のエリア --}}
-    <div class="button-area">
-        <button type="button" name="ButtonCreate" id="ButtonCreate" class="btn btn-outline-secondary" data-href="{{ route('city_model.create') }}" onclick="location.href='{{ route('city_model.create') }}'">追加</button>
-        <button type="button" name="ButtonShow" id="ButtonShow" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('city_model.show',['id' => 0]) }}">閲覧</button>
-        <button type="button" name="ButtonEdit" id="ButtonEdit" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('city_model.edit',['id' => 0]) }}">編集</button>
-        <button type="button" name="ButtonDelete" id="ButtonDelete" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('city_model.delete',['id' => 0]) }}">削除</button>
-        <button type="button" name="ButtonShare" id="ButtonShare" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('city_model.share', ['id' => 0]) }}">共有</button>
-        <button type="button" name="ButtonSimulationCreate" id="ButtonSimulationCreate" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('city_model.simulationCreate', ['id' => 0]) }}">シミュレーションモデル作成</button>
-    </div>
-
+        <div class="row">
+            <div class="col-10">
+                <div class="button-area">
+                    <button type="button" name="ButtonCreate" id="ButtonCreate" class="btn btn-outline-secondary" data-href="{{ route('city_model.create') }}" onclick="location.href='{{ route('city_model.create') }}'">新規登録</button>
+                    <button type="button" name="ButtonEdit" id="ButtonEdit" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('city_model.edit',['id' => 0]) }}">編集</button>
+                    <button type="button" name="ButtonDelete" id="ButtonDelete" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('city_model.delete',['id' => 0]) }}">削除</button>
+                    <button type="button" name="ButtonShow" id="ButtonShow" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('city_model.show',['id' => 0]) }}">閲覧</button>
+                </div>
+            </div>
+                <div class="col-2">
+                    <button type="button" name="ButtonShare" id="ButtonShare" class="btn btn-outline-secondary button-href-with-id" data-href="{{ route('city_model.share', ['id' => 0]) }}">共有</button>
+                </div>
+        </div>
     {{-- 一覧のエリア --}}
     <div class="list-area mt-2">
         <table class="table table-hover" id="tblCityModel">

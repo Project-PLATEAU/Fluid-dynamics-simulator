@@ -12,6 +12,7 @@ use App\Services\SolverService;
 use App\Utils\DatetimeUtil;
 use App\Utils\FileUtil;
 use App\Utils\LogUtil;
+use App\Utils\StringUtil;
 use Exception;
 use Faker\Core\Uuid;
 use Illuminate\Http\Request;
@@ -83,24 +84,13 @@ class SimulationModelController extends BaseController
 
     /**
      * シミュレーションモデル追加画面を表示する。
-     * @param Uuid $city_model_id 都市モデルID
-     *
-     * @return
      */
-    public function create($city_model_id)
+    public function create()
     {
         try {
-
-            if ($city_model_id) {
-                $message = session('message');
-
-                // 都市モデル
-                $cityModel = CityModelService::getCityModelById($city_model_id);
-                return view('simulation_model.create', compact('message', 'cityModel'));
-            } else {
-                throw new Exception("都市モデルIDが不正. 都市モデルID: {$city_model_id}");
-            }
-
+            $message = session('message');
+            $cityModelList = CityModelService::getCityModelList(self::getCookie(Constants::LOGIN_COOKIE_NAME)->user_id);
+            return view('simulation_model.create', compact('message', 'cityModelList'));
         } catch (Exception $e) {
             $error = $e->getMessage();
             LogUtil::e($error);
@@ -119,62 +109,53 @@ class SimulationModelController extends BaseController
     {
         try {
 
-            if ($city_model_id) {
+            $errorMessage = [];
 
-                $errorMessage = [];
+            // モデル識別名
+            $identification_name = $request->get('identification_name');
 
-                // 登録ユーザ
-                $registeredUserId = self::getCookie(Constants::LOGIN_COOKIE_NAME)->user_id;
+            // 選択した解析対象地域
+            $regionId = $request->query->get('region_id');
+            $region = null;
 
-                // モデル識別名
-                $identification_name = $request->get('identification_name');
-
-                // 選択した解析対象地域
-                $regionId = $request->query->get('region_id');
-                $region = null;
-
-                // 新規登録の操作ができるか確認
-                if (!$identification_name) {
-                    $errorMessage = ["type" => "E", "code" => "E9", "msg" => Message::$E9];
-                } else if (!$regionId) {
-                    $errorMessage = ["type" => "E", "code" => "E16", "msg" => Message::$E16];
-                } else {
-                    $region = RegionService::getRegionById($regionId);
-                    $stlModels = $region->stl_models()->get();
-                    $isE18 = true;
-                    foreach ($stlModels as $stlModel) {
-                        if ($stlModel->stl_type->required_flag) {
-                            $isE18 = false;
-                            break;
-                        }
-                    }
-                    if ($isE18) {
-                        $errorMessage = ["type" => "E", "code" => "E18", "msg" => sprintf(Message::$E18, $region->region_name)];
-                    }
-                }
-
-                // 画面遷移
-                if ($errorMessage) {
-                    LogUtil::w($errorMessage["msg"]);
-                    return redirect()->route('simulation_model.create', ['city_model_id' => $city_model_id])->with(['message' => $errorMessage]);
-                } else {
-
-                    // 新規登録の処理
-                    DB::beginTransaction();
-                    $addNewResult = SimulationModelService::addNewSimulation($identification_name, $city_model_id, $region, $registeredUserId);
-                    if ($addNewResult['result']) {
-                        DB::commit();
-                        foreach ($addNewResult['log_infos'] as $key => $log) {
-                            LogUtil::i($log);
-                        }
-                        $simulationModel = $addNewResult['simulation_model'];
-                        return redirect()->route('simulation_model.edit', ['id' => $simulationModel->simulation_model_id]);
-                    } else {
-                        throw new Exception("シミュレーションモデルの新規登録に失敗しました。識別名: {$identification_name}, 都市モデルID: {$city_model_id}");
-                    }
-                }
+            // 新規登録の操作ができるか確認
+            if (!$identification_name) {
+                $errorMessage = ["type" => "E", "code" => "E9", "msg" => Message::$E9];
+            } else if (!$regionId) {
+                $errorMessage = ["type" => "E", "code" => "E16", "msg" => Message::$E16];
             } else {
-                throw new Exception("都市モデルIDが不正. 都市モデルID: {$city_model_id}");
+                $region = RegionService::getRegionById($regionId);
+                $stlModels = $region->stl_models()->get();
+                $isE18 = true;
+                foreach ($stlModels as $stlModel) {
+                    if ($stlModel->stl_type->required_flag) {
+                        $isE18 = false;
+                        break;
+                    }
+                }
+                if ($isE18) {
+                    $errorMessage = ["type" => "E", "code" => "E18", "msg" => sprintf(Message::$E18, $region->region_name)];
+                }
+            }
+            // 画面遷移
+            if ($errorMessage) {
+                LogUtil::w($errorMessage["msg"]);
+                $cityModelList = CityModelService::getCityModelList(self::getCookie(Constants::LOGIN_COOKIE_NAME)->user_id);
+                return redirect()->route('simulation_model.create', ['cityModelList' => $cityModelList])->with(['message' => $errorMessage]);
+            } else {
+                // 新規登録の処理
+                DB::beginTransaction();
+                $addNewResult = SimulationModelService::addNewSimulation($identification_name, $city_model_id, $region, self::getCookie(Constants::LOGIN_COOKIE_NAME)->user_id);
+                if ($addNewResult['result']) {
+                    DB::commit();
+                    foreach ($addNewResult['log_infos'] as $key => $log) {
+                        LogUtil::i($log);
+                    }
+                    $simulationModel = $addNewResult['simulation_model'];
+                    return redirect()->route('simulation_model.edit', ['id' => $simulationModel->simulation_model_id]);
+                } else {
+                    throw new Exception("シミュレーションモデルの新規登録に失敗しました。識別名: {$identification_name}, 都市モデルID: {$city_model_id}");
+                }
             }
         } catch (Exception $e) {
             DB::rollBack();
@@ -195,8 +176,10 @@ class SimulationModelController extends BaseController
     {
         try {
 
+            // シミュレーションモデルにより、セッションキーが異なる。
+            $smPolicySessionKey = Constants::SM_POLICY_SESSION_KEY . $id;
             // 実施施策一覧に行を追加や削除の際に一時的に設定したセッションデータを削除
-            $request->session()->forget(Constants::SM_POLICY_SESSION_KEY);
+            $request->session()->forget($smPolicySessionKey);
 
             $errorMessage = [];
 
@@ -235,7 +218,10 @@ class SimulationModelController extends BaseController
                     }
                 }
 
-                return view('simulation_model.edit', compact('simulationModel', 'solverList', 'registeredUserId', 'message', 'policyList'));
+                // 風向表示設定ファイル(json)を読み込んで、プルダウン表示ようのデータを作成
+                $windDirections = SimulationModelService::createWindirectionDropdown();
+
+                return view('simulation_model.edit', compact('simulationModel', 'solverList', 'registeredUserId', 'message', 'policyList', 'windDirections'));
             }
         } catch (Exception $e) {
             $error = $e->getMessage();
@@ -275,8 +261,10 @@ class SimulationModelController extends BaseController
                         LogUtil::i($log);
                     }
 
+                    // シミュレーションモデルにより、セッションキーが異なる。
+                    $smPolicySessionKey = Constants::SM_POLICY_SESSION_KEY . $id;
                     // 実施施策一覧に行を追加や削除の際に一時的に設定したセッションデータを削除
-                    $request->session()->forget(Constants::SM_POLICY_SESSION_KEY);
+                    $request->session()->forget($smPolicySessionKey);
 
                     return redirect()->route('simulation_model.index');
                 } else {
@@ -427,7 +415,7 @@ class SimulationModelController extends BaseController
                     throw new Exception("シミュレーションモデルの公開に失敗しました。シミュレーションモデルID「{$id}」のレコードが存在しません。");
                 } else if ($simulationModel->run_status != Constants::RUN_STATUS_CODE_NORMAL_END) {
                     // 実行ステータスがが正常終了でない場合、[E5]を表示する。
-                    $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NORMAL_END)];
+                    $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NORMAL_END, $simulationModel->identification_name)];
                 }
             }
 
@@ -579,7 +567,7 @@ class SimulationModelController extends BaseController
                     } else if ($simulationModel->run_status == Constants::RUN_STATUS_CODE_NORMAL_END) {
                         $mixedMessage = ["type" => "E", "code" => "E29", "msg" => Message::$E29];
                     } else if ($simulationModel->run_status == Constants::RUN_STATUS_CODE_START_PROCESSING || $simulationModel->run_status == Constants::RUN_STATUS_CODE_CANCEL_PROCESSING) {
-                        $mixedMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NONE)];
+                        $mixedMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NONE, $simulationModel->identification_name)];
                     }
 
                     // シミュレーション中止するかどうか
@@ -732,7 +720,7 @@ class SimulationModelController extends BaseController
 
                     $simulationModel = SimulationModelService::getSimulationModelById($id);
                     if ($simulationModel->run_status != Constants::RUN_STATUS_CODE_RUNNING) {
-                        $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_RUNNING)];
+                        $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_RUNNING, $simulationModel->identification_name)];
                     }
                 }
 
@@ -758,16 +746,23 @@ class SimulationModelController extends BaseController
     /**
      * シミュレーション結果閲覧
      * @param Request $request リクエスト
-     * @param string $id シミュレーションモデルID
+     * @param string $id シミュレーションモデルID(※対象が複数行の場合：カンマー区切りで分ける)
      *
      * @return
      */
     public function show(Request $request, string $id)
     {
         try {
+
+            // シミュレーションモデルにより、セッションキーが異なる。
+            $smPolicySessionKey = Constants::RECREATE_SM_POLICY_SESSION_KEY . $id;
+            // 実施施策一覧に行を追加や削除の際に一時的に設定したセッションデータを削除
+            $request->session()->forget($smPolicySessionKey);
+
             $errorMessage = [];
 
             $simulationModel = null;
+            $simulationModelArr = [];
 
             // 登録ユーザ
             $registeredUserId = $request->query->get('registered_user_id');
@@ -776,11 +771,29 @@ class SimulationModelController extends BaseController
             if ($id == 0) {
                 $errorMessage = ["type" => "E", "code" => "E2", "msg" => Message::$E2];
             } else {
-                $simulationModel = SimulationModelService::getSimulationModelById($id);
-                if (!$simulationModel) {
-                    throw new Exception("シミュレーション結果閲覧に失敗しました。シミュレーションモデルID: 「{$id}」のレコードが存在しません。");
-                } else if ($simulationModel->run_status != Constants::RUN_STATUS_CODE_NORMAL_END) {
-                    $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NORMAL_END)];
+
+                // 選択したシミュレーション配列
+                $smIdArr = StringUtil::stringToArray($id);
+
+                // 異常のシミュレーション配列
+                $_errorSmIdentificationName = [];
+
+                // 選択したシミュレーションに異常があったかチェックする。
+                foreach ($smIdArr as $index => $_id) {
+
+                    $simulationModel = SimulationModelService::getSimulationModelById($_id);
+                    if (!$simulationModel) {
+                        throw new Exception("シミュレーション結果閲覧に失敗しました。シミュレーションモデルID: 「{$_id}」のレコードが存在しません。");
+                    } else if ($simulationModel->run_status != Constants::RUN_STATUS_CODE_NORMAL_END) {
+                        $_errorSmIdentificationName[] = $simulationModel->identification_name;
+                    } else {
+                        $simulationModelArr[] = $simulationModel;
+                    }
+                }
+
+                // 対象が複数行の場合、E5の｛1｝では、カンマ区切り等でシミュレーションモデル名を分けて表示する。
+                if (count($_errorSmIdentificationName) > 0) {
+                    $errorMessage = ["type" => "E", "code" => "E5", "msg" => sprintf(Message::$E5, Constants::RUN_STATUS_NORMAL_END, StringUtil::arrayToString($_errorSmIdentificationName))];
                 }
             }
 
@@ -793,16 +806,47 @@ class SimulationModelController extends BaseController
                 // 高さを取得
                 $heightList = HeightService::getAll();
 
-                //可視化種別：風況（※デフォルト）
+                // 可視化種別：風況（※デフォルト）
                 $visualizationType = Constants::VISUALIZATION_TYPE_WINDY;
 
                 // 高さ:1.5m（※デフォルト）
                 $heightId = $request->query->get('height') ? $request->query->get('height') : $heightList->toArray()[0]['height_id'];
 
-                // 可視化ファイル
-                $visualization = SimulationModelService::getVisualization($id, $visualizationType, $heightId);
+                // シミュレーション結果閲覧画面表示に必要な情報
+                $show_results = [];
 
-                return view('simulation_model.view', compact('simulationModel', 'heightList', 'visualizationType', 'heightId', 'visualization'));
+                // シミュレーションモデルごとのczmlファイル(建物のデータ)と可視化ファイルを取得する。
+                foreach ($simulationModelArr as $index => $sm) {
+
+                    // czmlファイル(建物のデータ)
+                    $czmlFiles = SimulationModelService::getCzmlFileWithoutNull($sm);
+
+                    // 可視化ファイルを取得
+                    $visualization = SimulationModelService::getVisualization($sm->simulation_model_id, $visualizationType, $heightId);
+                    if (!$visualization) {
+                        throw new Exception("シミュレーション結果閲覧に失敗しました。シミュレーションモデルID: 「{$_id}」の可視化ファイルが存在しません。");
+                    } else {
+                        if ($visualization->visualization_file) {
+                            $czmlFiles[] = FileUtil::referenceStorageFile($visualization->visualization_file);
+                        }
+                    }
+
+                    $show_results[] = [
+                        "simulation_model" => $sm,
+                        "visualization" => $visualization,
+                        "czml_files" => $czmlFiles,
+                        "visualization_type" => $visualizationType,
+                        "height_id" => $heightId
+                    ];
+                }
+
+                // 熱対策施策の各レコード
+                $policyList = SimulationModelService::getAllPolicy();
+
+                // 風向表示設定ファイル(json)を読み込んで、プルダウン表示ようのデータを作成
+                $windDirections = SimulationModelService::createWindirectionDropdown();
+
+                return view('simulation_model.view', compact('heightList', 'show_results', 'policyList', 'windDirections'));
             }
         } catch (Exception $e) {
             $error = $e->getMessage();
@@ -859,7 +903,7 @@ class SimulationModelController extends BaseController
     /**
      * シミュレーション結果閲覧(可視化種別により表示)
      * @param Request $request リクエスト
-     * @param string $id シミュレーションモデルID
+     * @param string $id シミュレーションモデルID(※複数シミュレーションの場合：カンマー区切りで分ける)
      *
      * @return
      */
@@ -867,55 +911,108 @@ class SimulationModelController extends BaseController
     {
         try {
 
+            $simulationModelArr = [];
+
+            // 選択したシミュレーション配列
+            $smIdArr = StringUtil::stringToArray($id);
+
+            // 念のため、シミュレーションモデルの存在チェックを行う。
+            foreach ($smIdArr as $index => $_id) {
+                $simulationModel = SimulationModelService::getSimulationModelById($_id);
+                if (!$simulationModel) {
+                    throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーション結果閲覧に失敗しました。「{$_id}」のシミュレーションモデルが存在しません。");
+                } else {
+                    $simulationModelArr[] = $simulationModel;
+                }
+            }
+
+            // シミュレーション結果閲覧画面表示に必要な情報
+            $show_results = [];
+
+            // シミュレーションモデルごとのczmlファイル(建物のデータ)と可視化ファイルを取得する。
+            foreach ($simulationModelArr as $index => $sm) {
+
+                // シミュレーションモデルにより、セッションキーが異なる。
+                $smPolicySessionKey = Constants::RECREATE_SM_POLICY_SESSION_KEY . $sm->simulation_model_id;
+                // 実施施策一覧に行を追加や削除の際に一時的に設定したセッションデータを削除
+                $request->session()->forget($smPolicySessionKey);
+
+                // czmlファイル(建物のデータ)
+                $czmlFiles = SimulationModelService::getCzmlFileWithoutNull($sm);
+
+                // 地図ごとの可視化種別
+                $visualizationType = $request->query->get('visualization_type_' . $index);
+
+                // 地図ごとの高さ
+                $heightId = $request->query->get('height_' . $index);
+
+                // 固定値利用可否モード
+                $legendType = ($request->query->get('ckb_value_fixed_' . $index) != null) ? $request->query->get('ckb_value_fixed_' . $index) : Constants::LEGENF_TYPE_FLUCTUATION;
+
+                if ($visualizationType) {
+                    // 可視化種別：1.風況と2.温度の場合、高さの指定が必要
+                    // 可視化種別：3.暑さ指数の場合、高さの指定が不要。
+                    if (($visualizationType == Constants::VISUALIZATION_TYPE_WINDY ||
+                        $visualizationType == Constants::VISUALIZATION_TYPE_TEMP) && !$heightId) {
+                        throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}, 高さ: null");
+                    }
+
+                    // 可視化種別：3.暑さ指数の場合、凡例種別を変動（1）にする。
+                    // ※「暑さ指数」の場合は、固定値（デフォルトの最高・最低）利用ができないため。
+                    if ($visualizationType == Constants::VISUALIZATION_TYPE_HEAT_INDEX) {
+                        // 「デフォルトの最高・最低を使用する」チェック状況を無視にする。
+                        $legendType = Constants::LEGENF_TYPE_FLUCTUATION;
+                    }
+                } else {
+                    throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}");
+                }
+
+                // 可視化ファイルを取得
+                $visualization = SimulationModelService::getVisualization($sm->simulation_model_id, $visualizationType, $heightId, $legendType);
+                if (!$visualization) {
+                    throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}, 高さ: {$heightId}, 凡例種別: {$legendType} の可視化ファイルが見つかりませんでした。");
+                } else {
+                    if ($visualization->visualization_file) {
+                        $czmlFiles[] = FileUtil::referenceStorageFile($visualization->visualization_file);
+                    }
+                }
+
+                // 表示モードを切り替え前の状態（方向、ピッチ、ポジション）を取得
+                $mapCurrentHeading = $request->query->get('map_current_heading_'. $index);
+                $mapCurrentPitch = $request->query->get('map_current_pitch_' . $index);
+                $mapCurrentRoll = $request->query->get('map_current_roll_' . $index);
+                $mapCurrentPositionX = $request->query->get('map_current_position_x_' . $index);
+                $mapCurrentPositionY = $request->query->get('map_current_position_y_' . $index);
+                $mapCurrentPositionZ = $request->query->get('map_current_position_z_' . $index);
+
+                $show_results[] = [
+                    "simulation_model" => $sm,
+                    "visualization" => $visualization,
+                    "czml_files" => $czmlFiles,
+                    "visualization_type" => $visualizationType,
+                    "height_id" => $heightId,
+                    "ckb_value_fixed" => $legendType,
+                    "viewer_camera" => [
+                        "map_current_heading" => $mapCurrentHeading,
+                        "map_current_pitch" =>  $mapCurrentPitch,
+                        "map_current_roll" => $mapCurrentRoll,
+                        "map_current_position_x" => $mapCurrentPositionX,
+                        "map_current_position_y" => $mapCurrentPositionY,
+                        "map_current_position_z" => $mapCurrentPositionZ
+                    ]
+                ];
+            }
+
             // 高さを取得
             $heightList = HeightService::getAll();
 
-            //可視化種別
-            $visualizationType = $request->query->get('visualization_type');
-            // 高さ
-            $heightId = $request->query->get('height');
+            // 熱対策施策の各レコード
+            $policyList = SimulationModelService::getAllPolicy();
 
-            // 表示モードを切り替え前の状態（方向、ピッチ、ポジション）を取得
-            $mapCurrentHeading = $request->query->get('map_current_heading');
-            $mapCurrentPitch = $request->query->get('map_current_pitch');
-            $mapCurrentRoll = $request->query->get('map_current_roll');
-            $mapCurrentPositionX = $request->query->get('map_current_position_x');
-            $mapCurrentPositionY = $request->query->get('map_current_position_y');
-            $mapCurrentPositionZ = $request->query->get('map_current_position_z');
+            // 風向表示設定ファイル(json)を読み込んで、プルダウン表示ようのデータを作成
+            $windDirections = SimulationModelService::createWindirectionDropdown();
 
-            if ($id && $visualizationType) {
-                if (($visualizationType == Constants::VISUALIZATION_TYPE_WINDY ||
-                    $visualizationType == Constants::VISUALIZATION_TYPE_TEMP) && !$heightId) {
-                    throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}, 高さ: null");
-                }
-            } else {
-                throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}");
-            }
-
-            $simulationModel = SimulationModelService::getSimulationModelById($id);
-            if (!$simulationModel) {
-                throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーション結果閲覧に失敗しました。「{$id}」のシミュレーションモデルが存在しません。");
-            } else {
-                // 可視化ファイル
-                $visualization = SimulationModelService::getVisualization($id, $visualizationType, $heightId);
-                if ($visualization) {
-                    return view('simulation_model.view', compact(
-                        'simulationModel',
-                        'heightList',
-                        'visualizationType',
-                        'heightId',
-                        'visualization',
-                        'mapCurrentHeading',
-                        'mapCurrentPitch',
-                        'mapCurrentRoll',
-                        'mapCurrentPositionX',
-                        'mapCurrentPositionY',
-                        'mapCurrentPositionZ'
-                    ));
-                } else {
-                    throw new Exception("可視化種別や高さにより表示切替に失敗しました。シミュレーションモデルID: {$id}, 可視化種別: {$visualizationType}, 高さ: {$heightId} の可視化ファイルが見つかりませんでした。");
-                }
-            }
+            return view('simulation_model.view', compact('show_results', 'heightList', 'policyList', 'windDirections'));
         } catch (Exception $e) {
             $error = $e->getMessage();
             LogUtil::e($error);
@@ -997,20 +1094,24 @@ class SimulationModelController extends BaseController
      * シミュレーション結果（GeoJSON）ファイルをダウンロード
      * @param Request $request リクエスト
      * @param string $id シミュレーションモデルID
+     * @param int $map_id  特定地図
      *
      * @return
      */
-    public function download(Request $request, string $id)
+    public function download(Request $request, string $id, int $map_id)
     {
         try {
 
             // 選択したラジオボタン
-            $visualizationType = $request->query->get('visualization_type');
+            $visualizationType = $request->query->get('visualization_type_' . $map_id);
             // 選択した高さ
-            $heightId = $request->query->get('height');
+            $heightId = $request->query->get('height_' . $map_id);
+
+            // 固定値利用可否モード
+            $legendType = ($request->query->get('ckb_value_fixed_' . $map_id) != null) ? $request->query->get('ckb_value_fixed_' . $map_id) : Constants::LEGENF_TYPE_FLUCTUATION;
 
             // 可視化ファイル
-            $visualization = SimulationModelService::getVisualization($id, $visualizationType, $heightId);
+            $visualization = SimulationModelService::getVisualization($id, $visualizationType, $heightId, $legendType);
 
             if (!$visualization) {
                 throw new Exception("指定した条件「シミュレーションモデルID： {$id}、可視化種別: {$visualizationType}、高さID：{$heightId}」に当てはまる「可視化ファイル」が存在しません。");
@@ -1111,17 +1212,35 @@ class SimulationModelController extends BaseController
                         throw new Exception("実施施策一覧に新規追加に失敗しました。シミュレーションモデルID 「{$simulationModelId}」のレコードが存在していません。");
                     }
 
-                    // 最新の実施施策一覧
-                    $smPolicies = SimulationModelService::addNewSmPolicy($request, $simulationModel, $stlTypeId, $policyId);
+                    // STLファイル一覧のhtml生成ようのデータ
+                    $paritalViewSmPolicyData = null;
+
+                    // シミュレーション結果閲覧画面でシミュレーション再作成を行った場合のみ、特定地図(map_id = 0 or 1..)の指定が必要。
+                    $mapId = $request->map_id;
+                    if (!is_null($mapId)) {
+                        // シミュレーションモデルにより、セッションキーが異なる。
+                        $smPolicySessionKey = Constants::RECREATE_SM_POLICY_SESSION_KEY . $simulationModel->simulation_model_id;
+                        // 最新の実施施策一覧
+                        $paritalViewSmPolicyData = [
+                            'smPolicies' => SimulationModelService::addNewSmPolicy($request, $simulationModel, $stlTypeId, $policyId, $smPolicySessionKey),
+                            'simulationModelId' => $simulationModelId,
+                            'mapId' => $mapId
+                        ];
+                    } else {
+                        // シミュレーションモデルにより、セッションキーが異なる。
+                        $smPolicySessionKey = Constants::SM_POLICY_SESSION_KEY . $simulationModel->simulation_model_id;
+                        // 最新の実施施策一覧
+                        $paritalViewSmPolicyData = [
+                            'smPolicies' => SimulationModelService::addNewSmPolicy($request, $simulationModel, $stlTypeId, $policyId, $smPolicySessionKey),
+                            'simulationModelId' => $simulationModelId,
+                        ];
+                    }
 
                     // STLファイル一覧のhtmlデータ
-                    $paritalViewSmPolicy = View::make('simulation_model.partial_sm_policy.partial_sm_policy_list', [
-                        'smPolicies' => $smPolicies,
-                        'simulationModelId' => $simulationModelId
-                    ])->render();
+                    $paritalViewSmPolicy = View::make('simulation_model.partial_sm_policy.partial_sm_policy_list', $paritalViewSmPolicyData)->render();
 
+                    // レスポンス情報
                     $smPoliciesInfos = ['paritalViewSmPolicy' => $paritalViewSmPolicy];
-
                     return response()->json($smPoliciesInfos);
                 } else {
                     throw new Exception("実施施策一覧に新規追加に失敗しました。シミュレーションモデルID: {$simulationModelId}が不正です。");
@@ -1169,23 +1288,158 @@ class SimulationModelController extends BaseController
                         throw new Exception("実施施策一覧より行削除に失敗しました。シミュレーションモデルID 「{$simulationModelId}」のレコードが存在していません。");
                     }
 
-                    // 最新の実施施策一覧
-                    $smPolicies = SimulationModelService::deleteSmPolicy($request, $simulationModel, $stlTypeId, $policyId);
+                    // STLファイル一覧のhtml生成ようのデータ
+                    $paritalViewSmPolicyData = null;
+
+                    // シミュレーション結果閲覧画面でシミュレーション再作成を行った場合のみ、特定地図(map_id = 0 or 1..)の指定が必要。
+                    $mapId = $request->map_id;
+                    if (!is_null($mapId)) {
+                        // シミュレーションモデルにより、セッションキーが異なる。
+                        $smPolicySessionKey = Constants::RECREATE_SM_POLICY_SESSION_KEY . $simulationModel->simulation_model_id;
+                        // 最新の実施施策一覧
+                        $paritalViewSmPolicyData = [
+                            'smPolicies' => SimulationModelService::deleteSmPolicy($request, $simulationModel, $stlTypeId, $policyId, $smPolicySessionKey),
+                            'simulationModelId' => $simulationModelId,
+                            'mapId' => $mapId
+                        ];
+                    } else {
+                        // シミュレーションモデルにより、セッションキーが異なる。
+                        $smPolicySessionKey = Constants::SM_POLICY_SESSION_KEY . $simulationModel->simulation_model_id;
+                        // 最新の実施施策一覧
+                        $paritalViewSmPolicyData = [
+                            'smPolicies' => SimulationModelService::deleteSmPolicy($request, $simulationModel, $stlTypeId, $policyId, $smPolicySessionKey),
+                            'simulationModelId' => $simulationModelId,
+                        ];
+                    }
 
                     // STLファイル一覧のhtmlデータ
-                    $paritalViewSmPolicy = View::make('simulation_model.partial_sm_policy.partial_sm_policy_list', [
-                        'smPolicies' => $smPolicies,
-                        'simulationModelId' => $simulationModelId
-                    ])->render();
+                    $paritalViewSmPolicy = View::make('simulation_model.partial_sm_policy.partial_sm_policy_list', $paritalViewSmPolicyData)->render();
 
+                    // レスポンス情報
                     $smPoliciesInfos = ['paritalViewSmPolicy' => $paritalViewSmPolicy];
-
                     return response()->json($smPoliciesInfos);
                 } else {
                     throw new Exception("実施施策一覧より行削除に失敗しました。シミュレーションモデルID: {$simulationModelId}が不正です。");
                 }
             }
         } catch (Exception $e) {
+            $error = $e->getMessage();
+            LogUtil::e($error);
+            header('HTTP/1.1 500 Internal Server');
+            header('Content-Type: application/json; charset=UTF-8');
+            die(json_encode(array('message' => 'error', 'code' => 500)));
+        }
+    }
+
+    /**
+     * 凡例種別値変更
+     * @param Request $request リクエスト
+     * @param string $id シミュレーションモデルID
+     *
+     * @return
+     */
+    public function changeLegendType(Request $request, string $id)
+    {
+        try {
+
+            $result = [];
+
+            if ($id) {
+
+                // 表示モード(風況、中空温度、暑さ指数)
+                $visualizationType = $request->visualizationType;
+                // 高さ
+                $heightId = $request->heightId;
+                // 凡例種別値
+                $legendType = $request->legendType;
+
+                // 可視化ファイルを取得
+                $visualization = SimulationModelService::getVisualization($id, $visualizationType, $heightId, $legendType);
+                if (!$visualization) {
+                    // レコードが存在しない場合
+                    $errorMessage = ["type" => "E", "code" => "E36", "msg" => Message::$E36];
+                    $result = [
+                        "error" => $errorMessage
+                    ];
+                } else {
+                    $result = [
+                        "error" => "",
+                        "visualization" => $visualization
+                    ];
+                }
+            } else {
+                throw new Exception("凡例種別値変更に失敗しました。シミュレーションモデルID: {$id}が不正です。");
+            }
+
+            return response()->json($result);
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            LogUtil::e($error);
+            header('HTTP/1.1 500 Internal Server');
+            header('Content-Type: application/json; charset=UTF-8');
+            die(json_encode(array('message' => 'error', 'code' => 500)));
+        }
+    }
+
+    /**
+     * 再作成のシミュレーションモデルを新規登録
+     * @param Request $request リクエスト
+     *
+     * @return
+     */
+    public function recreateSimulationModel(Request $request)
+    {
+        try {
+
+            $result = [];
+
+            if ($request && !is_null($request->map_id)) {
+                // 編集操作ができるか確認 E9, E19, E20
+                $errorMessage = SimulationModelService::recreateIsOk($request);
+
+                // 画面遷移
+                if ($errorMessage) {
+                    LogUtil::w($errorMessage["msg"]);
+                    $result = [
+                        "error" => $errorMessage
+                    ];
+                } else {
+
+                    DB::beginTransaction();
+
+                    // 元のシミュレーションモデルID
+                    $simulation_model_id_src = $request->simulation_model_id_src;
+
+                    // シミュレーションモデルの再作成
+                    $recreateResult = SimulationModelService::recreateSimulation($request, self::getCookie(Constants::LOGIN_COOKIE_NAME)->user_id, $simulation_model_id_src);
+                    if ($recreateResult['result']) {
+                        DB::commit();
+                        foreach ($recreateResult['log_infos'] as $key => $log) {
+                            LogUtil::i($log);
+                        }
+
+                        // シミュレーションモデルにより、セッションキーが異なる。
+                        $smPolicySessionKey = Constants::RECREATE_SM_POLICY_SESSION_KEY . $simulation_model_id_src;
+
+                        // 実施施策一覧に行を追加や削除の際に一時的に設定したセッションデータを削除
+                        $request->session()->forget($smPolicySessionKey);
+
+                        $result = [
+                            "error" => "",
+                            // 保存処理に成功したら、シミュレーションモデル一覧画面に遷移する。
+                            "redirect" => route('simulation_model.index')
+                        ];
+                    } else {
+                        throw new Exception("シミュレーションモデルの再作成に失敗しました。");
+                    }
+                }
+            } else {
+                throw new Exception("シミュレーションモデルの再作成に失敗しました。特定地図が不明");
+            }
+            // レスポンス
+            return response()->json($result);
+        } catch (Exception $e) {
+            DB::rollBack();
             $error = $e->getMessage();
             LogUtil::e($error);
             header('HTTP/1.1 500 Internal Server');

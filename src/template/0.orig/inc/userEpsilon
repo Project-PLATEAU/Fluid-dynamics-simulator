@@ -1,0 +1,41 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       IOobject;
+}
+
+    Wwall                                   // inlet wall
+    {
+        type            exprFixedValue;
+        value           $internalField;
+        U0               2.0;              // User Input Velocity (POSITIVE)
+        MINZ               0;              // User Input minZ
+        Z0              10.0;              // (m) CONSTAT Value
+        N0              0.27;              // Power CONSTAT Value
+        ZG             550.0;              // (m) CONSTAT Value
+        CM               0.3;              // CONSTAT Value
+        valueExpr       "$CM*$U0/$Z0*$N0*pow((pos().z()-$MINZ)/$Z0,$N0-1.0) \
+                               * pow(0.1*pow((pos().z()-$MINZ)/$ZG,-$N0-0.05) \
+                                   * $U0*pow((pos().z()-$MINZ)/$Z0,$N0) ,2.0)";
+    }
+
+
+    building                                    // building
+    {
+        type            epsilonWallFunction;
+        value           $internalField;
+    }
+
+    land                                    // grounds
+    {
+        type            epsilonWallFunction;
+        value           $internalField;
+    }
+
+    green                                    // grounds
+    {
+        type            epsilonWallFunction;
+        value           $internalField;
+    }
+
