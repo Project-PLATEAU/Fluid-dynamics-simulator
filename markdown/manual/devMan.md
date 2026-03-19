@@ -5,6 +5,8 @@
 
 # 1. 事前準備・推奨条件
 
+## 1.1. 動作環境について
+
 はじめに、本システムを利用する際は、
 [動作環境](https://github.com/Project-PLATEAU/)
 で示すサーバマシン内の構成を２台のマシンに分けて構成することを推奨します。また、OSはどちらのマシンもUbuntuを推奨します。
@@ -13,30 +15,27 @@
 
 - コンテナ管理用マシン
     - Webコンテナ、DBコンテナ、Wrapperコンテナ、APIコンテナを管理するマシン
-    - パブリックIPアドレスとホスト名（必要であればドメイン、SSL証明書）を取得し、FQDNでアクセスできるようにします。\
-  ※任意のドメインプロバイダ、またはAWS等パブリッククラウドサービスからパブリックIPアドレス、ドメイン、ホスト名等を取得してください。本書での取得手順の詳細は省略します。
-
-- コンテナ管理用マシンに接続されたファイルストレージ
-    - Webコンテナ、DBコンテナ、Wrapperコンテナ、APIコンテナから参照できるファイルサーバーやストレージ\
-  ※本システムのファイルストレージは、コンテナ管理用マシンにアクセスできる環境であれば、コンテナ管理用マシンに接続したハードディスク、または別のNASやパブリッククラウドサービス（Amazon EFS等）のいずれを利用しても問題ございません。そのため、本書でのインストール手順の詳細は省略します。
 
 - シミュレータ用マシン
     - 熱流体シミュレーションの稼働に十分なスペックであるマシン
 
-## 1.1. データベース情報の検討
-本システムの環境構築を効率よく進めていくうえで、データベース情報を事前に定義しておくことを推奨します。
-下記、３点(データベースのユーザー名、データベースのパスワード、データベース名)を検討し、手元に記録または管理してください。
- - [DB_USER]
- - [DB_PASSWORD]
- - [DB_NAME]
+## 1.2. コンテナ管理用マシン - 初期セットアップ
+- ネットワーク
+    - パブリックIPアドレスとホスト名（必要であればドメイン、SSL証明書）を取得し、FQDNでアクセスできるようにします。
+    
+      ※任意のドメインプロバイダ、またはAWS等パブリッククラウドサービスからパブリックIPアドレス、ドメイン、ホスト名等を取得してください。本書での取得手順の詳細は省略します。
 
-## 1.2. ファイルストレージのマウント
-コンテナ管理用マシンに接続されたファイルストレージをコンテナ管理用マシンの/mntにマウントしてください。
+- ファイルストレージ
+    - コンテナ管理用マシンに接続されたファイルストレージ
+    - Webコンテナ、DBコンテナ、Wrapperコンテナ、APIコンテナから参照できるファイルサーバーやストレージ
+
+      ※本システムのファイルストレージは、コンテナ管理用マシンにアクセスできる環境をであれば、コンテナ管理用マシンに接続したハードディスク、または別のNASやパブリッククラウドサービス（Amazon EFS等）のいずれを利用しても問題ございません。そのため、本書でのインストール手順の詳細は省略します。
+
+      ※コンテナ管理用マシンに接続されたファイルストレージはコンテナ管理用マシンの/mntにマウントしてください。
 マウント方法はストレージによって異なるため、本書では省略いたします。
 
-## 1.3. Dockerインストール
-本システムのコンテナ管理用マシンでは、Docker Engine および Docker Composeを利用します。\
-未インストールの方は以下参考にインストールから実施してください。
+## 1.3. コンテナ管理用マシン - Dockerインストール
+本システムのコンテナ管理用マシンでは、Docker Engine および Docker Composeを利用します。未インストールの方は以下参考にインストールから実施してください。
 
 ### Docker Engine
 詳細は、
@@ -96,11 +95,21 @@ sudo apt-get install docker-compose-plugin
 docker compose version
 ```
 
+
+## 1.4. データベース情報の検討
+本システムの環境構築を効率よく進めていくうえで、データベース情報を事前に定義しておくことを推奨します。
+下記、３点(データベースのユーザー名、データベースのパスワード、データベース名)を検討し、手元に記録または管理してください。
+ - [DB_USER]
+ - [DB_PASSWORD]
+ - [DB_NAME]
+
+
+
 # 2. 動作環境
 
 本システムは、利用者端末であるクライアントPCおよびネットワーク接続するサーバマシンの各ハードウェアより構成されます。サーバマシンでは複数のマシン（コンテナ）から構成され、うちWebコンテナがクライアントPC上のブラウザに対してウェブアプリをホストし、他のコンテナはWebコンテナと結合して諸機能を提供します。
 
-![ハードウェアアーキテクチャ図](../resources/devMan/devMan-fig21.png)
+![ハードウェアアーキテクチャ図](../resources/devMan/devMan00-fig33.png)
 
 動作環境は以下のとおりです。
 
@@ -109,7 +118,7 @@ docker compose version
 | 項目 | 最小動作環境 | 推奨動作環境 |
 | - | - | - |
 | ブラウザ | JavaScript、jQuery、CesiumJS対応ブラウザ | Google Chrome　120.0以上 |
-| ディスプレイ解像度 | 1024×768以上 | 1920×1080以上 |
+| ディスプレイ解像度 | 1920×1080以上 | 1920×1080以上 |
 | ネットワーク | 以下のURLを閲覧可能。 <br>・サーバマシンのWebアプリ<br>・[PLATEAU-3DTilesの配信サービス](https://github.com/Project-PLATEAU/plateau-streaming-tutorial/) | インターネット接続 |
 
 ## 2.2. コンテナ管理用マシン - Webコンテナ
@@ -159,7 +168,7 @@ docker compose version
 | ストレージ | 1TB以上 | 2TB以上 |
 
 
-# 3 コンテナ管理用マシン - Webコンテナ・DBコンテナのセットアップ
+# 3 コンテナ管理用マシン - セットアップ①（Web・DB）
 ## 3.1. Dockerコンテナの作成と起動
 コンテナ管理用マシン上に、4つのコンテナの作成から起動までを実施します。\
 まずは、自身でソースファイルを実行することで、コンテナを作成することができます。作成に必要なソースファイル一式は
@@ -223,7 +232,7 @@ sudo docker ps -a
 ```
 
 ## 3.2. Webコンテナ
-作成したWebコンテナへアクセスし、Webアプリの動作に必要な設定を実施します。\
+作成したWebコンテナへアクセスし、Webアプリの動作に必要な設定を実施します。
 
 1. Webコンテナへアクセス\
 コンテナ管理用マシン上で、以下のコマンドでWebコンテナに入ります。
@@ -310,13 +319,12 @@ vi database/seeders/UserAccountSeeder.php
 # データベースの作成
 php artisan migrate --path=/database/migrations/2023_11_01_172302_init_db_ver01.php
 php artisan migrate --path=/database/migrations/2024_07_08_135208_ver02.php
+php artisan migrate --path=/database/migrations/2025_08_04_113509_ver03.php
 
 # 初期データの投入
 php artisan db:seed
 ```
-※上記コマンドで自動で初期データが投入されますが、手動で入力する際は以下からダウンロードできるクエリを適宜編集し、
-データを投入してください。
-[こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/query)
+上記コマンドにより自動で初期データが投入されます。
 
 
 3. ユーザアカウント登録\
@@ -350,6 +358,8 @@ sudo mkdir /mnt/converted_output
 [こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/examples/input/template.tar)から標準ソルバーをダウンロードします。
 
 4. SCPコマンド等で2で作成した/mnt/compressed_solver/default以下に3からダウンロードしたtemplate.tarを配置します。
+
+5. [こちら](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/setting)を/mnt/setting/以下に配置します。
 
 ## 3.5. Webアプリ接続の確認
 1. Webアプリへの接続\
@@ -390,7 +400,7 @@ deb [arch=arm64 allow-insecure=yes trusted=yes] https://dl.openfoam.com/repos/de
 ```
 のように修正してください。
 
-# 5 コンテナ管理用マシン - Wrapperコンテナ・APIコンテナのセットアップ
+# 5 コンテナ管理用マシン - セットアップ②（Wrapper・API）
 ## 5.1. Wrapperコンテナ
 作成したWrapperコンテナへアクセスし、必要な設定を実施します。\
 Wrapperコンテナで利用するソースファイル一式は
@@ -470,6 +480,7 @@ APIコンテナで利用するソースファイル一式は
 sudo docker  exec -it  [API-CONTAINER ID] /bin/bash
 ```
 
+<!-- TODO：APIコンテナ内でAPIが自動起動するようになったら必要ないかもしれない箇所 -->
 2. GitHub mainブランチからsrcAPIのソースコードをダウンロードします。
 [src/srcAPI](https://github.com/Project-PLATEAU/Fluid-dynamics-simulator/tree/main/src/srcAPI)
 をコピーします。
@@ -485,24 +496,28 @@ cd srcAPI/
 /opt/Fluid-dynamics-simulator/srcAPI/ が作成され、その直下にconvert_to_czml.pyなどのpythonプログラム群が配置されていることを確認します。
 
 3. 設定ファイルの編集\
-連携するデータベースの情報とシミュレーションマシンの情報を、設定ファイルに追記します。
+APIがデータベースやシミュレーションマシンと通信を可能にするための設定を行います。
+コンテナに入って編集するか、ホスト側で直接ファイルを編集してください。
+コンテナ内で編集する場合は次の手順で行ってください。\
+\
 以下のコマンドで/opt/Fluid-dynamics-simulator/src/srcBatch/common/config.iniを開きます。
 ```
+sudo docker exec -it [API-CONTAINER ID] /bin/bash
+cd /opt/Fluid-dynamics-simulator/srcAPI/
 vi common/config.ini
 ```
 
-config.iniを編集します。
+config.iniの以下の項目を環境に合わせて修正します。
 
-- コンテナ管理用マシンに接続されたファイルストレージへのパスを設定します。
-今回は、docker-compose.ymlにおいて自動でAPIコンテナの/mnt/にマウントしているので、以下のように設定します。
+- 共有フォルダパスの設定：docker-compose.ymlでマウントしたパス（今回は自動でAPIコンテナの/mnt/にマウントしています）を指定します。
 ```
 shared_folder_root = /mnt/
 ```
-- シミュレーション用マシンにログインした際のホームディレクトリのパスを設定します。
+- シミュレーションマシン設定：シミュレーション用マシンにログインした際のホームディレクトリのパスを設定します。
 ```
 shared_folder_root = [シミュレーション用マシンにログインした際のホームディレクトリ]
 ```
-- 事前準備にて検討していたデータベース情報を[WebappDB]セクション以降の下記項目に入力します。
+- データベース接続情報の設定：事前準備にて検討していたデータベース情報を[WebappDB]セクション以降の下記項目に入力します。
 ```
 type = postgresql
 user = [DB_USER]
@@ -512,11 +527,20 @@ port = 5432
 dbname = [DB_NAME]
 ```
 
-4. API起動
-ダウンロードしたソースコードmain.pyを実行して、APIを起動します。
+4. APIの動作確認\
+Dockerfileの CMD 命令により、コンテナ起動時にAPIは既にバックグラウンドで実行されています。以下の手順で動作しているか確認してください。
+
+- 以下のコマンドをコンテナ管理マシン上で実行し、ログを確認します。\
+　Uvicorn running on http://0.0.0.0:8000 と表示されていれば正常です。
 ```
-cd /opt/Fluid-dynamics-simulator/srcAPI/
-uvicorn main:app --host=0.0.0.0 --reload &
+sudo docker logs -f [API-CONTAINER ID]
+
+```
+
+- config.ini を書き換えた後、設定を確実に反映させるにはコンテナを再起動してください。
+
+```
+sudo docker compose restart api
 ```
 
 
