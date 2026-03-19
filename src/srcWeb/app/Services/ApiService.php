@@ -13,11 +13,15 @@ class ApiService extends BaseService
 {
 
     // CZML変換API
-    const CONVERT_TO_CZML_API = "http://api:8000/convert_to_czml";
+    const CONVERT_TO_CZML_API   = "http://api:8000/convert_to_czml";
     // 建物作成API
-    const NEW_BUILDING_API = "http://api:8000/new_building";
+    const NEW_BUILDING_API      = "http://api:8000/new_building";
+    // 植被作成API
+    const NEW_PLANT_COVER_API   = "http://api:8000/new_plant_cover";
+    // 単独木作成API
+    const NEW_TREE_API          = "http://api:8000/new_tree";
     // 建物削除API
-    const REMOVE_BUILDING_API = "http://api:8000/remove_building";
+    const REMOVE_BUILDING_API   = "http://api:8000/remove_building";
 
     // リクエストメソッド：POST
     const HTTP_POST = "POST";
@@ -121,6 +125,34 @@ class ApiService extends BaseService
     public static function callNewBuildingAPI($params = [])
     {
         $responseData = self::fetchData(self::NEW_BUILDING_API, $params);
+        $statusCode = self::getStatusCode($responseData);
+        return $statusCode;
+    }
+
+    /**
+     * 植被作成APIを呼び出す。
+     *
+     * @param array $params リクエストのパラーメター
+     *
+     * @return string apiのステータス
+     */
+    public static function callNewPlantCoverAPI($params = [])
+    {
+        $responseData = self::fetchData(self::NEW_PLANT_COVER_API, $params);
+        $statusCode = self::getStatusCode($responseData);
+        return $statusCode;
+    }
+
+    /**
+     * 単独木作成APIを呼び出す。
+     *
+     * @param array $params リクエストのパラーメター
+     *
+     * @return string apiのステータス
+     */
+    public static function callNewTreeAPI($params = [])
+    {
+        $responseData = self::fetchData(self::NEW_TREE_API, $params);
         $statusCode = self::getStatusCode($responseData);
         return $statusCode;
     }

@@ -5,14 +5,13 @@ from common.coordinate_converter import *
 from common.utils import *
 from common.lockfile import *
 from common.webapp_db_connection import *
+from common.file_path_generator import *
 from city_model.czml_for_edit_building import *
 from city_model.bldg_file_for_edit_building import *
 from city_model.three_d_model_for_edit_building import *
 
 EPSG_CODE_LATLON = 4326 #wgs84
 #region ジオイド高、楕円体高計算パラメータ
-
-OBJ_EXTENSION = "obj"
 class NewBuilding:
     def __init__(self, coordinates: List[float], height: float, region_id: str, stl_type_id: int) -> None:
         # 底面のすべての頂点の標高を、標高が一番低い頂点に合わせる。
@@ -29,13 +28,9 @@ class NewBuilding:
         self.stl_file_dict = {
             "stl_type_id": stl_type_id,
             "stl_file": stl_file,
-            "czml_file": os.path.splitext(stl_file)[0] + ".czml",
-            "bldg_file": os.path.join(os.path.split(stl_file)[0], "bldg_file.json")}
-
-    @staticmethod
-    def is_obj_file(stl_file_str: str)->bool:
-        return stl_file_str.lower().endswith(OBJ_EXTENSION)
-    
+            "czml_file": get_czml_filename(stl_file),
+            "bldg_file": get_bldg_file_filename(stl_file)}
+  
     @staticmethod
     def set_min_elevation(coordinates):
         # 標高を表す要素を抽出
@@ -47,6 +42,7 @@ class NewBuilding:
         return coordinates
     
     def create(self):
+        logger.info(f"new_building.create is called")
         # 3D都市モデルのフルパス
         three_d_model_fullpath = os.path.join(get_shared_folder(), self.stl_file_dict["stl_file"])
         # ファイルのディレクトリ部分が存在しない場合は作成
@@ -58,7 +54,7 @@ class NewBuilding:
         czml_fullpath = os.path.join(get_shared_folder(), self.stl_file_dict["czml_file"])
         czml = CzmlFileForEditBuilding(czml_fullpath)
         czml.load()
-        czml.create_building(self.coordinates, self.height, self.stl_type_id)
+        czml.create(self.coordinates, self.height, self.stl_type_id)
         czml.export()
 
         # bldg_fileを読み込み
@@ -80,7 +76,7 @@ class NewBuilding:
 
         three_d_model_for_new_building = None
 
-        if self.is_obj_file(self.stl_file_dict["stl_file"]):
+        if is_obj_file(self.stl_file_dict["stl_file"]):
             three_d_model_for_new_building = ObjFileForNewBuilding(three_d_model_fullpath,
                                                                    bldg_file,
                                                                    new_building)
@@ -97,7 +93,7 @@ class NewBuilding:
         lockfile.delete_lockfile()
 
 if __name__ == "__main__":
-    print(f"{__file__} is called")
+    logger.info(f"{__file__} is called")
     coordinates_str = sys.argv[1:-3]
     height = float(sys.argv[-3])
     region_id = sys.argv[-2]

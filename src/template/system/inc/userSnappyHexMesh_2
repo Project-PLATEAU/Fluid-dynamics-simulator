@@ -17,4 +17,50 @@
             level $mlevel;
         }    
 
+        {
+            file "plantcover_under2m.eMesh";
+            level $mlevel;
+        }    
+
     );
+
+    refinementSurfaces
+    {
+        land
+        {
+            level (1 $mlevel);
+        }
+
+        building
+        {
+            level (1 $mlevel);
+        }
+    }
+
+    refinementRegions
+    {
+        dummy
+        {
+            mode distance;
+            levels ((3 2));
+        }
+                
+        tree1
+        {
+            mode distance;
+            levels ((3 2));
+        }
+
+        tree2
+        {
+            mode distance;
+            levels ((3 2));
+        }
+
+        plantcover_over2m
+        {
+            mode distance;
+            levels ((3 2));
+        }
+
+    }

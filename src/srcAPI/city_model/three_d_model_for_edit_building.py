@@ -3,6 +3,9 @@ from typing import Self
 from typing import List
 import numpy as np
 from stl import mesh
+
+from city_model.object_file_for_edit_object import IObjectFileForEditObject
+from city_model.object_for_new_object import IObjectForNewObject
 from .bldg_file_for_edit_building import *
 import math
 from typing import TYPE_CHECKING
@@ -17,16 +20,20 @@ class IThreeDModelForEditBuilding(metaclass=abc.ABCMeta):
         raise NotImplementedError()
  
 class ObjFileForRmBuilding(IThreeDModelForEditBuilding):
-    def __init__(self, filepath : str, bldg_file : BldgFileForEditBuilding) -> Self:
+    def __init__(self, filepath : str, object_file : IObjectFileForEditObject) -> Self:
         self.obj_filepath = filepath
         self.vertices = []
         self.face_vert_ids = []
         # 削除される頂点番号のリスト
-        self.vertice_ids_tobe_removed = bldg_file.vertice_ids_tobe_removed
+        self.vertice_ids_tobe_removed = object_file.vertice_ids_tobe_removed
         # 新しい頂点番号のリスト（削除された頂点番号にはNoneが入っている）
-        self.new_index_list = bldg_file.new_index_list
+        self.new_index_list = object_file.new_index_list
 
     def load_and_export(self) -> None:
+        # self.new_index_listの頂点番号がすべてNoneの場合、objファイルを削除する
+        if all(v is None for v in self.new_index_list):
+            os.remove(self.obj_filepath)
+            return
         num_vertices = 0
         tmp_file = self.obj_filepath + ".tmp"
         infile = open(self.obj_filepath, "r")
@@ -59,10 +66,10 @@ class ObjFileForRmBuilding(IThreeDModelForEditBuilding):
         return
 
 class StlFileForRmBuilding(IThreeDModelForEditBuilding):
-    def __init__(self, filepath : str, bldg_file : BldgFileForEditBuilding) -> Self:
+    def __init__(self, filepath : str, object_file : IObjectFileForEditObject) -> Self:
         self.stl_filepath = filepath
         # 削除される頂点のリスト
-        self.vertices_tobe_removed = bldg_file.vertices_tobe_removed
+        self.vertices_tobe_removed = object_file.vertices_tobe_removed
 
     def tobe_remained(self, face_stl)-> bool:
         float_face_stl = face_stl.astype(float).tolist()
@@ -78,6 +85,10 @@ class StlFileForRmBuilding(IThreeDModelForEditBuilding):
         all_faces_stl = stl_data.vectors
         # 削除する面をフィルタ
         mask = np.array([self.tobe_remained(face_stl) for face_stl in all_faces_stl])
+        # maskの要素がすべてFalseの場合、stlファイルを削除する
+        if not np.any(mask):
+            os.remove(self.stl_filepath)
+            return
         # ブールマスキングで削除されない面だけを保持した新しいメッシュを作成
         new_faces = all_faces_stl[mask]
         # 新しいメッシュのverctosを設定
@@ -89,24 +100,30 @@ class StlFileForRmBuilding(IThreeDModelForEditBuilding):
 
 class ObjFileForNewBuilding(IThreeDModelForEditBuilding):
     def __init__(self, filepath : str,
-                 bldg_file : BldgFileForEditBuilding, 
-                 new_building : "BuildingForNewBuilding") -> Self:
+                 object_file : IObjectFileForEditObject, 
+                 new_object : IObjectForNewObject) -> Self:
         self.obj_filepath = filepath
         # 建物が追加されたときの頂点一覧
-        self.vertices = bldg_file.bldg_file['vertices']
+        self.vertices = object_file.object_file['vertices']
         self.face_vert_ids = []
         # 建物追加前の頂点数
-        self.old_vertices_num = bldg_file.old_vertices_num
+        self.old_vertices_num = object_file.old_vertices_num
         # 新しい建物のメッシュの頂点番号リスト
-        self.face_vert_ids_of_new_building = new_building.face_index_list
+        self.face_vert_ids_of_new_building = new_object.face_index_list
 
     def load_and_export(self) -> None:
         num_vertices = 0
         tmp_file = self.obj_filepath + ".tmpnew"
         if os.path.exists(self.obj_filepath):
-            infile = open(self.obj_filepath, "r")
+            infile = open(self.obj_filepath, "r+")
             outfile = open(tmp_file, "w")
             need_to_add_new_face = False
+            # infileの最終行が改行で終わっていない場合、改行を追加する
+            last_row = infile.readlines()[-1].strip()
+            if last_row != "":
+                infile.seek(0, os.SEEK_END)
+                infile.write("\n")
+            infile.seek(0)
             for line in infile:
                 if num_vertices == self.old_vertices_num:
                     for vertice in self.vertices[num_vertices:]:
@@ -147,7 +164,8 @@ class ObjFileForNewBuilding(IThreeDModelForEditBuilding):
                 outfile.write(new_line)
             for face_vert_id in self.face_vert_ids_of_new_building:
                 new_line = "f " + " ".join(map(str, self.plus1_for_obj_face_index(face_vert_id))) + " \n"
-                outfile.write(new_line)           
+                outfile.write(new_line)  
+            outfile.close()  
         return
     
     @staticmethod
@@ -157,15 +175,15 @@ class ObjFileForNewBuilding(IThreeDModelForEditBuilding):
     
 class StlFileForNewBuilding(IThreeDModelForEditBuilding):
     def __init__(self, filepath : str, 
-                 bldg_file : BldgFileForEditBuilding,
-                 new_building : "BuildingForNewBuilding") -> Self:
+                 object_file : IObjectFileForEditObject,
+                 new_object : IObjectForNewObject) -> Self:
         self.stl_filepath = filepath
         # 建物が追加されたあとの頂点一覧
-        self.vertices = bldg_file.bldg_file['vertices']
+        self.vertices = object_file.object_file['vertices']
         # 建物追加前の頂点数
-        self.old_vertices_num = bldg_file.old_vertices_num
+        self.old_vertices_num = object_file.old_vertices_num
         # 新しい建物のメッシュの頂点番号リスト
-        self.face_vert_ids_of_new_building = new_building.face_index_list
+        self.face_vert_ids_of_new_building = new_object.face_index_list
 
     def load_and_export(self) -> None:
         stl_data = mesh.Mesh.from_file(self.stl_filepath)

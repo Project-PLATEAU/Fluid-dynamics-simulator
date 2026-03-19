@@ -1,31 +1,17 @@
-from math import isclose
-import numpy as np
 from typing import List
+from common.clockwise import Clockwise
 
 
 class Triangulate:
     def __init__(self, polygon: List[List[float]]) -> None:
-        if self.is_clockwise(polygon):
+        self.clockwise = Clockwise(polygon)
+        self.is_cw = self.clockwise.is_clockwise()
+        if self.is_cw:
             self.polygon = polygon
         else:
             self.polygon = polygon[::-1]
         return
 
-    @staticmethod
-    def signed_area(polygon):
-        # 多角形の符号付き面積を計算
-        n = len(polygon)
-        area = 0.0
-        for i in range(n):
-            x1, y1 = polygon[i]
-            x2, y2 = polygon[(i + 1) % n]
-            area += (x1 * y2 - x2 * y1)
-        return area / 2.0
-    
-    def is_clockwise(self, polygon):
-        # 多角形が時計回りかどうかを判定
-        return self.signed_area(polygon) < 0
-    
     @staticmethod
     def is_convex(prev, curr, next):
         """与えられた3つの頂点が凸であるかを判定"""
@@ -88,6 +74,12 @@ class Triangulate:
                 raise Exception("Triangulation failed. Invalid polygon.")
         # 残った最後の三角形を追加
         triangles.append(indices)
+        if not self.is_cw:
+            # 元の多角形が反時計回りの場合、三角形の頂点番号を反転
+            original_indices = list(range(len(self.polygon)))
+            reversed_indices = original_indices[::-1]
+            index_map = {original: new for original, new in enumerate(reversed_indices)}
+            triangles = [[index_map[idx] for idx in tri] for tri in triangles]        
         return triangles
 
 # 凹多角形の頂点 (反時計回り)

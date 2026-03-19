@@ -32,8 +32,8 @@ addLayers       false;
 castellatedMeshControls
 {
 
-    maxLocalCells 100000;
-    maxGlobalCells 2000000;
+    maxLocalCells  1000000;
+    maxGlobalCells 20000000;
     minRefinementCells 10;
     maxLoadUnbalance 0.10;
     nCellsBetweenLevels 3;
@@ -42,21 +42,8 @@ castellatedMeshControls
 
     #include "inc/userSnappyHexMesh_2"
 
-    refinementSurfaces
-    {
-        ".*"
-        {
-            level (1 $mlevel);
-        }
-    }
-
     // Resolve sharp angles
     resolveFeatureAngle 30;
-
-    refinementRegions
-    {
-    }
-
 
     // Mesh selection
     #include "inc/userSnappyHexMesh_3"

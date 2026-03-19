@@ -1,0 +1,95 @@
+import json
+from typing import List
+import os
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .plant_cover import *
+class PlantCoverFileForEditPlantCover():
+    def __init__(self, filepath: str) -> None:
+        self.filepath = filepath
+        self.object_file = None
+        self.vertice_ids_tobe_removed = []
+        self.new_index_list = []
+        self.vertices_tobe_removed = []
+        self.old_vertices_num = None
+    
+    def load(self):
+        if not os.path.exists(self.filepath):
+            # 存在しない場合は、空のplant_coverファイルを作成する。
+            with open(self.filepath, "w") as f:
+                json.dump({
+                    "vertices": [],
+                    "plant_covers": []
+                    }, f)
+
+        with open(self.filepath, 'r') as f:
+                self.object_file = json.load(f)
+
+    
+    @staticmethod
+    def get_new_index(old_index, vertice_ids_tobe_removed):
+        # 植被削除前のindexをold_indexとする
+        # 植被削除後のindexをnew_indexとして返却する
+        # 削除対象の頂点はnew_indexをNoneとする
+        i = 0
+        new_index = None
+        if old_index not in vertice_ids_tobe_removed:
+            for id in vertice_ids_tobe_removed:
+                if id < old_index:
+                    i = i + 1
+            new_index = old_index - i
+        return new_index
+
+    def remove_plant_covers(self, building_ids_tobe_removed: List[str]):
+        buildings_tobe_removed = [item for item in self.object_file['plant_covers'] if item.get('id') in building_ids_tobe_removed]
+        for b in buildings_tobe_removed:
+            faces_tobe_removed = b['faces']
+            for f in faces_tobe_removed:
+                for v in f:
+                    if v not in self.vertice_ids_tobe_removed:
+                        self.vertice_ids_tobe_removed.append(v)
+                        self.vertices_tobe_removed.append(self.object_file['vertices'][v])
+        # 古い頂点番号を新しい番号に変換するmap、ただし削除された番号はNoneとなる
+        new_index_map = map(lambda x: self.get_new_index(x, self.vertice_ids_tobe_removed), range(len(self.object_file['vertices'])))
+
+        # self.plant_cover_file['vertices']から削除対象頂点番号を削除する
+        self.object_file['vertices'] = [item for i, item in enumerate(self.object_file['vertices']) if i not in self.vertice_ids_tobe_removed]
+        # 削除対象のidの要素を消す
+        self.object_file['plant_covers'] = [item for item in self.object_file['plant_covers'] if item.get('id') not in building_ids_tobe_removed]
+        # facesの番号をnew_index_mapで変換する
+        self.new_index_list = list(new_index_map)
+        for b in self.object_file['plant_covers']:
+            for index, f in enumerate(b['faces']):
+                b['faces'][index] = list(map(lambda i: self.new_index_list[i], f))
+
+    def add_new_plant_cover(self, new_plant_cover: 'PlantCoverForNewPlantCover'):
+        self.old_vertices_num = len(self.object_file['vertices'])
+
+        # 新しい頂点を追加
+        for vertice in new_plant_cover.vertices:
+            self.object_file['vertices'].append(vertice['coordinate'])
+        # 新しい植被を追加
+        self.object_file['plant_covers'].append({
+            'id' : new_plant_cover.plant_cover_id,
+            'faces' : new_plant_cover.face_index_list
+        })
+        return
+    
+    def export(self):
+        # もし頂点が0個ならファイルを削除する
+        if len(self.object_file['vertices']) == 0:
+            os.remove(self.filepath)
+        else:
+            with open(self.filepath, 'w') as f:
+                json.dump(self.object_file, f)
+
+    def add_suffix_to_plant_cover_ids(self, suffix: str):
+        for plant_cover in self.object_file['plant_covers']:
+            plant_cover['id'] += suffix
+
+if __name__ == "__main__":
+    bldg_file = PlantCoverFileForEditPlantCover("plant_cover.json")
+    bldg_file.load()
+    bldg_file.remove_plant_covers(["2-0"])
+    bldg_file.export()

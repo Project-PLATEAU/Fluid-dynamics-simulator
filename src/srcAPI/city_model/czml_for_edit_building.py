@@ -1,13 +1,14 @@
 import json
 from typing import List
 import re
+from .czml_for_edit_object import ICzmlForEditObject
+from .constants import NEW_BUILDING_COLOR
 from common import webapp_db_connection
 import os
 
-BUILDING_COLOR_NEW_BUILDING = [89, 210, 255, 255]
 
 
-class CzmlFileForEditBuilding():
+class CzmlFileForEditBuilding(ICzmlForEditObject):
     def __init__(self, filepath: str) -> None:
         self.filepath = filepath
         self.czml = None
@@ -25,11 +26,11 @@ class CzmlFileForEditBuilding():
         with open(self.filepath, "r") as f:
             self.czml = json.load(f)
 
-    def remove_buildings(self, buildings_tobe_removed: List[str]):
-        # buildings_tobe_removedに含まれるid以外のidを持つデータをbuilding_removed_czmlにセット
+    def remove(self, buildings_tobe_removed: List[str]):
+        # buildings_tobe_removedに含まれるid以外のidを持つデータをczmlにセット
         self.czml = [item for item in self.czml if item.get('id') not in buildings_tobe_removed]
     
-    def create_building(self, coordinates: List[float], height: float, stl_type_id: int):
+    def create(self, coordinates: List[float], height: float, stl_type_id: int):
         pattern = re.compile(r"(\d+)-(\d+)")
         max_building_num = -1
         for element in self.czml:
@@ -53,7 +54,7 @@ class CzmlFileForEditBuilding():
                     "material" : {
                         "solidColor":{
                             "color":{
-                                "rgba": BUILDING_COLOR_NEW_BUILDING
+                                "rgba": NEW_BUILDING_COLOR
                             }
                         }
                     },
@@ -79,5 +80,5 @@ class CzmlFileForEditBuilding():
 if __name__ == "__main__":
     czml_file = CzmlFileForEditBuilding("converted_file.czml")
     czml_file.load()
-    czml_file.remove_buildings(["2-0"])
+    czml_file.remove(["2-0"])
     czml_file.export()

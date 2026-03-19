@@ -346,20 +346,27 @@ class RegionController extends BaseController
                         LogUtil::i($log);
                     }
 
-                    // ========「【IF204】3D都市モデルCZML変換API」を呼び出す。==========================
-                    $rqParams = [
-                        "region_id" => $region_id,
-                        "stl_type_id" => $stl_type_id
-                    ];
-                    $apiStatusCode = ApiService::callConvertToCzmlAPI($rqParams);
-                    LogUtil::i("CZML変換APIを呼び出しました。");
-                    if (ApiService::isError($apiStatusCode)) {
-                        $errorMessage = ["type" => "E", "code" => "E34", "msg" => Message::$E34];
-                        LogUtil::w($errorMessage["msg"]);
-                        return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_id' => $region_id])->with(['message' => $errorMessage]);
+                    $stlType = RegionService::getStlType($stl_type_id);
+                    if ($stlType->ground_flag) {
+                        LogUtil::i("stl_type_idのground_flagがtrueであるため、CZML変換APIは呼びだしません。 stl_type_id:{$stl_type_id}, ground_flag:{$stlType->ground_flag}");
+                        return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_id' => $region_id]);
+                    } else {
+                        // 地面フラグがfalseの場合のみCZML変換APIを呼び出す。
+                        // ========「【IF204】3D都市モデルCZML変換API」を呼び出す。==========================
+                        $rqParams = [
+                            "region_id" => $region_id,
+                            "stl_type_id" => $stl_type_id
+                        ];
+                        $apiStatusCode = ApiService::callConvertToCzmlAPI($rqParams);
+                        LogUtil::i("CZML変換APIを呼び出しました。");
+                        if (ApiService::isError($apiStatusCode)) {
+                            $errorMessage = ["type" => "E", "code" => "E34", "msg" => Message::$E34];
+                            LogUtil::w($errorMessage["msg"]);
+                            return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_id' => $region_id])->with(['message' => $errorMessage]);
+                        }
+                        // ========「【IF204】3D都市モデルCZML変換API」を呼び出す。//==========================
+                        return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_id' => $region_id]);
                     }
-                    // ========「【IF204】3D都市モデルCZML変換API」を呼び出す。//==========================
-                    return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_id' => $region_id]);
                 } else {
                     throw new Exception("STLファイルのアップロードに失敗しました。都市モデル: {$city_model_id}, 解析対象地域ID: {$region_id}");
                 }
@@ -457,8 +464,6 @@ class RegionController extends BaseController
             if ($isDeleteFlg) {
                 // STLファイルの削除
                 DB::beginTransaction();
-                // レコード削除前に名前を取得しておく
-                $stlModelName = RegionService::getSltFile($region_id, $stlTypeId)->stl_type_id;
 
                 // stl_modelから削除
                 $deleteResult = RegionService::deleteStlFile($city_model_id, $region_id, $stlTypeId);
@@ -485,7 +490,7 @@ class RegionController extends BaseController
                     $message = '[' . Constants::DEL_TYPE_RECORD . "] [Delete failed] [stl_model] [region_id:$region_id, stl_type_id:$stlTypeId]";
                     LogUtil::deleteDirectoryError($message);
                     // ダイアログを表示
-                    return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId])->with(['message' => $errorMessage]);
+                    return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_id' => $region_id])->with(['message' => $errorMessage]);
                 }
 
                 // DBのレコードの削除に成功した場合の処理
@@ -497,11 +502,11 @@ class RegionController extends BaseController
                 if ($errorMessage) {
                     $message = '[' . Constants::DEL_TYPE_DIRECTORY . '] [Delete failed] [path:' . $filePath . ']';
                     LogUtil::deleteDirectoryError($message);
-                    return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId])->with(['message' => $errorMessage]);
+                    return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_id' => $region_id])->with(['message' => $errorMessage]);
                 } else {
                     $message = '[' . Constants::DEL_TYPE_DIRECTORY . '] [Delete success] [path:' . $filePath . ']';
                     LogUtil::i($message);
-                    return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId]);
+                    return redirect()->route('city_model.edit', ['id' => $city_model_id, 'registered_user_id' => $registeredUserId, 'region_id' => $region_id]);
                 }
             } else {
 

@@ -7,7 +7,9 @@ use App\Commons\CommonUtils;
 use App\Commons\Constants;
 use App\Models\Db\CityModel;
 use App\Models\Db\Coordinate;
+use App\Models\Db\Information;
 use App\Models\Db\StlType;
+use App\Models\Db\TreeType;
 use App\Utils\DatetimeUtil;
 use App\Utils\LogUtil;
 use Faker\Core\Uuid;
@@ -231,17 +233,43 @@ class CityModelService extends BaseService
 
     /**
      * 都市モデルの新規作成時のSTLファイル種別の選択欄を取得
-     * 地表面フラグが"0"のレコードをID昇順で取得する
      * @return Collection 'App\Models\Db\StlType STLファイル種別の選択肢のコレクション
      */
     public static function getStlTypeOptionsByGroundFlagFalse()
     {
-        // STLファイル種別
-        // 地表面フラグが"0"のレコードをID昇順で取得する
-        $stlType = StlType::where('ground_flag', false)
+        // 地表面フラグと単独木フラグと植被フラグが全てFalseのレコードをID昇順で取得する
+        $stlType = StlType::where([
+            'ground_flag' => false,
+            'tree_flag' => false,
+            'plant_cover_flag' => false])
             ->orderBy('stl_type_id', 'asc')
             ->get();
 
         return $stlType;
+    }
+
+    /**
+     * インフォメーションを取得する。
+     * @param integer $infomation_id インフォメーションID
+     * @return \App\Models\Db\Information インフォメーション
+     */
+    public static function getInfomation($infomation_id = 1)
+    {
+        $info = Information::find($infomation_id);
+        $info->information = str_replace(
+            ['{height_default}', '{diameter_default}'],
+            [Constants::CANOPY_HEIGHT_DEFAULT, Constants::CANOPY_DIAMETER_DEFAULT],
+            $info->information);
+        return $info;
+    }
+
+    /**
+     *  単独木分類の選択欄を取得
+     * @return Collection App\Models\Db\TreeType 単独木分類の選択肢の配列
+     */
+    public static function getTreeTypeOptions()
+    {
+        //  単独木分類
+        return TreeType::all();
     }
 }

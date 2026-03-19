@@ -49,6 +49,14 @@ def delete_folder_fs(folder_path_fs : str ):
     shutil.rmtree(folder_path_fs)
     return
 def exist_folder_fs(folder_path_fs : str ) -> bool:
+    """
+    指定されたパスが存在するかを確認する関数。
+    （ファイルかフォルダかを問わず、パスが存在する場合にTrueを返します）
+    Parameters:
+        folder_path_fs (str): 確認したいパス（フォルダまたはファイル）
+    Returns:
+        bool: 指定されたパスが存在すればTrue、存在しない場合はFalse
+    """
     return os.path.exists(folder_path_fs)
 def create_folder_fs(folder_path_fs : str ):
     os.makedirs(folder_path_fs)

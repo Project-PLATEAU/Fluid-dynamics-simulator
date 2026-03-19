@@ -32,6 +32,26 @@ class NewBuildingArgs(BaseModel):
         region_id: str
     stl_type_id: int
 
+
+class NewTreeArgs(BaseModel):
+    coordinates: List[float]
+    height: float
+    canopy_diameter: float
+    if REQUIRED_RESULT == 400:
+        region_id: int
+    else:
+        region_id: str
+
+
+class NewPlantCoverArgs(BaseModel):
+    coordinates: List[float]
+    height: float
+    if REQUIRED_RESULT == 400:
+        region_id: int
+    else:
+        region_id: str
+
+
 @app.post("/convert_to_czml")
 async def add_czml(args: ConvertToCZMLArgs, background_tasks: BackgroundTasks):
     try:
@@ -75,6 +95,37 @@ async def new_building(args: NewBuildingArgs, background_tasks: BackgroundTasks)
         print(e)
         return JSONResponse(status_code=500, content={"msg":"error was happend in server"})
 
+@app.post("/new_tree")
+async def new_tree(args: NewTreeArgs, background_tasks: BackgroundTasks):
+
+    try:
+        print(f"coordinates={args.coordinates}")
+        print(f"height={args.height}")
+        print(f"canopy_diameter={args.canopy_diameter}")
+        print(f"region_id={args.region_id}")
+
+        if( REQUIRED_RESULT == 500):
+            raise
+        response = JSONResponse(status_code=409, content={"msg":"resource conflict"}) if REQUIRED_RESULT == 409 else JSONResponse(status_code=201, content=None)
+        return response
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=500, content={"msg":"error was happend in server"})
+
+@app.post("/new_plant_cover")
+async def new_plant_cover(args: NewPlantCoverArgs, background_tasks: BackgroundTasks):
+    try:
+        print(f"coordinates={args.coordinates}")
+        print(f"height={args.height}")
+        print(f"region_id={args.region_id}")
+
+        if( REQUIRED_RESULT == 500):
+            raise
+        response = JSONResponse(status_code=409, content={"msg":"resource conflict"}) if REQUIRED_RESULT == 409 else JSONResponse(status_code=201, content=None)
+        return response
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=500, content={"msg":"error was happend in server"})
 
 # BaseModelで例外が発生したときのハンドラ
 @app.exception_handler(RequestValidationError)

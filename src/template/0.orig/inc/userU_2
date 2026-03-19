@@ -10,7 +10,7 @@ FoamFile
         type            exprFixedValue;
         value           $internalField;
         U0              -2.0;              // User Input Velocity (NEGATIVE)
-        MINZ               0;              // User Input MINZ
+        MINZ            65.0;              // User Input MINZ
         N0              0.27;              // Power CONSTAT Value
         Z0              10.0;              // (m)   CONSTAT Value
         valueExpr       "$U0*pow((pos().z()-$MINZ)/$Z0,$N0)*face()/area()";
@@ -28,12 +28,13 @@ FoamFile
         type            noSlip;
     }
 
-    grounds                           // grounds
-    {
-        type            noSlip;
-    }
-
     land                              // grounds
     {
         type            noSlip;
     }
+
+    green                           // green
+    {
+        type            noSlip;
+    }
+

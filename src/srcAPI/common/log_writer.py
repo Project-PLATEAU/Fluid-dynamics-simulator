@@ -1,5 +1,5 @@
 # ログ出力の設定内容は 'logging.config' を参照
-# ログ出力ファイルは 'log/wrapper.log'
+# ログ出力ファイルは 'log/API.log'
 import logging
 import logging.config
 

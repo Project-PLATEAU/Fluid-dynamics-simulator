@@ -12,7 +12,7 @@ services:
       - db_network
       - api_network
     volumes:
-      - ./src:/var/www/html
+      - ../:/var/www/html
       - /mnt:/var/www/html/srcWeb/storage/app/public
 
   db:
@@ -41,6 +41,7 @@ services:
     networks:
       - db_network
     volumes:
+      - ./wrapper/opt/:/opt/
       - ./wrapper/var/:/var/
       - /mnt:/mnt
 

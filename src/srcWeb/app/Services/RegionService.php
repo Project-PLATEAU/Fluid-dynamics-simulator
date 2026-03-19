@@ -187,6 +187,8 @@ class RegionService extends BaseService
         $newRegion = new Region();
         // 複製元の解析対象地域
         $srcRegion = self::getRegionById($src_region_id);
+        // 複製元の解析対象地域に紐づいたSTLファイルのstl_type_idを全て取得する
+        $stlTypeIds = $srcRegion->stl_models()->pluck('stl_type_id')->toArray();
 
         // 解析対象地域テーブルを複製
         foreach ($srcRegion->getFillable() as $attribute) {
@@ -210,6 +212,15 @@ class RegionService extends BaseService
 
             //複製元の解析対象地域解IDフォルダ以下にOBJ / STLファイルがある場合(1つ以上のファイルがアップロードされた)のみ、コピーをする。
             if (FileUtil::isExists($srcObjStlPath)) {
+
+                // 複製先のOBJ / STLファイル種別フォルダを作成
+                foreach ($stlTypeIds as $stlTypeId) {
+                    // 複製先のOBJ / STLファイルパス設定：city_model/<city_model_id>/region/<region_id>/<stl_type_id>/
+                    $desObjStlTypePath = $desObjStlPath . "/{$stlTypeId}";
+                    // 複製先の親フォルダ
+                    FileUtil::makeDirectory($desObjStlTypePath);
+                }
+                
                 $result = FileUtil::copyFolder($srcObjStlPath, $desObjStlPath);
                 if ($result) {
                     $logInfo = "[OBJ / STL File] [copy from srcObjStlFiles: {$srcObjStlPath}]";
@@ -248,14 +259,14 @@ class RegionService extends BaseService
         foreach ($srcStlModels as $srcStlModel) {
 
             // 複製元のSTLファイル名を取得する。
-            $objStlFileName = FileUtil::getFileName($srcStlModel->stl_file);
+            $objStlFileName = pathinfo($srcStlModel->stl_file, PATHINFO_BASENAME);
             // 複製先のSTLファイルパス設定：city_model/<city_model_id>/region/<region_id>/<stl_type_id>/STLファイル名
             $desObjStlFilePath = $des_obj_stl_folder_path . "/" . $srcStlModel->stl_type_id . "/" . $objStlFileName;
 
             // 複製元のczmlファイル名を取得する。
             $czmlFileName = FileUtil::getFileName($srcStlModel->czml_file);
             // 複製先のczmlファイルパス設定：city_model/<city_model_id>/region/<region_id>/<stl_type_id>/czmlファイル名
-            $desCzmlFilePath = $des_obj_stl_folder_path . "/" . $srcStlModel->stl_type_id . "/" . $czmlFileName;
+            $desCzmlFilePath = $czmlFileName ? $des_obj_stl_folder_path . "/" . $srcStlModel->stl_type_id . "/" . $czmlFileName : null;
 
             $newStlModel = new StlModel();
             foreach ($srcStlModel->getFillable() as $attribute) {

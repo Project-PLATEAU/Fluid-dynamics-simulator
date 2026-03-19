@@ -33,3 +33,15 @@ green.stl                            // Set User stl
         openEdges       yes;
     }
 }
+
+plantcover_under2m.obj
+{
+    extractionMethod    extractFromSurface;
+    includedAngle       150;
+
+    subsetFeatures
+    {
+        nonManifoldEdges       no;
+        openEdges       yes;
+    }
+}

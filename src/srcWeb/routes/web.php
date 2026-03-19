@@ -92,10 +92,10 @@ Route::middleware(['log'])->group(function () {
         Route::post('/on_change_stl_type', 'App\Http\Controllers\RegionController@onChangeStlType')->name('stl_type.change');
         Route::get('/region/stl/czml_file/{region_id}', 'App\Http\Controllers\RegionController@longPollingWaitCzmlFile')->name('region.wait_czml_file');
 
-        //架空建物の新規作成
-        Route::post('/building/create', 'App\Http\Controllers\BuildingController@create')->name('building.create');
-        //架空建物の削除
-        Route::post('/building/delete', 'App\Http\Controllers\BuildingController@destroy')->name('building.delete');
+        //建物・樹木の作成
+        Route::post('/map_activity/create/{model_type}', 'App\Http\Controllers\MapActivityController@create')->name('map_activity.create');
+        //建物・樹木の削除
+        Route::post('/map_activity/delete/{model_type}', 'App\Http\Controllers\MapActivityController@destroy')->name('map_activity.delete');
 
         /**
          * シミュレーションモデル作成画面(index)

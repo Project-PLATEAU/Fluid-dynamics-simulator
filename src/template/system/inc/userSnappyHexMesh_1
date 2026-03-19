@@ -1,5 +1,16 @@
 mlevel  1;            // Mesh Refine Level 1 - 3
 
+miny -73190.000000;
+minx 46900.000000;
+minz 65.000000;
+maxy -73108.000000;
+maxx 47110.000000;
+maxz 125.000000;
+
+xc #eval{ ($minx+$maxx)*0.5 };
+yc #eval{ ($miny+$maxy)*0.5 };
+zz #eval{ $maxz-10 };
+
 // Add User STL File
 geometry
 {
@@ -20,5 +31,41 @@ geometry
         type triSurfaceMesh;
         name green;
     }
+
+    plantcover_under2m.obj
+    {
+        type triSurfaceMesh;
+        name green;
+    }
+
+    dummy
+    {
+        type searchableCylinder;
+        point1          ($xc $yc $zz);
+        point2          ($xc $yc $maxz);
+        radius       3.0;
+    }
     
+    tree1
+    {
+        type searchableCylinder;
+        point1          (0.0 0.0 0.0);
+        point2          (0.0 0.0 10.0);
+        radius      5.0;
+    }
+
+    tree2
+    {
+        type searchableCylinder;
+        point1          (5.0 0.0 0.0); 
+        point2          (5.0 0.0 10.0);
+        radius      5.0;
+    }
+
+    plantcover_over2m.obj
+    {
+        type triSurfaceMesh;
+        name plantcover_over2m;
+    }
+
 }

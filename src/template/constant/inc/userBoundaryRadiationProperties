@@ -38,3 +38,13 @@ green                                     // building or ground surface
     };
 }
     
+FaceZoneTrees                                // TreeZone surface
+{
+    type    opaqueDiffusive;
+    wallAbsorptionEmissionModel
+    {
+        type            multiBandAbsorption;
+        absorptivity    (0.30 0.70); //数値は要検証
+        emissivity      (0.30 0.70);
+    };
+}

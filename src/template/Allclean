@@ -10,3 +10,4 @@ cleanCase0
 rm -rf constant/extendedFeatureEdgeMesh
 
 #------------------------------------------------------------------------------
+touch temp.foam

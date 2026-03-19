@@ -37,6 +37,42 @@ def combine(x : str ,y : str ) -> str:
 def get_copied_stl_filename_without_extention(stl_type_id:int)->str:
     return 'type%i'%(stl_type_id)
 
+def generate_modified_file_path(path_fs_top_folder: str, stl_file_path: str) -> str:
+    """
+    指定されたフォルダパスとファイルパスを結合し、ファイル名の先頭に 'H_' を付けた新しいパスを生成する。
+    Parameters:
+        path_fs_top_folder (str): トップディレクトリのパス
+        stl_file_path (str): ディレクトリを含むファイルパス
+    Returns:
+        str: 結果として得られる新しいファイルパス
+    """
+    # トップフォルダとファイルパスを結合
+    full_path = os.path.join(path_fs_top_folder, stl_file_path)    
+    # ファイル名の抽出と変更
+    dirname, filename = os.path.split(full_path)  # フォルダパスとファイル名に分割
+    modified_filename = f'H_{filename}'          # ファイル名の先頭に 'H_' を追加
+    # 新しいパスを生成
+    modified_full_path = os.path.join(dirname, modified_filename)
+
+    return modified_full_path
+
+def generate_tree_file_path(path_fs_top_folder: str, stl_file_path: str) -> str:
+    """
+    指定されたフォルダパスとファイルパスを結合し、ファイル名を'tree.json' に変更したパスを生成する。
+    Parameters:
+        path_fs_top_folder (str): トップディレクトリのパス
+        stl_file_path (str): ディレクトリを含むファイルパス
+    Returns:
+        str: 結果として得られる新しいファイルパス
+    """
+    full_path = os.path.join(path_fs_top_folder, stl_file_path)
+    dirname, filename = os.path.split(full_path)
+    tree_filename = 'tree.json'
+    tree_full_path = os.path.join(dirname, tree_filename)
+
+    return os.path.normpath(tree_full_path)
+
+
 def get_shared_folder() -> str:
     """get_shared_folder
         共有ファイルサーバのパスを取得する

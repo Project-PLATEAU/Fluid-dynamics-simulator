@@ -15,6 +15,8 @@ from typing import Type
 import json
 import numpy as np
 from numpy import ndarray
+from collections import defaultdict
+from scipy.spatial import cKDTree
 
 logger = log_writer.getLogger()
 
@@ -178,16 +180,27 @@ def get_nFaces_and_startFace(file_type_id : str, model_id : str) -> Dict[str, in
     except Exception as e:
         logger.error(f"boundaryデータ取得時にエラーが発生しました: {e}")
 
-def get_solar_irradiances(file_type_id : str, result_folder_name : str)  -> ndarray: # 日射量
+def get_solar_irradiances(file_type_id : str, result_folder_name : str, boundary_cell_length : int)  -> ndarray: # 日射量
     try:
         with open(file_path_generator.combine(result_folder_name, FNAME_SOLAR_IRRADIANCE), "r") as file:
             text = file.read()
-        pattern = re.compile(fr"\s+{file_type_id}\s+{{[^}}]*?[\d]+\s*\(\s*([0-9\.e\s]*?)\s*\)\s*;\s+}}", re.DOTALL)
+        pattern = re.compile(fr"\s+{file_type_id}\s+{{[^}}]*?[\d]+\s*\(\s*([0-9\.e\s\-]*?)\s*\)\s*;\s+}}", re.DOTALL)
         match = pattern.search(text)
         solar_irradiances = None
         if match:
             solar_irradiances_str = match.group(1)
             solar_irradiances = np.array([float(s) for s in solar_irradiances_str.split()])
+        else:
+            # uniformの場合
+            pattern_uniform = re.compile(fr"\s+{file_type_id}\s+{{[^}}]*?([0-9\.e\-]*?)\s*;\s+}}", re.DOTALL)
+            match = pattern_uniform.search(text)
+            if match:
+                solar_irradiance_uniform_str = match.group(1)
+                solar_irradiance_uniform = float(solar_irradiance_uniform_str)
+                solar_irradiances = np.array([solar_irradiance_uniform for _ in range(boundary_cell_length)])
+            else:
+                logger.error(f"日射量データ取得時にエラーが発生しました: {file_type_id}のデータが見つかりません")
+                raise Exception
         return solar_irradiances
     except Exception as e:
         logger.error(f"qrデータ取得時にエラーが発生しました: {e}")
@@ -202,7 +215,7 @@ def get_boundary_cell_numbers_and_solar_irradiances( # 境界セル番号に対�
         match = pattern.search(text)
         face_owners = np.array([int(s) for s in match.group(1).split()])
         boundary_cell_numbers = face_owners[boundary[START_FACE]:boundary[START_FACE] + boundary[N_FACES]]
-        solar_irradiances = get_solar_irradiances(file_type_id, result_folder_name)
+        solar_irradiances = get_solar_irradiances(file_type_id, result_folder_name, len(boundary_cell_numbers))
         cell_numbers_and_solar_irradiances = []
         for i in range(len(boundary_cell_numbers)):
             boundary_cell_number_and_solar_irradiance = {"cell_num" : boundary_cell_numbers[i], "solar_irradiance" : solar_irradiances[i]}
@@ -219,8 +232,12 @@ def get_solar_irradiance_and_cell_num(model_id : str, result_folder_name : str) 
         stl_type_id = file_path_generator.get_copied_stl_filename_without_extention(record.stl_type_id)
         ground_nFace_startFace = get_nFaces_and_startFace(stl_type_id, model_id)
         if ground_nFace_startFace is not None:
-            ground_cell_numbers_and_solar_irradiances += get_boundary_cell_numbers_and_solar_irradiances(
-                ground_nFace_startFace, result_folder_name, model_id, stl_type_id)
+            ground_cell_numbers_and_solar_irradiances += get_boundary_cell_numbers_and_solar_irradiances(ground_nFace_startFace, result_folder_name, model_id, stl_type_id)
+
+    PLANT_COVER = 'type21'
+    ground_nFace_startFace = get_nFaces_and_startFace(PLANT_COVER, model_id)
+    if ground_nFace_startFace is not None:
+        ground_cell_numbers_and_solar_irradiances += get_boundary_cell_numbers_and_solar_irradiances(ground_nFace_startFace, result_folder_name, model_id, PLANT_COVER)
 
     return ground_cell_numbers_and_solar_irradiances
 # endregion
@@ -307,12 +324,108 @@ def create_fixed_temp_range_list() -> List[Dict[str, float | Tuple[int, int, int
         range_list.append({"threshold": FIXED_MIN_TEMP + (TEMP_1_STEP * i), "rgba" : gradient_colors[i]})
     return range_list
 
+def lonlat_to_local_xy(lons, lats, lat0=None):
+    if lat0 is None:
+        lat0 = float(np.mean(lats))
+    lat0_rad = math.radians(lat0)
+    # 近似係数（地域により微調整可）
+    meters_per_deg_lat = 111132.92 - 559.82 * math.cos(2*lat0_rad) + 1.175 * math.cos(4*lat0_rad)
+    meters_per_deg_lon = 111412.84 * math.cos(lat0_rad) - 93.5 * math.cos(3*lat0_rad)
+    xs = (np.array(lons, dtype=float)) * meters_per_deg_lon
+    ys = (np.array(lats, dtype=float)) * meters_per_deg_lat
+    return xs, ys
+
+def get_filterd_cell_centres_by_radius(
+    cell_centres: List[Tuple[float, float, float]], radius_meters: float
+) -> Tuple[List[Tuple[float, float, float]], List[int]]:
+    """
+    入力と同じ型の出力を返すバージョン。
+    - cell_centres: List[Tuple[lon, lat, z]]
+    - radius_meters: 近接クラスタの閾値（メートル）
+    戻り値:
+      filtered_cells: List[Tuple[lon, lat, z]]
+      indexes: List[int]  # 元のインデックス
+    """
+    # 入力チェック・空処理
+    if cell_centres is None:
+        return [], []
+    if len(cell_centres) == 0:
+        return [], []
+
+    # lon, lat, z を抽出
+    lons = [float(t[0]) for t in cell_centres]
+    lats = [float(t[1]) for t in cell_centres]
+
+    # 局所平面に投影（代表緯度は平均を使う）
+    lat0 = float(np.mean(lats))
+    xs, ys = lonlat_to_local_xy(lons, lats, lat0=lat0)
+
+    pts = np.vstack((xs, ys)).T  # shape (N,2)
+
+    # KDTree で半径によるクラスタ化
+    tree = cKDTree(pts)
+    N = pts.shape[0]
+    visited = [False] * N
+    selected_indices: List[int] = []
+
+    for i in range(N):
+        if visited[i]:
+            continue
+        # 半径内の点インデックスを取得
+        idxs = tree.query_ball_point(pts[i], r=radius_meters)
+        for j in idxs:
+            visited[j] = True
+        # 代表点として「最初に出現した点 i」を選ぶ
+        selected_indices.append(i)
+
+    # 出力を入力と同じ型に整形（list of tuples）
+    filtered_cells: List[Tuple[float, float, float]] = [
+        (float(cell_centres[i][0]), float(cell_centres[i][1]), float(cell_centres[i][2]))
+        for i in selected_indices
+    ]
+    indexes: List[int] = [int(i) for i in selected_indices]
+
+    return filtered_cells, indexes
+
 # 指定高さのセルとインデックスを取得
 def get_filterd_cell_centres_and_indexes(cell_centres : List[Tuple[float, float, float]], hight : float):
+    """
+    完全一致の (x,y) ごとにグループ化し、target (=min_hight + hight) に最も近い z を持つ行だけを残す。
+    戻り値: (cells_out, indexes_out) -- numpy arrays
+    """
     min_hight = get_min_hight(cell_centres)
-    cells_in_hight = np.array([t for t in cell_centres if min_hight + hight - HIGHT_BUFFER <= t[2] <= min_hight + hight + HIGHT_BUFFER])
-    indexes_in_hight = np.array([i for i, t in enumerate(cell_centres) if min_hight + hight - HIGHT_BUFFER <= t[2] <= min_hight + hight + HIGHT_BUFFER])
-    return cells_in_hight, indexes_in_hight
+    target = min_hight + hight
+    lower = target - HIGHT_BUFFER
+    upper = target + HIGHT_BUFFER
+    grid_size = 4.0
+
+    # 候補だけを先に抽出（元の挙動）
+    candidates = [(i, t[0], t[1], t[2]) for i, t in enumerate(cell_centres) if lower <= t[2] <= upper]
+    if not candidates:
+        # 空の numpy 配列を返す（形状を揃える）
+        return np.empty((0, 3), dtype=float), np.empty((0,), dtype=int)
+
+    # 完全一致の (x,y) をキーにグループ化（丸めなし）
+    groups = defaultdict(list)  # key -> list of (row_index, x, y, z)
+    for i, x, y, z in candidates:
+        #defw = (float(x), float(y))  # 完全一致で比較
+        key = (int(np.floor(float(x) / grid_size)), int(np.floor(float(y) / grid_size)))
+        groups[key].append((i, float(x), float(y), float(z)))
+
+    selected_cells = []
+    selected_indexes = []
+
+    for key, items in groups.items():
+        # items: list of (row_index, x, y, z)
+        # target に最も近い z を持つ要素を選ぶ
+        best = min(items, key=lambda it: abs(it[3] - target))
+        row_idx, x, y, z = best
+        selected_cells.append((x, y, z))
+        selected_indexes.append(row_idx)  # enumerate インデックス（元の位置）
+
+    cells_out = np.array(selected_cells, dtype=float)
+    indexes_out = np.array(selected_indexes, dtype=int)
+    return cells_out, indexes_out
 
 def get_min_hight(cell_centres : ndarray) -> float:
     return min(cell_centre[2] for cell_centre in cell_centres)
@@ -363,7 +476,9 @@ def get_wbgt_colors(wbgts : List[float]):
 def get_wbgts(solar_irradiances_and_cell_nums:List[Dict[str, int | float]],  wind_strengths:List[float], temperatures:List[float], humidities:List[float]) -> ndarray:
     wbgts = []
     for i in range(len(solar_irradiances_and_cell_nums)):
-        wbgts.append(get_wbgt(temperatures[i], humidities[i], solar_irradiances_and_cell_nums[i]["solar_irradiance"] * 0.001, wind_strengths[i])) #HUMIDITY→humidity
+        #wbgts.append(get_wbgt(temperatures[i], humidities[i], solar_irradiances_and_cell_nums[i]["solar_irradiance"] * 0.001, wind_strengths[i])) #HUMIDITY→humidity
+        wbgts.append(get_wbgt(temperatures[solar_irradiances_and_cell_nums[i]["cell_num"]], humidities[solar_irradiances_and_cell_nums[i]["cell_num"]],
+                              solar_irradiances_and_cell_nums[i]["solar_irradiance"] * 0.001, wind_strengths[solar_irradiances_and_cell_nums[i]["cell_num"]]))
     return np.array(wbgts)
 
 # region ベクトル&座標
@@ -427,8 +542,8 @@ def export_wind_visualization_file(
         cc_list = list(cell_centres[i])
         endpoint_list = list(endpoints[i])
         # 建物データはCesiumで表示するとジオイド高だけ浮くのでそれに合わせて調整
-        cc_list[2] = cc_list[2] + GEOID_HEIGHT
-        endpoint_list[2] = endpoint_list[2] + GEOID_HEIGHT
+        cc_list[2] = cc_list[2] + GEOID_HEIGHT + 2
+        endpoint_list[2] = endpoint_list[2] + GEOID_HEIGHT + 2
         doc.append(
             {
                 "id":f"arrow{str(i)}",
@@ -506,7 +621,7 @@ def export_temp_visualization_file(file_path : str,
     for i in range(len(cell_centres)):
         cc_list = list(cell_centres[i])
         # 建物データはCesiumで表示するとジオイド高だけ浮くのでそれに合わせて調整
-        cc_list[2] = cc_list[2] + GEOID_HEIGHT
+        cc_list[2] = cc_list[2] + GEOID_HEIGHT + 2
         doc.append(
             {
                 "id":f"dot{str(i)}",
@@ -567,7 +682,7 @@ def export_wbgt_visualization_file(file_path : str, cell_centres : ndarray,
     for i in range(len(cell_centres)):
         cc_list = list(cell_centres[i])
         # 建物データはCesiumで表示するとジオイド高だけ浮くのでそれに合わせて調整
-        cc_list[2] = cc_list[2] + GEOID_HEIGHT
+        cc_list[2] = cc_list[2] + GEOID_HEIGHT + 2
         doc.append(
             {
                 "id":f"dot{str(i)}",
@@ -655,8 +770,10 @@ def create_output_data(
     # 出力ファイルを作成 #
     for h in height_list:
         height = h.height
+        logger.info('height : [%s]'%height)
         # 指定高さのセルとインデックスを取得
         flt_cell_centres, indexes = get_filterd_cell_centres_and_indexes(cell_centres, height)
+        # analyze_same_xy_diff_z(flt_cell_centres, indexes, None, None, 5)
 
         ## 風況　##
         flt_wind_vectors = get_filterd_list(wind_vectors, indexes)
@@ -720,15 +837,18 @@ def create_output_data(
                 legend_label_higher = str(round(temp_fi_legend_label_min_max["max"],1)), legend_label_lower = str(round(temp_fi_legend_label_min_max["min"],1)), legend_type = FIXED
         ))
 
+
     ## WBGT ##
     # 境界面に接するセルの中心座標を取得
     boundary_cell_centres = get_boundary_cell_centres(cell_centres, solar_irradiances_and_cell_nums)
     boundary_cell_centres_lonlat = convert_coordinates_to_lonlat(coordinate_id, boundary_cell_centres)
+    cell_centres_lonlat, index = get_filterd_cell_centres_by_radius(boundary_cell_centres_lonlat, 4.0)
+
     # WBGTを計算
     wbgts = get_wbgts(solar_irradiances_and_cell_nums, get_wind_strength(wind_vectors), temperatures, humidities)
     wbgt_colors = get_wbgt_colors(wbgts)
-    wbgt_visualization_filepath = export_wbgt_visualization_file(wbgt_va_vi_folder, boundary_cell_centres_lonlat, wbgt_colors, wbgts)
-    wbgt_download_filepath = export_wbgt_download_file(wbgt_va_dl_folder, boundary_cell_centres_lonlat, wbgts, wbgt_colors)
+    wbgt_visualization_filepath = export_wbgt_visualization_file(wbgt_va_vi_folder, cell_centres_lonlat, wbgt_colors, wbgts)
+    wbgt_download_filepath = export_wbgt_download_file(wbgt_va_dl_folder, cell_centres_lonlat, wbgts, wbgt_colors)
     # WBGTでは高さを表示しないが、height_idをNullにできないのでheightが最小のheight_idを代わりに代入する
     min_height = min(height_list, key=lambda x: x.height)
     # CZML追加
@@ -783,6 +903,7 @@ def convert(model_id : str):
     logger.info('[%s] Complete to get solar irriadiance data.'%model_id)
 
     # CZML/GeoJson作成処理
+    logger.info('[%s] Start to create czml file.'%model_id)
     visualizations = create_output_data(model_id, coordinate_id, initial_wind_speed, initial_temp,
                                             webapp_db_connection.fetch_height(), wind_vectors, temperetures, humidities, cell_centres, solar_irradiance_and_cell_num)
     # レコード削除

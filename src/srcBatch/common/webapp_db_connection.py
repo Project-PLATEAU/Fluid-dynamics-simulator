@@ -137,6 +137,7 @@ def select_stls(region_id,model_id):
         .all()
     return records
 
+
 def select_policies(model_id,stl_type_id):
     with session_con() as session:
         try:
@@ -148,6 +149,28 @@ def select_policies(model_id,stl_type_id):
         except NoResultFound :
             logger.error(f'No records found for model_id: {model_id} & stl_type_id: {stl_type_id}')
             raise Exception(f'No records found for solver_id: {model_id} & stl_type_id: {stl_type_id}')
+
+# 対象レコードの取得：WEBアプリDBのシミュレーションモデルテーブルと解析対象地域テーブルをJoinし、引数で取得したシミュレーションモデルIDのレコードを取得
+# シミュレーションモデルテーブルから取得したregion_idをキーにSTLファイルテーブルとSTLファイル種別テーブルからstl_type_id、tree_flag、plant_cover_flag、stl_fileを取得する
+def select_veg_stls(region_id):
+    initialize()
+    with session_con() as session:
+        records = session.query(StlModel, StlType)\
+        .join(StlModel, StlModel.stl_type_id == StlType.stl_type_id)\
+        .filter(StlModel.region_id == region_id,
+                or_(StlType.tree_flag == True, StlType.plant_cover_flag == True))\
+        .all()
+    return records
+
+def update_stl_file(updates):
+    initialize()
+    with session_scope() as session:
+        for stl_file,region_id,stl_type_id in updates:
+            model = session.query(StlModel)\
+                .where(StlModel.region_id == region_id, StlModel.stl_type_id == stl_type_id)\
+                .first()
+            model.stl_file = stl_file
+    return
 
 # # 2.7 アウトプットデータ変換サービス
 # 高さテーブルからすべてのレコードを取得

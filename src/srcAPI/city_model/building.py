@@ -1,7 +1,12 @@
 from typing import List
 from typing import Dict
 from collections import defaultdict
+
+from common.file_path_generator import get_bldg_file_filename
+
+from .three_d_model_object_list import IThreeDModelObjectList
 from .three_d_model import IThreeDModel
+from .face import Face
 from common.coordinate_converter import *
 from common import webapp_db_connection
 from .three_d_model_for_edit_building import *
@@ -11,18 +16,7 @@ import json
 from .triangulate import *
 import os
 import math
-
-GEOID_HEIGHT = 36.7071
-BUILDING_COLOR = [240, 240, 240, 255]
-
-class Face:
-    def __init__(self, face_vert_ids: List[int]) -> None:
-        self.face_vert_id_0 = face_vert_ids[0]
-        self.face_vert_id_1 = face_vert_ids[1]
-        self.face_vert_id_2 = face_vert_ids[2]
-
-    def get_face(self)->List[int]:
-        return [self.face_vert_id_0, self.face_vert_id_1, self.face_vert_id_2]
+from .constants import GEOID_HEIGHT, BUILDING_COLOR
 
 class Building:
     def __init__(self, face: Face, stl_type_id: int, building_num: int) -> None:
@@ -30,7 +24,7 @@ class Building:
         self.vertice_indexes = []
         # 建物に含まれる面(Faceクラス)のリスト [Face1, Face2, ... ]
         self.faces = []
-        self.building_id = self.get_building_id(stl_type_id, building_num)
+        self.building_id = self.generate_building_id(stl_type_id, building_num)
         type_info =  webapp_db_connection.fetch_stl_type_info(stl_type_id)
         self.type_name =  type_info.stl_type_name
         self.faces.append(face)
@@ -144,15 +138,22 @@ class Building:
         # 底面を構成する辺のリストからなる図形を一筆書きするよう、頂点をソートする。
         # グラフを作成
         graph = self.create_graph(self.bottom_feature_edges)
-        # 開始点を適当に選ぶ（グラフに含まれる任意の頂点）
-        start_vertex = self.bottom_vertice_indexes[0]
+        # 開始点を適当に選ぶ（self.bottom_feature_edgesに含まれる任意の頂点）
+        #start_vertex = self.bottom_vertice_indexes[0]
+        start_vertex = None
+        for bottom_vertice_index in self.bottom_vertice_indexes:
+            if any(bottom_vertice_index in e for e in self.bottom_feature_edges):
+                start_vertex = bottom_vertice_index
+                break
+        if start_vertex is None:
+            print("Error start_vertex is None")
         # オイラー閉路を求める
         cycle = self.find_eulerian_cycle(graph, start_vertex)
         self.sorted_bottom_indexes = cycle[:-1]
         return
     
     @staticmethod
-    def get_building_id(stl_type_id: int, building_num: int)->str:
+    def generate_building_id(stl_type_id: int, building_num: int)->str:
         # 各建物のbuilding_idを作成する
         return f"{stl_type_id}-{str(building_num)}"
     
@@ -170,7 +171,7 @@ class Building:
             grouped_dict[key].append(b)
         return grouped_dict
 
-class ThreeDModelBuildingList:
+class ThreeDModelBuildingList(IThreeDModelObjectList):
     def __init__(self, three_d_model: IThreeDModel, stl_type_id: str) -> None:
         self.buildings: List[Building] = []
         self.faces: List[Face] = []
@@ -187,7 +188,7 @@ class ThreeDModelBuildingList:
                 added_face_index = self.buildings[-1].iterate_faces_and_return_added_index(self.faces)
                 if added_face_index is not None: del self.faces[added_face_index] 
     
-    def set_buildings_details(self):
+    def set_objects_details(self):
         for building in self.buildings:
             building.set_vertices_dict(self.vertices)
             # 地表面の頂点番号リストを作成し、建物高さを設定する
@@ -244,13 +245,12 @@ class ThreeDModelBuildingList:
                 }
             )
         # ファイル出力
-        # TODO:STLファイルテーブル.czmlファイルに出力したファイルのファイルパスを設定する
         visualization_file = os.path.splitext(self.full_filepath)[0] + ".czml"
         with open(visualization_file, "w") as f:
             json.dump(doc, f)
-        return visualization_file
+        return
 
-    def export_to_bldg_file(self):
+    def export_to_objects_file(self):
         buildings = []
 
         for i in range(len(self.buildings)):
@@ -271,7 +271,7 @@ class ThreeDModelBuildingList:
 
         # ファイル出力
 
-        bldg_file = os.path.join(os.path.split(self.full_filepath)[0], "bldg_file.json")
+        bldg_file = get_bldg_file_filename(self.full_filepath)
         with open(bldg_file, "w") as f:
             json.dump(doc, f)
         return
@@ -285,7 +285,7 @@ class BuildingForNewBuilding:
         self.building_id = czml.new_building_id
         self.height = height
         self.converter = converter
-        self.first_vertice_id = len(bldg_file.bldg_file['vertices'])
+        self.first_vertice_id = len(bldg_file.object_file['vertices'])
         self.vertices = []
         self.face_index_list = []
 

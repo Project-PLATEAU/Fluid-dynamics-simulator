@@ -111,11 +111,13 @@ class FileUtil extends \Eloquent
     }
 
     /**
-     * 特定のフォルダをコピーする。
+     * 指定したフォルダ内の全てのファイルをコピーする。
      * @param string $relativeSrc 相対パスのコピー元
      * @param string $relativeDes 相対パスのコピー先
      *
-     * @return
+     * @return bool
+     * ファイルを全てコピーできた場合、true
+     * ファイルが1つでもコピーできなかった場合、false
      */
     public static function copyFolder($relativeSrc, $relativeDes)
     {
@@ -124,7 +126,7 @@ class FileUtil extends \Eloquent
         $source = "public/" . $relativeSrc;
         $destination = "public/" .$relativeDes;
 
-        // ディレクトリ内のすべてのファイルとフォルダをコピー
+        // ディレクトリ内のすべてのファイルをコピー
         foreach (Storage::allFiles($source) as $file) {
             $relativePath = str_replace($source, '', $file);
             $newPath = $destination . $relativePath;
@@ -133,6 +135,7 @@ class FileUtil extends \Eloquent
                 return false;
             }
         }
+
         return $result;
     }
 
@@ -163,5 +166,18 @@ class FileUtil extends \Eloquent
             return Storage::deleteDirectory($deleteDirectoryPath);
         }
         return true;
+    }
+
+    /**
+     * ディレクトリを新規作成する
+     * @param string $path 作成したいディレクトリのパス
+     * @return bool
+     * 作成に成功した場合、true
+     * 作成に失敗した場合、false
+     */
+    public static function makeDirectory($path)
+    {
+        $directoryPath = "public" . DIRECTORY_SEPARATOR . $path;
+        return Storage::makeDirectory($directoryPath);
     }
 }

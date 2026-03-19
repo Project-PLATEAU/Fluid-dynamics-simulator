@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Commons\Constants;
 use App\Commons\Message;
 use App\Services\ApiService;
 use App\Utils\LogUtil;
@@ -9,17 +10,18 @@ use Exception;
 use Illuminate\Http\Request;
 
 /**
- * 架空建物に対しての操作用のコントロール
+ * 3D地図に対しての操作（建物・樹木の追加・削除）用のコントロール
  */
-class BuildingController extends BaseController
+class MapActivityController extends BaseController
 {
     /**
-     * 架空建物の新規作成を行う。
-     * @param Request $request 架空建物の新規作成のリクエスト
+     * モデル（建物・植被・単独木）新規作成を行う。
+     * @param Request $request 作成のリクエスト
+     * @param integer $model_type モデルタイプ(2:建物; 3:植被; 4:単独木)
      *
      * @return
      */
-    public function create(Request $request)
+    public function create(Request $request, $model_type)
     {
         try {
 
@@ -30,8 +32,24 @@ class BuildingController extends BaseController
 
             $errorMessage = [];
 
-            $apiStatusCode = ApiService::callNewBuildingAPI($rqParams);
-            LogUtil::i("建物作成APIを呼び出しました。");
+            $apiStatusCode = null;
+            switch($model_type)
+            {
+                case Constants::ADDNEW_MODEL_BUILDING:
+                    $apiStatusCode = ApiService::callNewBuildingAPI($rqParams);
+                    LogUtil::i("建物作成APIを呼び出しました。");
+                    break;
+                case Constants::ADDNEW_MODEL_PLANT_COVER:
+                    $apiStatusCode = ApiService::callNewPlantCoverAPI($rqParams);
+                    LogUtil::i("植被作成APIを呼び出しました。");
+                    break;
+                case Constants::ADDNEW_MODEL_TREE:
+                    $apiStatusCode = ApiService::callNewTreeAPI($rqParams);
+                    LogUtil::i("単独木作成APIを呼び出しました。");
+                    break;
+                default:
+                    break;
+            }
 
             if (ApiService::isError($apiStatusCode)) {
                 $errorMessage = ["type" => "E", "code" => "E34", "msg" => Message::$E34];
@@ -55,12 +73,13 @@ class BuildingController extends BaseController
     }
 
     /**
-     * 架空建物の削除を行う。
-     * @param Request $request 架空建物削除のリクエスト
+     * モデルの削除を行う。
+     * @param Request $request モデル削除のリクエスト
+     * @param integer $model_type モデルタイプ(1:モデル削除)
      *
      * @return
      */
-    public function destroy(Request $request)
+    public function destroy(Request $request, $model_type)
     {
         try {
 
@@ -71,8 +90,16 @@ class BuildingController extends BaseController
 
             $errorMessage = [];
 
-            $apiStatusCode = ApiService::callRemoveBuildingAPI($rqParams);
-            LogUtil::i("建物削除APIを呼び出しました。");
+            $apiStatusCode = null;
+            switch($model_type)
+            {
+                case Constants::DELETE_MODEL:
+                   $apiStatusCode = ApiService::callRemoveBuildingAPI($rqParams);
+                    LogUtil::i("建物削除APIを呼び出しました。");
+                    break;
+                default:
+                    break;
+            }
 
             if (ApiService::isError($apiStatusCode)) {
                 $errorMessage = ["type" => "E", "code" => "E34", "msg" => Message::$E34];

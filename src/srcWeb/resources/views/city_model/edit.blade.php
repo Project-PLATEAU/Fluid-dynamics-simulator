@@ -162,7 +162,7 @@
         </div>
 
         <div class="row mb-4">
-            <label class="col-sm-2 col-form-label">OBJ・STLファイル編集</label>
+            <label class="col-sm-2 col-form-label">建物・樹木の追加・削除</label>
             <div class="col-sm-10">
                 <div class="row" id="objSTLfileEditArea">
                     @include('city_model/partial_stl.parital_obj_stl_file_edit', ['stlTypeOptions' => $stlTypeOptions])
@@ -203,8 +203,8 @@
         // ロングポーリングの状態を管理
         let longPollingActive = false;
 
-        // 削除しようとする建物
-        let deleteBuildings = [];
+        // 削除しようとするモデル
+        let deleteModels = [];
 
         // 選択した建物を表示するかどうか
         let showBuildingActive = false;
@@ -293,7 +293,7 @@
         function selectRegion(target, isAlert)
         {
             setbgColor(target);
-            setBuildingActive(target);
+            setMapActive(target);
             ajaxUpdateStlInfo(isAlert);
         }
 
@@ -439,7 +439,7 @@
             // 3D地図をリセット
             reset3DMap(viewer);
 
-            // 3D地図がロードされるまで、建物データ編集モードラジオボタンは無効にする。
+            // 3D地図がロードされるまで、建物・樹木の追加・削除モードラジオボタンは無効にする。
             $(".disabled-all").prop("disabled", true);
 
             $.ajaxSetup({
@@ -519,10 +519,10 @@
                         $("#stlFileListArea span").css("pointer-events", "");
 
                         // 解析対象地域一覧で選択された地域の登録者がログインユーザでない場合は、
-                        // 建物データ編集モードラジオボタンは有効にする。
+                        // 建物・樹木の追加・削除モードラジオボタンは有効にする。
                         let buildingEditIsOk = response['buildingEditIsOk'];
                         if (!buildingEditIsOk) {
-                            $("input[name='building_activity']").prop("disabled", true);
+                            $("input[name='map_activity']").prop("disabled", true);
                         }
                     }
                 },
@@ -669,6 +669,22 @@
                     // 特定のSTLファイル種別の日射吸収率と排熱量を更新
                     $('#solar_absorptivity').val(stl_type['solar_absorptivity']);
                     $('#heat_removal').val(stl_type['heat_removal']);
+
+                    // [STLファイル種別]の単独木フラグまたは植被フラグがTrueの場合は
+                    // 日射吸収率入力欄が非アクティブとし、値は空白とする。
+                    if (!stl_type['solar_absorptivity']) {
+                        $('#solar_absorptivity').prop("disabled", true);
+                    } else {
+                        $('#solar_absorptivity').prop("disabled", false);
+                    }
+
+                    // [STLファイル種別]の単独木フラグまたは植被フラグがTrueの場合は
+                    //　排熱量入力欄が非アクティブとし、値は空白とする。
+                    if (!stl_type['heat_removal']) {
+                        $('#heat_removal').prop("disabled", true);
+                    } else {
+                        $('#heat_removal').prop("disabled", false);
+                    }
                 },
                 error: function(xhr, textStatus, errorThrown) {
                     console.log(xhr, textStatus, errorThrown);
@@ -680,102 +696,210 @@
         }
 
         /**
-        * 建物データ編集モードをアクティブに設定
+        * 建物・樹木の追加・削除モードをアクティブに設定
         *
         * @param region 選択した「解析対象地域」
         */
-        function setBuildingActive(region)
+        function setMapActive(region)
         {
             let registerUserId = $(region).data('user-id');
             let loginUserId = "{{ $loginUserId }}";
 
-            // OBJ・STLファイル編集用の各項目をリセットする。
+            // 建物・樹木の追加・削除用の各項目をリセットする。
             resetObjStlSetting();
 
             // 解析対象地域一覧]で選択されたレコードの登録者がログインユーザでない状態の場合は非アクティブとする
-            $("input[name='building_activity']").prop('checked', false); // 「建物データ編集モード」の状態をクリア
+            $("input[name='map_activity']").prop('checked', false); // 「建物・樹木の追加・削除モード」の状態をクリア
             if (loginUserId == registerUserId) {
-                $("input[name='building_activity']").prop('disabled', false);
+                $("input[name='map_activity']").prop('disabled', false);
             } else {
-                $("input[name='building_activity']").prop('disabled', true);
+                $("input[name='map_activity']").prop('disabled', true);
             }
         }
 
         /**
-        * OBJ・STLファイル編集用の各項目をリセットする。
+        * 建物・樹木の追加・削除用の各項目をリセットする。
         */
         function resetObjStlSetting()
         {
-            $("input[name='building_hidden']").prop('checked', false); // 「選択建物を非表示」の状態をクリア
-            $("input[name='building_height']").val(""); // 「高さ」の状態をクリア
-            $("select[name='obj_stl_type_id']").prop("selectedIndex", 0);; // 「建物種別」の状態をクリア
+            // 建物作成の各項目をリセット
+            $("input[name='building_height']").val("");                     //「高さ」の状態をクリア
+            $("select[name='obj_stl_type_id']").prop("selectedIndex", 0);   // 「建物種別」の状態をクリア
+
+            // 植被作成の各項目をリセット
+            $("input[name='plant-cover-height']").val("");                  //「高さ」の状態をクリア
+
+            // 単独木作成の各項目をリセット
+            $("select[name='tree_type_id']").prop("selectedIndex", 0);      //「分類」の状態をクリア
+            $("input[name='canopy_height']").val("");                       //「樹高」の状態をクリア
+            $("input[name='canopy_diameter']").val("");                     //「樹冠直径」の状態をクリア
+            $("input[name='add_tree_to_line']").prop('checked', false);     //「直線上に追加」の状態をクリア
+            $("input[name='tree_interval']").val("");                       //「間隔」の状態をクリア
+
+            // 「選択モデルを非表示」の状態をクリア
+            $("input[name='model_hidden']").prop('checked', false);
         }
 
         /**
-        * 建物データ編集モードをクリックする。
+        * 建物・樹木の追加・削除モードをクリックする。
         *
-        * @param target クリックした建物データ編集モード
+        * @param target クリックした建物・樹木の追加・削除モード
         */
-        function onClickBuildingActivity(target)
+        function onClickMapActivity(target)
         {
-            // OBJ・STLファイル編集用の各項目をリセットする。
+            // 建物・樹木の追加・削除用の各項目をリセットする。
             resetObjStlSetting();
 
-            let $buildingActivity = $(target).val();
-            if ($buildingActivity == "1") {
-                // 「既存建物削除」ラジオボタン押下した場合、3D地図上で建物データ削除が可能とする。
-                $(".building-activity-del").prop('disabled', false);
-                $(".building-activity-addnew").prop('disabled', true);
-                $("#ButtonResetBuilding").prop('disabled', true);
+            $("#ButtonPreviewModel").prop('disabled', false);   // プレビューボタンを無効にしておく。
+            $("#ButtonReset").prop('disabled', true);           // 元に戻すボタンを無効にする。
+            $("#ButtonAddNewModel").prop('disabled', true);     // 作成ボタンを無効にする。
 
-                // 地面をクリックするイベントの設定を無効にする。
-                if (handler) {
-                    removeActionFromHander(handler);
-                }
-
-                // 前回で削除手続き中に解析対象地域一覧より別の解析対象地域を選択しまう可能性があるため、
-                // 念のため、前回で使用したデータをリセットする。
-                _resetDeleteBuilding();
-
-                // レビュー中の建物が存在していたら、「元に戻す」ボタン押下時の処理も呼び出す。
-                if (previewActivity) {
-                    _resetAddNewBuilding();
-                }
-
-                // 建物選択イベントの設定を有効にする。
-                if (viewer) {
-                    handler = buildingClickEventSetting(viewer, deleteBuildings);
-                }
-            } else if ($buildingActivity == "2") {
-                // 「新規建物作成」ラジオボタン押下した場合、3D地図上で新規建物の地表面上の頂点の選択および新規建物の作成が可能とする。
-                $(".building-activity-addnew").prop('disabled', false);
-                $(".building-activity-del").prop('disabled', true);
-
-                // 前回でプレビュー中に解析対象地域一覧より別の解析対象地域を選択しまう可能性があるため、
-                // 念のため、前回で使用したデータをリセットする。
-                _resetAddNewBuilding();
-
-                // 削除手続き中(建物選択までや 非表示までなど)の建物が存在していたら、クリアする。
-                _resetDeleteBuilding();
-
-                // 建物選択イベントの設定を無効にする。
-                if (handler) {
-                    removeActionFromHander(handler);
-                }
-
-                // 地面をクリックするイベントの設定を有効にする。
-                if (viewer) {
-                    handler = mapClickEventSetting(viewer, hierarchy, positions);
-                }
+            mapActivityMode = Number($(target).val());
+            if (mapActivityMode == {{ App\Commons\Constants::DELETE_MODEL }}) {
+                // 「モデル削除」ラジオボタン押下した場合、3D地図上で建物データ削除が可能とする。
+                onClickMapModelDel();
+            } else if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_BUILDING }}) {
+                // 建物作成
+                onClickMapAddnewBuilding();
+            } else if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_PLANT_COVER }}) {
+                // 植被作成
+                onClickMapAddnewPlantCover();
+            } else if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_TREE }}) {
+                // 単独木作成
+                onClickMapAddnewTree();
             }
         }
 
         /**
-        * 高さ入力チェック（負の数を入力できないようにする）
+         * モデル削除を選択する
+         * @param id 削除対象モデルID
+         */
+        function onClickMapModelDel(id)
+        {
+            $(".activity-del").prop('disabled', false);
+            $(".activity-addnew-building").prop('disabled', true);
+            $(".activity-addnew-plant-cover").prop('disabled', true);
+            $(".activity-addnew-tree").prop('disabled', true);
+            $("#ButtonPreviewModel").prop('disabled', true);
+
+            // 地面をクリックするイベントの設定を無効にする。
+            if (handler) {
+                removeActionFromHandler(handler);
+            }
+
+            // 前回で削除手続き中に解析対象地域一覧より別の解析対象地域を選択しまう可能性があるため、
+            // 念のため、前回で使用したデータをリセットする。
+            _resetMapActivity();
+
+            // 削除手続き中(モデル選択までや 非表示までなど)のモデルが存在していたら、クリアする。
+            _resetDeleteModel();
+
+            // 建物選択イベントの設定を有効にする。
+            if (viewer) {
+                handler = modelClickEventSetting(viewer, deleteModels);
+            }
+        }
+
+        /**
+         * 建物作成を選択する。
+         */
+        function onClickMapAddnewBuilding()
+        {
+            // 「建物作成」ラジオボタン押下した場合、3D地図上で新規建物の地表面上の頂点の選択および新規建物の作成が可能とする。
+            $(".activity-addnew-building").prop('disabled', false);
+            $(".activity-addnew-plant-cover").prop('disabled', true);
+            $(".activity-addnew-tree").prop('disabled', true);
+            $(".activity-del").prop('disabled', true);
+
+            // 前回でプレビュー中に解析対象地域一覧より別の解析対象地域を選択しまう可能性があるため、
+            // 念のため、前回で使用したデータをリセットする。
+            _resetMapActivity();
+
+            // 削除手続き中(モデル選択までや 非表示までなど)のモデルが存在していたら、クリアする。
+            _resetDeleteModel();
+
+            // 建物選択イベントの設定を無効にする。
+            if (handler) {
+                removeActionFromHandler(handler);
+            }
+
+            // 地面をクリックするイベントの設定を有効にする。
+            if (viewer) {
+                handler = mapClickEventSetting(viewer, hierarchy, positions);
+            }
+        }
+
+        /**
+         * 植被作成を選択する。
+         */
+        function onClickMapAddnewPlantCover()
+        {
+            // 「植被作成」ラジオボタン押下した場合、3D地図上で新規植被の地表面上の頂点の選択および新規植被の作成が可能とする。
+            $(".activity-addnew-plant-cover").prop('disabled', false);
+            $(".activity-addnew-building").prop('disabled', true);
+            $(".activity-addnew-tree").prop('disabled', true);
+            $(".activity-del").prop('disabled', true);
+
+            // 前回でプレビュー中に解析対象地域一覧より別の解析対象地域を選択しまう可能性があるため、
+            // 念のため、前回で使用したデータをリセットする。
+            _resetMapActivity();
+
+            // 削除手続き中(モデル選択までや 非表示までなど)のモデルが存在していたら、クリアする。
+            _resetDeleteModel();
+
+            // 建物選択イベントの設定を無効にする。
+            if (handler) {
+                removeActionFromHandler(handler);
+            }
+
+            // 地面をクリックするイベントの設定を有効にする。
+            if (viewer) {
+                handler = mapClickEventSetting(viewer, hierarchy, positions);
+            }
+        }
+
+        /**
+         * 単独木作成を選択する。
+         * @param integer 建物・樹木の追加・削除モード(1: モデル削除; 2: 新規建物作成; 3: 植被作成; 4: 単独木作成)
+         */
+        function onClickMapAddnewTree()
+        {
+            // 「単独木作成」ラジオボタン押下した場合、3D地図上で新規単独木の地表面上の頂点の選択および新規単独木の作成が可能とする。
+            $(".activity-addnew-tree").prop('disabled', false);
+            $(".activity-addnew-plant-cover").prop('disabled', true);
+            $(".activity-addnew-building").prop('disabled', true);
+            $(".activity-del").prop('disabled', true);
+
+            // 分類が未選択の場合、「樹高」と「樹冠直径」を入力不可にする
+            $('#canopy_height').prop('disabled', true);
+            $('#canopy_diameter').prop('disabled', true);
+            // 「間隔」を入力不可にする
+            $('#tree_interval').prop('disabled', true);
+
+            // 前回でプレビュー中に解析対象地域一覧より別の解析対象地域を選択しまう可能性があるため、
+            // 念のため、前回で使用したデータをリセットする。
+            _resetMapActivity();
+
+            // 削除手続き中(モデル選択までや 非表示までなど)のモデルが存在していたら、クリアする。
+            _resetDeleteModel();
+
+            // 建物選択イベントの設定を無効にする。
+            if (handler) {
+                removeActionFromHandler(handler);
+            }
+
+            // 地面をクリックするイベントの設定を有効にする。
+            if (viewer) {
+                handler = mapClickEventSetting(viewer, hierarchy, positions);
+            }
+        }
+
+        /**
+        * 正の数のみを許可する
         *
-        * @param target 「高さ」input
+        * @param target 高さなどのinput
         */
-        function validateBuildingHeight(target)
+        function validatePositiveNumber(target)
         {
             const height = $(target).val();
             // input type numberは、 「-」負のみ入力した場合は、空文字になる。
@@ -897,9 +1021,9 @@
         }
 
         /**
-         * 「選択建物を非表示チェックボックス」にチェック入れ・外しをする。
+         * 「選択モデルを非表示チェックボックス」にチェック入れ・外しをする。
          *
-         * @param object target 選択建物を非表示チェックボックス
+         * @param object target 選択モデルを非表示チェックボックス
          *
          * @return
          */
@@ -907,47 +1031,47 @@
         {
             let isChecked = $(target).prop("checked");
             if (isChecked) {
-                if (deleteBuildings.length > 0) {
-                    // 選択建物を非表示する。(※透明度をゼロに設定)
-                    setPolygonColor(deleteBuildings, MODE_HIDE_BUILDING, Cesium.Color.TRANSPARENT);
+                if (deleteModels.length > 0) {
+                    // 選択モデルを非表示する。(※透明度をゼロに設定)
+                    setEntityColor(deleteModels, HIDE_MODEL, Cesium.Color.TRANSPARENT);
                 } else {
                     // エラーメッセージダイアログを表示
                     showDialog("E31", '{{ App\Commons\Message::$E31 }}');
-                    // 選択建物を非表示チェックボックスよりチェックを外す。
+                    // 選択モデルを非表示チェックボックスよりチェックを外す。
                     $(target).prop("checked", false);
                 }
             } else {
-                // 選択建物を再表示する。(※元の色に設定する。)
-                setPolygonColor(deleteBuildings, MODE_SHOW_BUILDING);
+                // 選択モデルを再表示する。(※元の色に設定する。)
+                setEntityColor(deleteModels, SHOW_MODEL);
             }
         }
 
         /**
-         * 削除しようとする建物をリセットする。
+         * 削除しようとするモデルをリセットする。
          *
          * @return
          */
-        function _resetDeleteBuilding()
+        function _resetDeleteModel()
         {
-            if (deleteBuildings.length > 0) {
-                // 選択建物を表示する。(※元の色に設定する。)
-                resetPolygonColor(deleteBuildings);
-                deleteBuildings = [];
+            if (deleteModels.length > 0) {
+                // 選択モデルの元の色に戻す
+                resetEntityColor(deleteModels);
+                deleteModels = [];
             }
         }
 
         /**
-         *「選択建物を削除」ボタン押下
+         *「モデルを削除」ボタン押下
          *
-         * @param object target 「選択建物を削除」ボタン
+         * @param object target 「モデルを削除」ボタン
          *
-         * @return
+         * @returns
          */
-        function deleteBuilding(target)
+        function deleteModel(target)
         {
 
             // プレビューボタンはまだ押されていない場合、エラーを出す。
-            if (deleteBuildings.length == 0) {
+            if (deleteModels.length == 0) {
                 // エラーメッセージダイアログを表示
                 showDialog("E31", '{{ App\Commons\Message::$E31 }}');
                 return;
@@ -956,8 +1080,8 @@
             // 選択した解析対象地域
             let regionId = $("#region-list span.bg-cyan").data('region-id');
 
-            // 削除しようとする建物IDの配列
-            let buildingId = deleteBuildings.map(element => {
+            // 削除しようとするモデルIDの配列
+            let buildingId = deleteModels.map(element => {
                 return element.entity.id;
             });
 
@@ -968,22 +1092,54 @@
             }
 
             // 建物削除する用のAPIを呼び出す。
-            buildingProcessRequest(params, 1);
+            modelProcessRequest(params, {{ App\Commons\Constants::DELETE_MODEL }});
 
             // 削除を行った建物リストをクリアする。
-            deleteBuildings = [];
-            $("input[name='building_hidden']").prop('checked', false); // 「選択建物を非表示」の状態を強制にクリア
+            resetEntityColor(deleteModels);
+            deleteModels = [];
+            $("input[name='model_hidden']").prop('checked', false); // 「選択モデルを非表示」の状態を強制にクリア
         }
 
         /**
-         * 作成しようとする建物をプレビュー
+         * 作成しようとするモデルのプレビュ
          *
          * @param object target プレビューボタン
          *
-         * @return
+         * @returnss {Promise<void>}
          */
-        function previewBuilding(target)
+        async function previewModel(target)
         {
+            var errorMsg = "";
+            if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_BUILDING }}) {
+                // 建物作成の場合
+                errorMsg = previewBuilding();
+            } else if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_PLANT_COVER }}) {
+                // 植被作成の場合
+                errorMsg = previewPlantCover();
+            } else if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_TREE }}) {
+                // 単独木作成の場合
+                errorMsg = await previewTree();
+            }
+
+            if (errorMsg == "" && previewActivity) {
+                $(target).prop("disabled", true);                   // プレビューボタン自体は無効にする。
+                $("#ButtonReset").prop("disabled", false);          //「元に戻す」ボタンは有効にする。
+                $("#ButtonAddNewModel").prop("disabled", false);    //「作成」ボタンは有効にする。
+            } else if (errorMsg != ""){
+                // エラーメッセージダイアログを表示
+                showDialog("E32", errorMsg);
+            }
+        }
+
+        /**
+         * 作成しようとする建物のプレビュー
+         *
+         * @returns string エラーメッセージ
+         */
+        function previewBuilding()
+        {
+            let errorMsg = "";
+
             let extrudedHeight = Number($("#building_height").val());
             // 建物作成は最低4点指定(クリック)が必要（三角の建物は対象外）
             if ((hierarchy.length >= 4) && (extrudedHeight > 0)) {
@@ -992,21 +1148,100 @@
                 // プレビュー後に作成操作できないようにするため、
                 // 地図をクリックするイベントの設定を無効にする。
                 if (handler) {
-                    removeActionFromHander(handler);
+                    removeActionFromHandler(handler);
                 }
 
                 // プレビューボタンは押した(フラグをtrueにする。)
                 previewActivity = true;
+                // 建物作成用の各項目を無効にする。
+                $(".activity-addnew-building").prop("disabled", true);
 
-                $(target).prop("disabled", true);                   // プレビューボタン自体は無効にする。
-                $("#building_height").prop("disabled", true);       // 高さは無効にする。
-                $("#obj_stl_type_id").prop("disabled", true);       // 建物種別は無効にする。
-                $("#ButtonResetBuilding").prop("disabled", false);  //「元に戻す」ボタンは有効にする。
-                $("#ButtonAddNewBuilding").prop("disabled", false); //「新規建物を作成」ボタンは有効にする。
             } else {
-                // エラーメッセージダイアログを表示
-                showDialog("E32", '{{ App\Commons\Message::$E32 }}');
+                errorMsg = '{{ sprintf(App\Commons\Message::$E32, "建物の頂点と高さ") }}';
             }
+
+            return errorMsg;
+        }
+
+        /**
+         * 作成しようとする植被のプレビュー
+         *
+         * @returns string エラーメッセージ
+         */
+        function previewPlantCover()
+        {
+            let errorMsg = "";
+
+            let plantCoverHeight = Number($("#plant-cover-height").val());
+            // 建物作成は最低4点指定(クリック)が必要（三角の建物は対象外）
+            if ((hierarchy.length >= 4) && (plantCoverHeight > 0)) {
+                drawBuilding(viewer, hierarchy, plantCoverHeight);
+
+                // プレビュー後に作成操作できないようにするため、
+                // 地図をクリックするイベントの設定を無効にする。
+                if (handler) {
+                    removeActionFromHandler(handler);
+                }
+
+                // プレビューボタンは押した(フラグをtrueにする。)
+                previewActivity = true;
+                // 植被作成用の各項目を無効にする。
+                $(".activity-addnew-plant-cover").prop("disabled", true);
+            } else {
+                errorMsg = '{{ sprintf(App\Commons\Message::$E32, "植被の頂点と高さ") }}';
+            }
+
+            return errorMsg;
+        }
+
+        /**
+         * 作成しようとする単独木のプレビュー
+         *
+         * @returnss {Promise<string>} 正常の場合、空文字列を返す。異常の場合はエラーメッセージを返す。
+         */
+        async function previewTree()
+        {
+            let errorMsg = '{{ sprintf(App\Commons\Message::$E32, "単独木の分類、頂点、樹冠直径、高さ、間隔（直線上に追加する場合のみ）") }}';
+
+            let treeTypeId = Number($("#tree_type_id").val());         // 分類
+            if (treeTypeId >= 0) {
+                // 念のため、樹高は基準値より小さいかをチェック
+                if (checkBelowMinimum("#canopy_height") || checkBelowMinimum("#canopy_diameter")) {
+                    return "";
+                }
+
+                let canopyHeight = Number($("#canopy_height").val());       // 樹高
+                let canopyDiameter = Number($("#canopy_diameter").val());   // 樹冠直径
+                let treeInterval = Number($("#tree_interval").val());        // 間隔
+
+                // 「直線上に追加」の場合(選択２点に制限)
+                if ((createTreeOnLineFlg && treeInterval > 0 && hierarchy.length == 2)) {
+                    try {
+                        await drawCylindersOnLine(viewer, hierarchy, canopyHeight, canopyDiameter, treeInterval);
+                        errorMsg = "";
+                    } catch (error) {
+                        console.error("「単独木」「直線上に追加」のプレビューに失敗しました。:", error);
+                    }
+                } else if (!createTreeOnLineFlg && hierarchy.length >= 1) {
+                    // 通常の単独木作成は最低1点指定(クリック)が必要
+                    drawCylinder(viewer, hierarchy, canopyHeight, canopyDiameter);
+                    errorMsg = "";
+                }
+
+                if (errorMsg == "") {
+                    // プレビュー後に作成操作できないようにするため、
+                    // 地図をクリックするイベントの設定を無効にする。
+                    if (handler) {
+                        removeActionFromHandler(handler);
+                    }
+
+                    // プレビューボタンは押した(フラグをtrueにする。)
+                    previewActivity = true;
+                    // 単独木作成用の各項目を無効にする。
+                    $(".activity-addnew-tree").prop("disabled", true);
+                }
+            }
+            return errorMsg;
         }
 
         /**
@@ -1014,39 +1249,55 @@
          *
          * @param object target 「元に戻す」ボタン
          *
-         * @return
+         * @returns
          */
-        function resetAddNewBuilding(target)
+        function resetMapActivity(target)
         {
             // 元に戻す処理
-            _resetAddNewBuilding();
+            _resetMapActivity();
 
-            // OBJ・STLファイル編集用の各項目をリセットする。
+            // 建物・樹木の追加・削除用の各項目をリセットする。
             resetObjStlSetting();
 
             // 地図をクリックするイベントの設定を有効にする。(プレビュー後に無効にしたため)
             handler = mapClickEventSetting(viewer, hierarchy, positions);
 
-            $("#building_height").prop("disabled", false);          // 高さは有効にする。
-            $("#obj_stl_type_id").prop("disabled", false);          // 建物種別は有効にする。
-            $("#ButtonPreviewBuilding").prop("disabled", false);    // プレビューボタンは有効にする。
-            $(target).prop("disabled", true);                       // 「元に戻す」ボタン自体は無効にする。
-            $("#ButtonAddNewBuilding").prop("disabled", true);      // 「新規建物を作成」ボタンは無効にする。
+            if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_BUILDING }}) {
+                // 建物作成の場合
+                $(".activity-addnew-building").prop("disabled", false);
+            } else if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_PLANT_COVER }}) {
+                // 植被作成の場合
+                $(".activity-addnew-plant-cover").prop("disabled", false);
+            } else if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_TREE }}) {
+                // 単独木作成の場合、単独木作成用の各項目を有効にする。
+                $(".activity-addnew-tree").prop("disabled", false);
+                //「樹高」と「樹冠直径」と「間隔」を入力不可にする
+                $('#canopy_height').prop('disabled', true);
+                $('#canopy_diameter').prop('disabled', true);
+                $('#tree_interval').prop('disabled', true);
+            }
+
+            $("#ButtonPreviewModel").prop("disabled", false);    // プレビューボタンは有効にする。
+            $(target).prop("disabled", true);                    // 「元に戻す」ボタン自体は無効にする。
+            $("#ButtonAddNewModel").prop("disabled", true);      // 「作成」ボタンは無効にする。
         }
 
         /**
          * 元に戻す処理(サブ処理)
          *
-         * @return
+         * @returns
          */
-        function _resetAddNewBuilding() {
+        function _resetMapActivity() {
 
             // プレビューフラグを無効にする。
             previewActivity = false;
 
-            // プレビューボタンで追加表示されていた新規建物を非表示にして建物データを3D地図上に描画する。
+            // 3D地図上に描画中するモデル(建物・植被・単独木)をリセットする。
             if (viewer) {
-                clearBuilding(viewer);
+                // 単独木の場合、追加した円柱をリセットする。
+                clearTree(viewer);
+                // 建物と植被の場合、追加したpolygonをリセットする。
+                clearPolygon(viewer);
             }
 
             // プレビューで保存した建物描画ようの座標をリセットする。
@@ -1055,27 +1306,62 @@
         }
 
         /**
-         * 「新規建物を作成」ボタン押下
+         * 作成ボタン押下
          *
-         * @param object target 「新規建物を作成」ボタン
+         * @param object target 作成ボタン
          *
-         * @return
+         * @returns
          */
-        function addNewBuilding(target)
+        function addNewModel(target)
         {
-            // プレビューボタンはまだ押されていない場合、エラーを出す。
-            if (!previewActivity) {
-                // エラーメッセージダイアログを表示
-                showDialog("E33", '{{ App\Commons\Message::$E33 }}');
-                return;
+            // 建物・樹木の追加・削除モードを取得
+            let msg = "";
+            if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_BUILDING }}) {
+                // 建物作成の場合
+                if (!previewActivity) {
+                    // プレビューボタンはまだ押されていない場合、エラーを出す。
+                    msg = '{{ sprintf(App\Commons\Message::$E33, "建物") }}';
+                } else {
+                    addNewBuilding();
+                }
+            } else if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_PLANT_COVER }}) {
+                // 植被作成の場合
+                if (!previewActivity) {
+                    // プレビューボタンはまだ押されていない場合、エラーを出す。
+                    msg = '{{ sprintf(App\Commons\Message::$E33, "植被") }}';
+                } else {
+                   addNewPlantCover();
+                }
+            } else if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_TREE }}) {
+                // 単独木作成の場合
+                if (!previewActivity) {
+                    // プレビューボタンはまだ押されていない場合、エラーを出す。
+                    msg = '{{ sprintf(App\Commons\Message::$E33, "単独木") }}';
+                } else {
+                    addNewTree();
+                }
             }
 
-            $("#building_height").prop("disabled", false);          // 高さは有効にする。
-            $("#obj_stl_type_id").prop("disabled", false);          // 建物種別は有効にする。
-            $("#ButtonPreviewBuilding").prop("disabled", false);    // プレビューボタンは有効にする。
-            $(target).prop("disabled", true);                       // 「新規建物を作成」ボタン自体は無効にする。
-            $("#ButtonResetBuilding").prop("disabled", true);       // 「元に戻す」ボタンは無効にする。
+            // エラーメッセージダイアログを表示
+            if (msg != "") {
+                showDialog("E33", msg);
+            } else {
+                $("#ButtonPreviewModel").prop("disabled", false);   // プレビューボタンは有効にする。
+                $(target).prop("disabled", true);                   // 作成ボタン自体は無効にする。
+                $("#ButtonReset").prop("disabled", true);           // 「元に戻す」ボタンは無効にする。
 
+                // 建物・樹木の追加・削除用の各項目をリセットする。
+                resetObjStlSetting();
+                // 元に戻す処理
+                _resetMapActivity();
+            }
+        }
+
+        /**
+         * 建物作成を行う
+         */
+        function addNewBuilding()
+        {
             let height = Number($("#building_height").val());                  // 高さ
             let regionId = $("#region-list span.bg-cyan").data('region-id');   // 選択した解析対象地域
             let stlTypeId = Number($("#obj_stl_type_id").val());               // 建物種別
@@ -1088,34 +1374,83 @@
                 "stl_type_id": stlTypeId
             }
             // 新規建物を作成する用のAPIを呼び出す。
-            buildingProcessRequest(params, 2);
+            modelProcessRequest(params, {{ App\Commons\Constants::ADDNEW_MODEL_BUILDING }});
 
-            // OBJ・STLファイル編集用の各項目をリセットする。
-            resetObjStlSetting();
-            // 元に戻す処理
-            _resetAddNewBuilding();
+            // 建物作成用の各項目を有効にする。
+            $(".activity-addnew-building").prop("disabled", false);
+        }
+
+        /**
+         * 植被作成を行う
+         */
+        function addNewPlantCover()
+        {
+            let height = Number($("#plant-cover-height").val());                  // 高さ
+            let regionId = $("#region-list span.bg-cyan").data('region-id');   // 選択した解析対象地域
+
+            // リクエストパラメータ
+            let params = {
+                "coordinates": positions,   // ユーザが入力した建物の底面の点(※入力した順にリストに格納される情報)
+                "height": height,
+                "region_id": regionId,
+            }
+            // 植被作成する用のAPIを呼び出す。
+            modelProcessRequest(params, {{ App\Commons\Constants::ADDNEW_MODEL_PLANT_COVER }});
+
+            // 植被作成用の各項目を有効にする。
+            $(".activity-addnew-plant-cover").prop("disabled", false);
+        }
+
+        /**
+         * 単独木作成を行う
+         */
+        function addNewTree()
+        {
+            let canopyHeight = Number($("#canopy_height").val());              // 樹高
+            let canopyDiameter = Number($("#canopy_diameter").val());          // 樹冠直径
+            let regionId = $("#region-list span.bg-cyan").data('region-id');   // 選択した解析対象地域
+
+            // リクエストパラメータ
+            let params = {
+                "coordinates": positions,   // ユーザが入力した建物の底面の点(※入力した順にリストに格納される情報)
+                "height": canopyHeight,
+                "canopy_diameter": canopyDiameter,
+                "region_id": regionId,
+            }
+            // 単独木作成する用のAPIを呼び出す。
+            modelProcessRequest(params, {{ App\Commons\Constants::ADDNEW_MODEL_TREE }});
+
+            // 単独木作成用の各項目を有効にする。
+            $(".activity-addnew-tree").prop("disabled", false);
+
+            //「樹高」と「樹冠直径」と「間隔」を入力不可にする
+            $('#tree_interval').prop('disabled', true);
+            $('#canopy_height').prop('disabled', true);
+            $('#canopy_diameter').prop('disabled', true);
         }
 
         /**
          * イベントハンドラを再設定する。
          *
-         * @return
+         * @returns
          */
         function reSettingHandler()
         {
-            // 建物データ編集モードを取得
-            const buildingEditMode = Number($("input[name='building_activity']:checked").val());
-
-            // 建物データ編集モード: 1: 既存建物削除；2: 新規建物作成
-            if (buildingEditMode == 1) {
-                // 建物をクリックするイベントの設定を有効にする。
-                if (viewer) {
-                    handler = buildingClickEventSetting(viewer, deleteBuildings);
-                }
-            } else if (buildingEditMode == 2) {
-                // 地面をクリックするイベントの設定を有効にする。
-                if (viewer) {
-                    handler = mapClickEventSetting(viewer, hierarchy, positions);
+            // 建物・樹木の追加・削除モード:
+            // 1: モデル削除
+            // 2: 新規建物作成
+            // 3: 植被作成
+            // 4: 単独木作成
+            if (viewer && handler) {
+                removeActionFromHandler(handler);
+                if (mapActivityMode == {{ App\Commons\Constants::DELETE_MODEL }}) {
+                    // 建物をクリックするイベントの設定を有効にする。
+                    handler = modelClickEventSetting(viewer, deleteModels);
+                } else if (mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_BUILDING }} ||
+                            mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_PLANT_COVER }} ||
+                            mapActivityMode == {{ App\Commons\Constants::ADDNEW_MODEL_TREE }}) {
+                        // 地面をクリックするイベントの設定を有効にする。
+                        handler = mapClickEventSetting(viewer, hierarchy, positions);
                 }
             }
         }
@@ -1124,11 +1459,11 @@
          * 架空建物の操作リクエストを送る。
          *
          * @param array params リクエストパラメータ
-         * @param int type 操作タイプ（削除:1; 新規追加：2）
+         * @param int model_type 操作タイプ（(1: モデル削除; 2:建物作成; 3:植被作成; 4:単独木作成)
          *
-         * @return
+         * @returns
          */
-        function buildingProcessRequest(params, type = 1)
+        function modelProcessRequest(params, model_type = {{ App\Commons\Constants::DELETE_MODEL }})
         {
             $.ajaxSetup({
                 headers: {
@@ -1138,19 +1473,22 @@
 
             // リクエスト先
             let url = "";
-            if (type == 1) {
-                // 架空建物の削除
-                url = "{{ route('building.delete') }}";
-            } else if (type == 2) {
-                // 架空建物の新規作成
-                url = "{{ route('building.create') }}";
+            if (model_type == {{ App\Commons\Constants::DELETE_MODEL }}) {
+                // モデル削除
+                url = "{{ route('map_activity.delete', ['model_type' => ':model_type']) }}".replace(':model_type', model_type);
+            } else if (model_type == {{ App\Commons\Constants::ADDNEW_MODEL_BUILDING }} ||
+                        model_type == {{ App\Commons\Constants::ADDNEW_MODEL_PLANT_COVER }} ||
+                        model_type == {{ App\Commons\Constants::ADDNEW_MODEL_TREE }}) {
+                // 建物の作成
+                url = "{{ route('map_activity.create', ['model_type' => ':model_type']) }}".replace(':model_type', model_type);
             }
 
             // リクエストを送る
             $.ajax({
                 url: url,
                 type: 'POST',
-                data: params,
+                data: JSON.stringify(params),
+                contentType: 'application/json; charset=UTF-8',
                 dataType: 'json',
                 success: function (response) {
                     let error = (response && response['error'] !== undefined) ? response['error'] : [];
@@ -1174,6 +1512,7 @@
                     showDialog("エラー", "サーバーでエラーが発生しました。");
                 },
                 complete: function(xhr, textStatus, errorThrown) {
+                    // 新規建物作成や削除のAPIを呼び出したあと、連続的に操作できるようにこちらで、建物描画等にクリックのイベントを再設定する必要がある。
                     reSettingHandler();
                 }
             })
@@ -1186,10 +1525,12 @@
          * @param string msg メッセージ
          * @param string type ダイアログ種類（※デフォルト：E(エラー)）
          *
-         * @return
+         * @returns
          */
         function showDialog(code, msg, type="E")
         {
+            $("div#messageModal").children().removeClass('modal-lg');
+
             if (type == "E")
             {
                 // エラーメッセージダイアログを表示
@@ -1212,11 +1553,141 @@
                     '<div class="d-flex flex-row"><img class="ms-2" src="{{ asset('/image/dialog/info.png') }}?ver={{ config('const.ver_image') }}" height="65px" width="65px" alt="warning"><span class="ms-4" id="message"></span></div>');
                 $("div#messageModal [class='modal-footer']").html(
                     '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">OK</button>');
+            } else {
+                // インフォメーションを表示する。
+                $("div#messageModal [class='modal-body']").html(
+                    '<div class="d-flex flex-row"><span class="ms-4" id="message"></span></div>');
+                $("div#messageModal [class='modal-footer']").html(
+                    '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">OK</button>');
+                $("div#messageModal [class='modal-dialog']").addClass('modal-lg');
             }
 
             $("div#messageModal [class='modal-header'] h1#messageModalLabel").html(code);
             $("div#messageModal [class='modal-body'] span#message").html(msg);
             $('#messageModal').modal('show');
+        }
+
+         /**
+         * インフォメーションを表示する。
+         * @param event イベントオブジェクト
+         * @returns
+         */
+        function displayInfo(event)
+        {
+            event.preventDefault();
+            var code = '<i class="bi bi-info-circle-fill"></i> 【参考】単独木の分類定義';
+            var message = '{{ $infomation->information }}'.replace(/\n/g, '<br>');
+            showDialog(code, message, null);
+        }
+
+        /**
+        * 単独木の分類のonchangeイベント
+        *
+        * @return
+        */
+        function onchangeTreeType(target)
+        {
+            // 選択した分類
+            const treeTypeId = Number($(target).val());
+            if (treeTypeId < 0) {
+                // 未選択の場合
+                $('#canopy_height').val("");    // 樹高をリセット
+                $('#canopy_diameter').val("");  // 樹冠直径をリセット
+                //「樹高」と「樹冠直径」を入力不可にする
+                $('#canopy_height').prop('disabled', true);
+                $('#canopy_diameter').prop('disabled', true);
+                return;
+            } else if (treeTypeId == 0) {
+                // 「手動入力」が選択された場合
+                $('#canopy_height').val("");    // 樹高をリセット
+                $('#canopy_diameter').val("");  // 樹冠直径をリセット
+                //「樹高」と「樹冠直径」を入力可能にする
+                $('#canopy_height').prop('disabled', false);
+                $('#canopy_diameter').prop('disabled', false);
+                return;
+            } else {
+                const treeTypeOptionsJson = '<?= json_encode($treeTypeOptions, JSON_UNESCAPED_UNICODE) ?>';
+                const treeTypeOptions = JSON.parse(treeTypeOptionsJson);
+                treeTypeOptions.forEach(element => {
+                    if (treeTypeId == element.tree_type_id) {
+                        $('#canopy_height').val(element.height);            // 樹高を更新
+                        $('#canopy_diameter').val(element.canopy_diameter); // 樹冠直径を更新
+                        //「樹高」と「樹冠直径」を入力不可にする
+                        $('#canopy_height').prop('disabled', true);
+                        $('#canopy_diameter').prop('disabled', true);
+                        return;
+                    }
+                });
+            }
+        }
+
+        /**
+        * 最小値を下回っているかをチェックする
+        *
+        * @param target 高さなどのinput
+        *
+        * @returns boolean エラーダイアログを表示するかどうか
+        */
+        function checkBelowMinimum(target)
+        {
+            var isShowError = true;
+
+            var targetVal = $(target).val();
+            if (targetVal != "") {
+                const value = parseFloat($(target).val());
+                const data = $(target).data();
+                var defaultValue = 0;
+
+                if (data.type == 1) {
+                    // 高さの基準値
+                    defaultValue = {{ App\Commons\Constants::CANOPY_HEIGHT_DEFAULT }};
+                } else if (data.type == 2) {
+                    // 樹冠直径の基準値
+                    defaultValue = {{ App\Commons\Constants::CANOPY_DIAMETER_DEFAULT }};
+                }
+
+                if (value >= defaultValue) {
+                    // 入力された値は基準値以上である場合、W6は表示しない。
+                   isShowError = false;
+                }
+            }
+
+            if (isShowError) {
+                showDialog("E39", '{!! App\Commons\Message::$E39 !!}', 'E');
+            }
+
+            return isShowError;
+        }
+
+        /**
+        * 「直線上に追加」チェックにより単独木作成モードを変える
+        * 　　チェックを入れた場合、任意2点間に単独木を作成する。
+        * 　　チェックを外た場合、任意の場所に複数の「点」に単独木を作成する。
+        *
+        * @param target 「直線上に追加」チェックボックス
+        *
+        * @returns
+        */
+        function onChangeAddTreeMode(target) {
+            _resetMapActivity();
+
+            if (viewer && handler) {
+                removeActionFromHandler(handler);
+                handler = mapClickEventSetting(viewer, hierarchy, positions);
+            }
+            // 「直線上に追加」チェックの状態
+            createTreeOnLineFlg = $(target).prop("checked");
+            if (createTreeOnLineFlg) {
+                // 「直線上に追加」チェックを入れた場合
+                // 「間隔」を入力可能にする
+                $('#tree_interval').prop('disabled', false);
+            } else {
+                // 「直線上に追加」チェックを外た場合
+                // 「間隔」を入力不可にする
+                $('#tree_interval').prop('disabled', true);
+                $('#tree_interval').val(""); // 間隔をリセット
+            }
+            createTreeInterval = Number($("#tree_interval").val()); // 間隔
         }
     </script>
 @endsection

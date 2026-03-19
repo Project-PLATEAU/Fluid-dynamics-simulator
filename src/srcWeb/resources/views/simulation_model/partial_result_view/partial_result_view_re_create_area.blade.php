@@ -120,8 +120,11 @@
                                     @php
                                         $stlModels = $simulationModel->region->stl_models()->get();
                                     @endphp
+                                    {{-- 単独木フラグ・植被フラグがともにFalseのレコードのみ、STLファイル種別IDより特定されるPT2種別名を選択肢とする（※単独木と植被は除外対象）--}}
                                     @foreach($stlModels as $stlModel)
-                                        <option value="{{ $stlModel->stl_type->stl_type_id }}">{{ $stlModel->stl_type->stl_type_name }}</option>
+                                        @if(!($stlModel->stl_type->tree_flag) && !($stlModel->stl_type->plant_cover_flag))
+                                            <option value="{{ $stlModel->stl_type->stl_type_id }}">{{ $stlModel->stl_type->stl_type_name }}</option>
+                                        @endif
                                     @endforeach
                                 </select>
                             </div>

@@ -10,6 +10,8 @@ runApplication blockMesh
 
 runApplication snappyHexMesh -overwrite
 
+runApplication topoSet
+
 #runApplication renumberMesh -overwrite
 
 restore0Dir
@@ -20,10 +22,20 @@ runApplication decomposePar
 
 runParallel $(getApplication)
 
+# Get status
+status=$?
+
 #------------------------------------------------------------------------------
 #runApplication reconstructParMesh -constant
 runApplication reconstructPar -latestTime
 #------------------------------------------------------------------------------
+
+# Remove processorDir when Normal End
+
+if [ "$status" -eq 0 ]; then
+  echo " End Status = $status "
+  rm -r processor*
+fi
 
 postProcess -func writeCellCentres -latestTime
 

@@ -48,6 +48,26 @@ functions{
 //       writeControl    adjustable;
        writeInterval   100;
        purgeWrite 0;
+    
+        fvOptions
+        {
+            Source1
+            {
+                type            scalarSemiImplicitSource;
+                scalarSemiImplicitSourceCoeffs
+                {
+                    selectionMode   cellZone;
+                    cellZone        zoneTrees;
+
+                    volumeMode      specific;
+
+                    sources
+                    {
+                        s           (2.0e-5 0);
+                    }
+                }
+            }
+        }    
     }
 }
 

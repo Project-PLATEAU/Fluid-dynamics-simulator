@@ -199,7 +199,17 @@ class CityModelController extends BaseController
 
             $loginUserId = self::getCookie(Constants::LOGIN_COOKIE_NAME)->user_id;
 
-            return view('city_model.edit', compact('cityModel', 'registeredUserId', 'message', '_3dTilesOptions', 'coordinateOptions', 'stlTypeOptions', 'stlTypeOptionsByGroundFalse', 'regionId', 'stlTypeId', 'loginUserId'));
+            // インフォメーションを取得
+            $infomation = CityModelService::getInfomation();
+
+            // 単独木分類の選択欄
+            $treeTypeOptions = CityModelService::getTreeTypeOptions();
+
+            return view('city_model.edit', compact('cityModel', 'registeredUserId',
+                'message', '_3dTilesOptions', 'coordinateOptions',
+                'stlTypeOptions', 'stlTypeOptionsByGroundFalse',
+                'regionId', 'stlTypeId', 'loginUserId', 'infomation',
+                'treeTypeOptions'));
 
         } catch (Exception $e) {
             $error = $e->getMessage();

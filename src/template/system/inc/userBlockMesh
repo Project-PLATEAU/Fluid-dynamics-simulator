@@ -12,9 +12,9 @@ x2 $maxx;
 y2 $miny;
 x3 $maxx;
 y3 $maxy;
-x4 $minx; 
+x4 $minx;
 y4 $maxy;
 
-nx 16;
-ny 42;
-nz 12;
+nx 84;
+ny 32;
+nz 24;

@@ -2,8 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Db\SimulationModel;
-use App\Utils\DatetimeUtil;
 use Illuminate\Database\Seeder;
 
 class SimulationModelSeeder extends Seeder

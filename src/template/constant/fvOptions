@@ -1,0 +1,124 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2406                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvOptions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+U_Fi
+{
+    type            vectorSemiImplicitSource;
+    selectionMode   cellZone;
+    cellZone        zoneTrees;
+
+    volumeMode      specific;//absolute;
+
+    sources
+    {
+        U
+        {
+            explicit
+            {
+                type        exprField;
+                variables
+                (
+                    "Cf = 0.275"
+                    "a = 10.0"
+                    "root = mag(U)"
+                    
+                    "Fx = Cf*a*U.x()*root"
+                    "Fy = Cf*a*U.y()*root"
+                    "Fz = Cf*a*U.z()*root"
+                );
+                expression  "vector(-1.0*Fx, -1.0*Fy, -1.0*Fz)";
+            }
+        }
+    }
+}
+
+k_Fk
+{
+    type            scalarSemiImplicitSource;
+    selectionMode   cellZone;
+    cellZone        zoneTrees;
+
+    volumeMode      specific;//absolute;
+
+    sources
+    {
+        k
+        {
+            explicit
+            {
+                type        exprField;
+                variables
+                (
+                    "Cf = 0.275"
+                    "a = 10.0"
+                    "root = mag(U)"                   
+
+                    "Fx = Cf*a*U.x()*root"
+                    "Fy = Cf*a*U.y()*root"
+                    "Fz = Cf*a*U.z()*root"
+
+                    "uFx = U.x()*Fx"
+                    "vFy = U.y()*Fy"
+                    "wFz = U.z()*Fz"
+
+                    "UF = uFx + vFy + wFz"
+                    "Lk = 4*Cf*a*root*k"
+                );
+                expression  "UF - Lk";
+            }
+        }
+    }
+}
+
+eps
+{
+    type            scalarSemiImplicitSource;
+    selectionMode   cellZone;
+    cellZone        zoneTrees;
+
+    volumeMode      specific;
+
+    sources
+    {
+        epsilon
+        {
+            explicit
+                {
+                    type        exprField;
+                    expression  "epsilon*2.5*30*pow(k,0.5)";
+                }
+        }
+    }
+}
+
+scalarSourceH
+{
+    type            scalarSemiImplicitSource;
+    scalarSemiImplicitSourceCoeffs
+    {
+        //duration        1000.0;
+        selectionMode   cellZone;
+        cellZone        zoneTrees;
+
+        volumeMode      specific;
+
+        sources
+        {
+            h           (-500.0 0); //値は仮
+        }
+    }
+}
+
+// ************************************************************************* //

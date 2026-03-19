@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Collection;
  * @property string|null $stl_type_name
  * @property bool|null $required_flag
  * @property bool|null $ground_flag
+ * @property bool|null $tree_flag
+ * @property bool|null $plant_cover_flag
  * @property float|null $solar_absorptivity
  * @property float|null $heat_removal
  *
@@ -34,7 +36,9 @@ class StlType extends DbModel
 	protected $casts = [
 		'stl_type_id' => 'int',
 		'required_flag' => 'bool',
-        'ground_flag' => 'bool'
+        'ground_flag' => 'bool',
+        'tree_flag' => 'bool',
+        'plant_cover_flag' => 'bool'
 	];
 
 	protected $fillable = [
@@ -42,6 +46,8 @@ class StlType extends DbModel
 		'stl_type_name',
 		'required_flag',
         'ground_flag',
+        'tree_flag',
+        'plant_cover_flag',
         'solar_absorptivity',
         'heat_removal'
 	];

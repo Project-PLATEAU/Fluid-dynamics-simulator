@@ -176,6 +176,57 @@ def fetch_stl_type_info(stl_type_id) -> int:
             logger.error(f'No stl_type found for stl_type_id: {stl_type_id}')
             raise Exception(f'No stl_type found for stl_type_id: {stl_type_id}')
 
+# # 対象：STL_TYPEテーブル
+def fetch_ground_flag(stl_type_id) -> int:
+    """
+    STL_TYPEテーブルで[stl_type_id]に合致するground_flagを取得
+    """
+    initialize()
+    with session_con() as session:
+        try:
+            record = session.query(StlType).filter(StlType.stl_type_id == stl_type_id).one()
+            logger.info(f'Get ground_flag. stl_type_id: {stl_type_id} ground_flag: {record.ground_flag}')
+            return record.ground_flag
+        except NoResultFound :
+            logger.error(f'No stl_type found for stl_type_id: {stl_type_id}')
+            raise Exception(f'No stl_type found for stl_type_id: {stl_type_id}')
+
+# # 対象：STL_TYPEテーブル
+def fetch_stl_type_tree() -> int:
+    """
+    STL_TYPEテーブルで[tree_flag]がtrueのものを取得
+    """
+    initialize()
+    with session_con() as session:
+        try:
+            record = session.query(StlType).filter(StlType.tree_flag == True).one()
+            logger.info(f'Get stl_type. tree_flag: true')
+            return record.stl_type_id
+        except NoResultFound :
+            logger.error(f'No stl_type found for tree_flag: true')
+            raise Exception(f'No stl_type found for tree_flag: true')
+        except MultipleResultsFound:
+            logger.error(f'Multiple stl_type found for tree_flag: true')
+            raise Exception(f'Multiple stl_type found for tree_flag: true')
+
+# # 対象：STL_TYPEテーブル
+def fetch_stl_type_plant_cover() -> int:
+    """
+    STL_TYPEテーブルで[plant_cover_flag]がtrueのものを取得
+    """
+    initialize()
+    with session_con() as session:
+        try:
+            record = session.query(StlType).filter(StlType.plant_cover_flag == True).one()
+            logger.info(f'Get stl_type. plant_cover_flag: true')
+            return record.stl_type_id
+        except NoResultFound :
+            logger.error(f'No stl_type found for plant_cover_flag: true')
+            raise Exception(f'No stl_type found for plant_cover_flag: true')
+        except MultipleResultsFound:
+            logger.error(f'Multiple stl_type found for plant_cover_flag: true')
+            raise Exception(f'Multiple stl_type found for plant_cover_flag: true')
+
 # # 対象：REGIONテーブル
 def fetch_coordinate_id(region_id) -> int:
     """
@@ -204,6 +255,23 @@ def fetch_city_model_id(region_id) -> int:
         except NoResultFound :
             logger.error(f'No city_model_id found for region_id: {region_id}')
             raise Exception(f'No city_model_id found for region_id: {region_id}')
+
+def update_stl_file(region_id, stl_type_id, stl_file):
+    """
+    STL_MODELテーブルで[region_id, stl_type_id]に合致する一意のレコードに対して、新規/更新したSTLファイルを配置
+    """
+    initialize()
+    with session_scope() as session:
+        try:
+            # 対象レコードを抽出
+            stl_file_record = session.query(StlModel).filter(
+                and_(StlModel.region_id == region_id, StlModel.stl_type_id == stl_type_id)).one()
+            # stl_fileカラムにstlファイルをセット
+            stl_file_record.stl_file = stl_file
+            logger.info(f'Update stl_file. region_id: {region_id} & stl_type_id: {stl_type_id}')
+        except NoResultFound :
+            logger.error(f'No stl_file found for region_id: {region_id} & stl_type_id: {stl_type_id}')
+            raise Exception(f'No stl_file found for region_id: {region_id} & stl_type_id: {stl_type_id}')
 
 def main():
     # テスト用のデータ

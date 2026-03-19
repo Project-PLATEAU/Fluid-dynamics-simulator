@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Db\UserAccount;
 use App\Utils\DatetimeUtil;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class UserAccountSeeder extends Seeder
 {
@@ -14,12 +14,26 @@ class UserAccountSeeder extends Seeder
      */
     public function run(): void
     {
-        UserAccount::create([
-            'user_id' => 'testuser',
-            'password' => '',
-            'display_name' => 'テストユーザ',
-            'note' => '環境構築用DMLサンプルユーザ',
-            'last_update_datetime' => DatetimeUtil::getNOW(),
-        ]);
+        // ユーザアカウントの初期データを作成
+        $userAccountData = [
+            [
+                'user_id' => 'testuser',
+                'password' => '',
+                'display_name' => 'テストユーザ',
+                'note' => '環境構築用DMLサンプルユーザ',
+                'last_update_datetime' => DatetimeUtil::getNOW(),
+            ],
+            // 新規追加のレコードはここから追加してください
+        ];
+
+        // トランザクションを使用してデータを挿入
+        DB::transaction(function () use ($userAccountData) {
+           foreach ($userAccountData as $userAccount) {
+                UserAccount::updateOrCreate(
+                    ['user_id' => $userAccount['user_id']],
+                    $userAccount
+                );
+            }
+        });
     }
 }

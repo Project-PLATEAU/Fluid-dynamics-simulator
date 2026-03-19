@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Db\Solver;
 use App\Utils\DatetimeUtil;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class SolverSeeder extends Seeder
@@ -17,10 +16,10 @@ class SolverSeeder extends Seeder
         Solver::create([
             'solver_name'               =>  '標準',
             'solver_compressed_file'    =>  'compressed_solver/default/template.tar',
-            'user_id'                   =>  'testuser',
             'upload_datetime'           =>  DatetimeUtil::getNOW(),
             'preset_flag'               =>  true,
-            'disclosure_flag'           =>   true
+            'disclosure_flag'           =>   true,
+            'explanation'               =>  'OpenFOAMのbuoyantSimpleFoamを利用'
         ]);
     }
 }

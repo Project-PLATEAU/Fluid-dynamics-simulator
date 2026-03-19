@@ -1,0 +1,168 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2406                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       IOobject;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+miny -73190.000000;
+minx 46900.000000;
+minz 65.000000;
+maxy -73108.000000;
+maxx 47110.000000;
+maxz 125.000000;
+
+xc #eval{ ($minx+$maxx)*0.5 };
+yc #eval{ ($miny+$maxy)*0.5 };
+zz #eval{ $maxz-3 };
+
+actions
+(
+    //dummy to make newZone
+    {
+        name    dummyCell;
+        type    cellSet;
+        action  new;
+        source      cylinderToCell;
+        p1          ($xc $yc $zz);
+        p2          ($xc $yc $maxz); 
+        radius      1.5;
+    }
+    {
+        name    zoneTrees;
+        type    cellZoneSet;
+        action  new;
+        source  setToCellZone;
+        set     dummyCell;
+    }
+    {
+        name    dummyFace;
+        type    faceSet;
+        action  new;
+        source      cylinderToFace;
+        p1          (0.0 0.0 0.0);
+        p2          (0.0 0.0 0.001);
+        radius      0.001;
+    }
+    {
+        name    FaceZoneTrees;
+        type    faceZoneSet;
+        action  new;
+        source  setToFaceZone;
+        faceSet     dummyFace;
+    }
+
+    //tree1 cell
+    {
+        name    tree1;
+        type    cellSet;
+        action  new;
+        source      cylinderToCell;
+        p1          (0.0 0.0 0.0); 
+        p2          (0.0 0.0 10.0);
+        radius      5.0;
+    }
+    {
+        name    zoneTrees;
+        type    cellZoneSet;
+        action  add;
+        source  setToCellZone;
+        set     tree1;
+    }
+    //tree1 face
+    {
+        name    treeFace1;
+        type    faceSet;
+        action  new;
+        source      cylinderToFace;
+        p1          (0.0 0.0 0.0); 
+        p2          (0.0 0.0 10.0);
+        radius      5.0;
+    }
+    {
+        name    FaceZoneTrees;
+        type    faceZoneSet;
+        action  add;
+        source  setToFaceZone;
+        faceSet     treeFace1;
+    }
+
+    //tree2
+    {
+        name    tree2;
+        type    cellSet;
+        action  new;
+        source      cylinderToCell;
+        p1          (0.0 -50.0 5.0);
+        p2          (0.0 -50.0 15.0);
+        radius      3.0;
+    }
+    {
+        name    zoneTrees;
+        type    cellZoneSet;
+        action  add;
+        source  setToCellZone;
+        set     tree2;
+    }
+    //tree2 face
+    {
+        name    treeFace2;
+        type    faceSet;
+        action  new;
+        source      cylinderToFace;
+        p1          (0.0 -50.0 5.0);
+        p2          (0.0 -50.0 15.0);
+        radius      3.0;
+    }
+    {
+        name    FaceZoneTrees;
+        type    faceZoneSet;
+        action  add;
+        source  setToFaceZone;
+        faceSet     treeFace2;
+    }
+
+    //plantcover cell（2m以上）
+    {
+        name        plantCoverCell;
+        type        cellSet;
+        action      new;
+        source      searchableSurfaceToCell;
+        surfaceType triSurfaceMesh;
+        surfaceName  plantcover_over2m.obj;
+    }
+    {
+        name         zoneTrees;
+        type         cellZoneSet;
+        action       add;
+        source       setToCellZone;
+        set          plantCoverCell;
+    }
+    //plantcover face
+    {
+        name         plantCoverFace;
+        type         faceSet;
+        action       new;
+        source       searchableSurfaceToFace;
+        surfaceType  triSurfaceMesh;
+        surfaceName  plantcover_over2m.obj;
+    }
+    {
+        name         FaceZoneTrees;
+        type         faceZoneSet;
+        action       add;
+        source       setToFaceZone;
+        faceSet      plantCoverFace;
+    }
+);
+
+
+// ************************************************************************* //

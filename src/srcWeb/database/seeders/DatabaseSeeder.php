@@ -32,5 +32,7 @@ class DatabaseSeeder extends Seeder
         $this->call(VisualizationSeeder::class);
         $this->call(SolarAbsorptivitySeeder::class);
         $this->call(PolicySeeder::class);
+        $this->call(InformationSeeder::class);
+        $this->call(TreeTypeSeeder::class);
     }
 }

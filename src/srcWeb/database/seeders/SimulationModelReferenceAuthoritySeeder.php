@@ -2,8 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Db\SimulationModelReferenceAuthority;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class SimulationModelReferenceAuthoritySeeder extends Seeder

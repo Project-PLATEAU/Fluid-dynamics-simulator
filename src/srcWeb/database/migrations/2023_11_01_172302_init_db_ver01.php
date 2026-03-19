@@ -152,7 +152,7 @@ return new class extends Migration
             // ソルバ一式圧縮ファイル
             $table->string('solver_compressed_file', 256)->nullable()->comment('ソルバ一式圧縮ファイル');
             // FK:登録ユーザID
-            $table->string('user_id', 32)->comment('登録ユーザID');
+            $table->string('user_id', 32)->nullable()->comment('登録ユーザID');
             // 登録日時
             $table->timestamp('upload_datetime')->nullable()->comment('登録日時');
             // プリセットフラグ

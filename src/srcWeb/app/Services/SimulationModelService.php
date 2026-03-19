@@ -86,7 +86,7 @@ class SimulationModelService extends BaseService
         $simulationModel->last_update_datetime = DatetimeUtil::getNOW();
         $simulationModel->preset_flag = false;
         $simulationModel->temperature = 26.85;
-        $simulationModel->wind_speed = 0;
+        $simulationModel->wind_speed = 1;
         $simulationModel->wind_direction = 1;
         $simulationModel->solar_altitude_date = DatetimeUtil::getNOW(DatetimeUtil::DATE_FORMAT);
         $simulationModel->solar_altitude_time = 13;

@@ -5,26 +5,40 @@
 // Cesium ionの読み込み指定
 Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5N2UyMjcwOS00MDY1LTQxYjEtYjZjMy00YTU0ZTg5MmViYWQiLCJpZCI6ODAzMDYsImlhdCI6MTY0Mjc0ODI2MX0.dkwAL1CcljUV7NA7fDbhXXnmyZQU_c-G5zRx8PtEcxE";
 
-// 新規建物作成(1っの建物作成)に使用PolygonIDとPolylineID
-const NEW_BUILDING_POLYGON_ID = "create_new_building_polygon_id";
-const NEW_BUILDING_POLYLINE_ID = "create_new_building_polyline_id_";
+// 新規建物や植被作成(1っの建物作成)に使用PolygonIDとPolylineID
+const NEW_ENTITY_POLYGON_ID = "polygon_id";
+const NEW_ENTITY_POLYLINE_ID = "polyline_id_";
 // クリックするごとに作成するpolylineにIDを設定する。
 let createPolylineId = 0;
 
-// 建物を非表示にするモード
-const MODE_HIDE_BUILDING = 1;
-// 建物を表示にするモード
-const MODE_SHOW_BUILDING = 2;
+// モデルを非表示にするモード
+const HIDE_MODEL = 1;
+// モデルを表示にするモード
+const SHOW_MODEL = 2;
+
+// 建物・樹木の追加・削除モード
+let mapActivityMode = 0;
+const ADDNEW_MODEL_BUILDING = 2;    // 新規建物作成
+const ADDNEW_MODEL_PLANT_COVER = 3; // 植被作成
+const ADDNEW_MODEL_TREE = 4;        // 単独木作成
+
+// 単独木作成（複数あり）に使用するCylinderID
+const NEW_ENTITY_CYLINDER_ID = "cylinder_id_";
+const NEW_ENTITY_ELLIPSE_ID = "ellipse_id_";
+// クリックするごとに作成するEllipseにIDを設定する。(小さな点描画のため)
+let createEllipseId = 0;
+//単独木は直線に追加するフラグ(true:追加する; false: 追加しない)
+let createTreeOnLineFlg = false;
 
 /**
 * 3D地図描画
 *
-* @param string cesiumContainer 地図表示用のid要素
-* @param array czmlFiles 特定の解析対象地域に紐づいていたCZMLファイル配列
-* @param Date viewerLockCurrentTime ビューアーに設定する時間
-* @param array viewerCamera ビューアーにカメラを設定する情報
+* @param {string} cesiumContainer 地図表示用のid要素
+* @param {Array} czmlFiles 特定の解析対象地域に紐づいていたCZMLファイル配列
+* @param {Date} viewerLockCurrentTime ビューアーに設定する時間
+* @param {Array} viewerCamera ビューアーにカメラを設定する情報
 *
-* @return ビューアー
+* @returns {Cesium.Viewer} ビューアー
 */
 function show3DMap(cesiumContainer, czmlFiles, viewerLockCurrentTime="", viewerCamera = null) {
 
@@ -103,15 +117,15 @@ function show3DMap(cesiumContainer, czmlFiles, viewerLockCurrentTime="", viewerC
 /**
  * カメラ設定
  *
- * @param Cesium.Viewer viewer ビューアー
- * @param number heading カメラコントローラ用の方向(東)
- * @param number pitch カメラコントローラ用の方向(北)
- * @param number roll カメラコントローラ用の方向(上)
- * @param number positionX カメラの位置(経度)
- * @param number positionY カメラの位置(緯度)
- * @param number positionZ カメラの位置(標高)
+ * @param {Cesium.Viewer} viewer ビューアー
+ * @param {number} heading カメラコントローラ用の方向(東)
+ * @param {number} pitch カメラコントローラ用の方向(北)
+ * @param {number} roll カメラコントローラ用の方向(上)
+ * @param {number} positionX カメラの位置(経度)
+ * @param {number} positionY カメラの位置(緯度)
+ * @param {number} positionZ カメラの位置(標高)
  *
- * @return ビューアー
+ * @returns ビューアー
  */
 function setCamera(viewer, heading, pitch, roll, positionX, positionY, positionZ) {
     if (heading && pitch && roll && positionX && positionY && positionZ) {
@@ -131,9 +145,9 @@ function setCamera(viewer, heading, pitch, roll, positionX, positionY, positionZ
 /**
  * 3D地図をリセットする。
  *
- * @param Cesium.Viewer viewer ビューアー
+ * @param {Cesium.Viewer} viewer ビューアー
  *
- * @return
+ * @returns
  */
 function reset3DMap(viewer) {
     // 完全にビューアーを破棄する。
@@ -145,15 +159,15 @@ function reset3DMap(viewer) {
 /**
  * ライン引く
  *
- * @param Cesium.Viewer viewer ビューアー
- * @param array positions 指定した点の座標と標高
+ * @param {Cesium.Viewer} viewer ビューアー
+ * @param {Array.<number>} positions 指定した点の座標と標高
  *
- * @return
+ * @returns
  */
 function createLine(viewer, positions) {
 
     // polylineIdを定義
-    let _id = NEW_BUILDING_POLYLINE_ID + createPolylineId;
+    let _id = NEW_ENTITY_POLYLINE_ID + createPolylineId;
 
     viewer.entities.add({
         id: _id,
@@ -170,15 +184,43 @@ function createLine(viewer, positions) {
     return viewer;
 }
 
+/**
+ * 円の描画
+ *
+ * @param {Cesium.Viewer} viewer ビューアー
+ * @param {Cesium.PositionProperty} cartesian 指定した点の座標と標高
+ *
+ * @returns
+ */
+function createEllipse(viewer, cartesian) {
+    // ellipseIDを定義
+    let _id = NEW_ENTITY_ELLIPSE_ID + createEllipseId;
+
+    viewer.entities.add({
+        id: _id,
+        position: cartesian,
+        ellipse: {
+            semiMinorAxis: 2, // 半長軸の設定
+            semiMajorAxis: 2, // 半短軸の設定
+            material: Cesium.Color.RED,
+        }
+    });
+
+    // 作成するellipseIDを増加
+    createEllipseId += 1;
+
+    return viewer;
+}
+
 
 /**
- * 地面をクリックするイベントの設定(建物作成用)
+ * 地面をクリックするイベントの設定(建物・植被：単独木作成用)
  *
- * @param Cesium.Viewer viewer ビューアー
- * @param array hierarchy 建物描画に必要な座標
- * @param array positions 建物描画に必要な座標
+ * @param {Cesium.Viewer} viewer ビューアー
+ * @param {Array.<Cesium.Cartographic>} hierarchy 建物・植被：単独木の描画に必要な座標
+ * @param {Array.<number>} positions 建物・植被：単独木の描画に必要な座標
  *
- * @return ハンドル
+ * @returns ハンドル
  */
 function mapClickEventSetting(viewer, hierarchy, positions) {
     // 新しいhandlerを作成して、viewerに設定
@@ -189,7 +231,7 @@ function mapClickEventSetting(viewer, hierarchy, positions) {
         // クリックしたスクリーン座標を取得
         let cartesian = viewer.scene.pickPosition(click.position);
 
-        if (cartesian) {
+        if (Cesium.defined(cartesian)) {
             // 地理座標（緯度・経度）に変換
             let cartographic = Cesium.Cartographic.fromCartesian(cartesian);
 
@@ -202,76 +244,40 @@ function mapClickEventSetting(viewer, hierarchy, positions) {
             // let elevation = Cesium.Math.toDegrees(cartographic.height);
             let elevation = cartographic.height;
 
-            let _hierarchy = Cesium.Cartesian3.fromDegrees(longitude, latitude, elevation)
-            hierarchy.push(_hierarchy)
-            positions.push(longitude, latitude, elevation);
-
-            if (hierarchy.length >= 2) {  // 最初の2点でラインを作成
-                createLine(viewer, positions);
+            let _hierarchy = null;
+            if (mapActivityMode === ADDNEW_MODEL_TREE) {
+                // 単独木の場合
+                let canopyHeight = Number($("#canopy_height").val()); // 樹高
+                _hierarchy = Cesium.Cartesian3.fromDegrees(longitude, latitude, elevation + (canopyHeight / 2));
+            } else {
+                _hierarchy = Cesium.Cartesian3.fromDegrees(longitude, latitude, elevation);
             }
-        }
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-    return handler;
-}
+            // 単独木 + 直線モードの場合：2点に制限し、線と円を描画
+            if (mapActivityMode === ADDNEW_MODEL_TREE && createTreeOnLineFlg) {
+                if (hierarchy.length < 2) {
+                    // hierarchy.push(_hierarchy);
+                    hierarchy.push(cartographic);
+                    positions.push(longitude, latitude, elevation);
+                    createEllipse(viewer, cartesian); // プレビュー用の円
 
-/**
- * 建物をクリックするイベントの設定（建物削除用）
- *
- * @param Cesium.Viewer viewer ビューアー
- * @param array selectedEntities 選択したポリゴンのエンティティ)の配列
- *  データ例：
- *    [
- *      0:
- *       original_color: {red: 0.3137254901960784, green: 0.3137254901960784, blue: 0.3137254901960784, alpha: 1}, entity: {_id: xxx, _name='テストテスト',...}
- *      1:
- *       original_color: {red: 0.3137254901960784, green: 0.3137254901960784, blue: 0.3137254901960784, alpha: 1}, entity: {_id: xxx, _name='テストテスト',...}
- *    ]
- *
- * @return ハンドル
- */
-function buildingClickEventSetting(viewer, selectedEntities = []) {
-    // 新しいhandlerを作成して、viewerに設定
-    let handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-    // 選択された建物のID（※重複を取り除くため、一時的に使用する）
-    let selectedBuildings = [];
-
-    // クリックイベントを設定
-    handler.setInputAction(function (click) {
-        let pickedFeature = viewer.scene.pick(click.position);
-        if (Cesium.defined(pickedFeature)) {
-            // 建物のオブジェクト
-            let entity = pickedFeature.id;
-            // エンティティがポリゴンを持っている場合に限る(CZMLファイルの構造次第で、処理修正が必要)
-            if (entity.polygon && entity.polygon.material) {
-
-                // エンティティが既に選択されているかどうかを確認
-                const selectedIndex = selectedBuildings.indexOf(entity.id);
-
-                if (selectedIndex === -1) {
-                    // エンティティが選択されていない場合、配列に追加し、色を赤に変更
-                    selectedBuildings.push(entity.id);
-
-                    // 元の色を保存して、エンティティ情報を追加
-                    let _result = {
-                        "original_color": entity.polygon.material.color.getValue(Cesium.JulianDate.now()), // 元の色
-                        "entity": entity // 選択したエンティティ
-                    };
-                    selectedEntities.push(_result);
-
-                    // 色を赤に変更
-                    entity.polygon.material = new Cesium.ColorMaterialProperty(Cesium.Color.RED);
-
-                } else {
-                    // エンティティが選択されている場合、配列から除去し、元の色に戻す
-                    // 配列 selectedEntities からも削除する
-                    const originalEntityIndex = selectedEntities.findIndex(e => e.entity.id === entity.id);
-                    if (originalEntityIndex !== -1) {
-                        entity.polygon.material = new Cesium.ColorMaterialProperty(selectedEntities[originalEntityIndex].original_color);
+                    if (hierarchy.length === 2) {
+                        createLine(viewer, positions); // 線を作成
                     }
+                }
+            } else {
+                // 通常の追加処理（制限なし）
+                hierarchy.push(_hierarchy);
+                positions.push(longitude, latitude, elevation);
 
-                    selectedBuildings.splice(selectedIndex, 1);
-                    selectedEntities.splice(originalEntityIndex, 1);  // 元の配列から要素を削除
+                // 単独木モードなら円を作成
+                if (mapActivityMode === ADDNEW_MODEL_TREE) {
+                    createEllipse(viewer, cartesian);
+                }
+
+                // 建物・植生などで2点以上なら線を作成
+                if ((mapActivityMode === ADDNEW_MODEL_BUILDING || mapActivityMode === ADDNEW_MODEL_PLANT_COVER) && hierarchy.length >= 2) {
+                    createLine(viewer, positions);
                 }
             }
         }
@@ -280,11 +286,11 @@ function buildingClickEventSetting(viewer, selectedEntities = []) {
     return handler;
 }
 
-
 /**
- * ポリゴンのエンティティに色を設定する。
+ * モデル（建物・植被・単独木）をクリックするイベントの設定（モデル削除用）
  *
- * @param array entities ポリゴンのエンティティ
+ * @param {Cesium.Viewer} viewer ビューアー
+ * @param {Array.<Object>} selectedEntities 選択したポリゴンのエンティティ)の配列
  *  データ例：
  *    [
  *      0:
@@ -292,26 +298,96 @@ function buildingClickEventSetting(viewer, selectedEntities = []) {
  *      1:
  *       original_color: {red: 0.3137254901960784, green: 0.3137254901960784, blue: 0.3137254901960784, alpha: 1}, entity: {_id: xxx, _name='テストテスト',...}
  *    ]
- * @param int mode 建物を非表示にするかどうかのモード
- * @param Cesium.Color color 色
  *
- * @return
+ * @returns ハンドル
  */
-function setPolygonColor(entities, mode = MODE_HIDE_BUILDING, color = Cesium.Color.TRANSPARENT) {
-    // エンティティがポリゴンを持っている場合に限る(CZMLファイルの構造次第で、処理修正が必要)
+function modelClickEventSetting(viewer, selectedEntities = []) {
+    // 新しいhandlerを作成して、viewerに設定
+    let handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+    // クリックイベントを設定
+    handler.setInputAction(function (click) {
+        let pickedFeature = viewer.scene.pick(click.position);
+        if (Cesium.defined(pickedFeature)) {
+            // エンティティのオブジェクト
+            let entity = pickedFeature.id;
+
+            // ポリゴンまたはシリンダを持っているエンティティのみ対象
+            let geometryType = null;
+            if (entity.polygon && entity.polygon.material) {
+                geometryType = "polygon";
+            } else if (entity.cylinder && entity.cylinder.material) {
+                geometryType = "cylinder";
+            }
+
+            if (geometryType) {
+                // すでに選択されているかどうかをIDで判定
+                const selectedIndex = selectedEntities.findIndex(e => e.entity.id === entity.id);
+
+                if (selectedIndex === -1) {
+                    // 選択されていない場合、配列に追加し、色を赤に変更
+                    let originalColor;
+                    if (geometryType === "polygon") {
+                        originalColor = entity.polygon.material.color.getValue(Cesium.JulianDate.now());
+                        entity.polygon.material = new Cesium.ColorMaterialProperty(Cesium.Color.RED);
+                    } else if (geometryType === "cylinder") {
+                        originalColor = entity.cylinder.material.color.getValue(Cesium.JulianDate.now());
+                        entity.cylinder.material = new Cesium.ColorMaterialProperty(Cesium.Color.RED);
+                    }
+                    selectedEntities.push({
+                        entity: entity,
+                        geometryType: geometryType,
+                        originalColor: originalColor
+                    });
+                } else {
+                    // 選択済みの場合、元の色に戻して配列から削除
+                    const info = selectedEntities[selectedIndex];
+                    if (info.geometryType === "polygon") {
+                        entity.polygon.material = new Cesium.ColorMaterialProperty(info.originalColor);
+                    } else if (info.geometryType === "cylinder") {
+                        entity.cylinder.material = new Cesium.ColorMaterialProperty(info.originalColor);
+                    }
+                    selectedEntities.splice(selectedIndex, 1);
+                }
+            }
+        }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    return handler;
+}
+
+/**
+ * エンティティに色を設定する。
+ *
+ *  @param {Array.<Object>} entities エンティティ
+ *  データ例：
+ *    [
+ *      0:
+ *       original_color: {red: 0.3137254901960784, green: 0.3137254901960784, blue: 0.3137254901960784, alpha: 1}, entity: {_id: xxx, _name='テストテスト',...}
+ *      1:
+ *       original_color: {red: 0.3137254901960784, green: 0.3137254901960784, blue: 0.3137254901960784, alpha: 1}, entity: {_id: xxx, _name='テストテスト',...}
+ *    ]
+ * @param {number} mode 選択モデルを非表示にするかどうかのモード
+ * @param {Cesium.Color} color 色
+ *
+ * @returns
+ */
+function setEntityColor(entities, mode = HIDE_MODEL, color = Cesium.Color.TRANSPARENT) {
+    // エンティティがpolygonやcylinderを持っている場合に限る(CZMLファイルの構造次第で、処理修正が必要)
     entities.forEach(entity => {
-        if (mode == MODE_HIDE_BUILDING) {
-            entity['entity'].polygon.material = new Cesium.ColorMaterialProperty(color);
+        let geometryType = entity['geometryType'];
+        if (mode == HIDE_MODEL) {
+            entity['entity'][geometryType].material = new Cesium.ColorMaterialProperty(color);
         } else {
-            entity['entity'].polygon.material = new Cesium.ColorMaterialProperty(Cesium.Color.RED);
+            entity['entity'][geometryType].material = new Cesium.ColorMaterialProperty(Cesium.Color.RED);
         }
     });
 }
 
 /**
- * ポリゴンのエンティティの色と非表示をリセットに色を設定する。
+ * エンティティの色と非表示をリセットに色を設定する。
  *
- * @param array entities ポリゴンのエンティティ
+ * @param {Array.<Object>} entities エンティティ
  *  データ例：
  *    [
  *      0:
@@ -320,35 +396,36 @@ function setPolygonColor(entities, mode = MODE_HIDE_BUILDING, color = Cesium.Col
  *       original_color: {red: 0.3137254901960784, green: 0.3137254901960784, blue: 0.3137254901960784, alpha: 1}, entity: {_id: xxx, _name='テストテスト',...}
  *    ]
  *
- * @return
+ * @returns
  */
-function resetPolygonColor(entities) {
-    // エンティティがポリゴンを持っている場合に限る(CZMLファイルの構造次第で、処理修正が必要)
+function resetEntityColor(entities) {
+    // エンティティがpolygonやcylinderを持っている場合に限る(CZMLファイルの構造次第で、処理修正が必要)
     entities.forEach(entity => {
-        entity['entity'].polygon.material = new Cesium.ColorMaterialProperty(entity['original_color']);
+        let geometryType = entity['geometryType'];
+        entity['entity'][geometryType].material = new Cesium.ColorMaterialProperty(entity['originalColor']);
     });
 }
 
 /**
  * ハンダーよりアクションを削除する。
  *
- * @param Cesium.ScreenSpaceEventHandler hander
+ * @param {Cesium.ScreenSpaceEventHandler} handler
  *
- * @return
+ * @returns
  */
-function removeActionFromHander(hander) {
+function removeActionFromHandler(handler) {
     // アクションを削除する
-    hander.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK);
 }
 
 /**
  * 建物描画
  *
- * @param Cesium.Viewer viewer ビューアー
- * @param Cesium.Cartesian3 hierarchy 建物描画に必要な座標
- * @param number extrudedHeight 建物の高さ
+ * @param {Cesium.Viewer} viewer ビューアー
+ * @param {Cesium.Cartesian3} hierarchy 建物描画に必要な座標
+ * @param {number} extrudedHeight 建物の高さ
  *
- * @return ビューアー
+ * @returns {Cesium.Viewer} ビューアー
  */
 function drawBuilding(viewer, hierarchy, extrudedHeight) {
     // 地形の標高を考慮してextrudedHeightを調整
@@ -357,14 +434,13 @@ function drawBuilding(viewer, hierarchy, extrudedHeight) {
     entity = viewer.entities.add({
         name: "新規建物",
         description: "ここでは新規建物を作成します。",
-        id: NEW_BUILDING_POLYGON_ID,
+        id: NEW_ENTITY_POLYGON_ID,
         polygon: {
             hierarchy: hierarchy,
             extrudedHeight: baseHeight + extrudedHeight,
             material: Cesium.Color.RED.withAlpha(0.5),
             outline: true,
             outlineColor: Cesium.Color.RED,
-            // outlineWidth: 3 効かない
         }
     });
 
@@ -372,22 +448,172 @@ function drawBuilding(viewer, hierarchy, extrudedHeight) {
 }
 
 /**
- * 追加した建物をリセットする。
+ * 円柱描画
  *
- * @param Cesium.Viewer viewer ビューアー
+ * @param {Cesium.Viewer} viewer ビューアー
+ * @param {integer} index 何番目の円柱か
+ * @param {Cesium.Cartesian3} position 円柱の描画位置
+ * @param {number} height 樹高
+ * @param {number} diameter 樹冠直径
  *
- * @return
+ * @returns
  */
-function clearBuilding(viewer) {
-    // 建物アウトラインを削除する。
-    let polygonEntity = viewer.entities.getById(NEW_BUILDING_POLYGON_ID);
-    if (polygonEntity) {
-        viewer.entities.remove(polygonEntity);
+function _drawCylinder(viewer, index, position, height, diameter) {
+    var _id = NEW_ENTITY_CYLINDER_ID + index;
+    viewer.entities.add({
+        id: _id,
+        name: "単独木_" + (index + 1),
+        description: "ここでは単独木を作成します。",
+        position: position,
+        cylinder: {
+            length: height,
+            topRadius: diameter / 2,    // 円柱の上面の半径(直径の半分)
+            bottomRadius: diameter / 2, // 円柱の底面の半径(直径の半分)
+            material: Cesium.Color.RED.withAlpha(0.5),
+            outline: true,
+            outlineColor: Cesium.Color.RED,
+            numberOfVerticalLines: 2
+        }
+    });
+}
+
+/**
+ * 円柱描画（単独木描画）
+ *
+ * @param {Cesium.Viewer} viewer ビューアー
+ * @param {Cesium.Cartesian3} hierarchy 単独木描画に必要な座標(クリックした点数の座標)
+ * @param {number} canopyHeight 樹高
+ * @param {number} canopyDiameter 樹冠直径
+ *
+ * @returns
+ */
+function drawCylinder(viewer, hierarchy, canopyHeight, canopyDiameter) {
+    // クリックした点ごとに円柱描画する。
+    hierarchy.forEach((_position, index) => {
+        _drawCylinder(viewer, index, _position, canopyHeight, canopyDiameter);
+    });
+}
+
+/**
+ * 直線上に円柱描画（単独木描画）
+ *
+ * @param {Cesium.Viewer} viewer ビューアー
+ * @param {Cesium.Cartesian3} hierarchy 単独木描画に必要な座標(クリックした点数の座標)
+ * @param {number} canopyHeight 樹高
+ * @param {number} canopyDiameter 樹冠直径
+ * @param {number} createTreeInterval 樹木間隔
+ *
+ * @returns {Promise<string>} 正常の場合、空文字列を返す。異常の場合はエラーメッセージを返す。
+ * @throws {Error} 地形に基づいた標高（高さ）取得に失敗したエラー
+ */
+async function drawCylindersOnLine(viewer, hierarchy, canopyHeight, canopyDiameter, createTreeInterval) {
+    // 2点間の距離を計算
+    const start = hierarchy[0];
+    const end = hierarchy[1];
+    const geodesic = new Cesium.EllipsoidGeodesic(start, end);
+    const totalDistance = geodesic.surfaceDistance; // メートル単位
+
+    // 間隔ごとの点の数を計算
+    const numPoints = Math.floor(totalDistance / createTreeInterval) + 1;
+
+    // 始点と終点を含む全ての点
+    const points = [];
+    for (let index = 0; index <= numPoints; index++) {
+        // fraction は 0（始点）〜 1（終点）までを均等に分割する値
+        const fraction = index / numPoints;
+        const interpolated = geodesic.interpolateUsingFraction(fraction);
+        points.push(interpolated);
     }
 
-    // 建物作成に引いた線を削除する。
+    //「作成」に使用するグローバル変数に値をリセット
+    positions = [];
+    try {
+        // 緯度・経度の位置に対して、地形に基づいた標高（高さ）を取得する
+        const terrainData = await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, points);
+        for (const [index, cartographic] of terrainData.entries()) {
+            let _longitude = Cesium.Math.toDegrees(cartographic.longitude); // 経度
+            let _latitude = Cesium.Math.toDegrees(cartographic.latitude);   // 緯度
+            let _height = cartographic.height;                              // 標高
+            positions.push(_longitude, _latitude, _height);                 //「作成」に使用するグローバル変数に値を更新
+
+            // 直線上に円柱描画
+            var position = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, cartographic.height + (canopyHeight / 2));
+            _drawCylinder(viewer, index, position, canopyHeight, canopyDiameter);
+        }
+        // 線の削除
+        clearLine(viewer);
+        return "";
+    } catch (error) {
+        throw error;
+    }
+
+}
+
+/**
+ * 追加した建物や植被のpolygonをリセットする。
+ *
+ * @param {Cesium.Viewer} viewer ビューアー
+ *
+ * @returns
+ */
+function clearPolygon(viewer) {
+    // 建物アウトラインを削除する。
+    var entity = viewer.entities.getById(NEW_ENTITY_POLYGON_ID);
+    if (entity) {
+        viewer.entities.remove(entity);
+    }
+
+    // 追加したpolylineを削除する。
+    clearLine(viewer);
+}
+
+/**
+ * 追加した単独木をリセットする。
+ *
+ * @param {Cesium.Viewer} viewer ビューアー
+ *
+ * @returns
+ */
+function clearTree(viewer) {
+
+    // 円柱の削除
+    const matchingCylinderEntities = viewer.entities.values.filter(entity =>
+        entity.id.includes(NEW_ENTITY_CYLINDER_ID)
+    );
+    matchingCylinderEntities.forEach(entity => {
+        viewer.entities.remove(entity);
+    });
+
+    // 円の削除
+    const matchingEllipseEntities = viewer.entities.values.filter(entity =>
+        entity.id.includes(NEW_ENTITY_ELLIPSE_ID)
+    );
+    matchingEllipseEntities.forEach(entity => {
+        viewer.entities.remove(entity);
+    });
+
+    // 「直線上に追加」の場合、線の削除も行う。
+    if (createTreeOnLineFlg) {
+        clearLine(viewer);
+    }
+
+    // 作成するellipseIDをリセット
+    createEllipseId = 0;
+    // 「直線上に追加」をリセット
+    createTreeOnLineFlg = false;
+}
+
+/**
+ * 追加した線をリセットする。
+ *
+ * @param {Cesium.Viewer} viewer ビューアー
+ *
+ * @returns
+ */
+function clearLine(viewer) {
+    // 追加したpolylineを削除する。
     for (let i = 0; i < createPolylineId; i++) {
-        let _id = NEW_BUILDING_POLYLINE_ID + i;
+        let _id = NEW_ENTITY_POLYLINE_ID + i;
         let polylineEntity = viewer.entities.getById(_id);
         if (polylineEntity) {
             viewer.entities.remove(polylineEntity);

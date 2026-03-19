@@ -43,12 +43,12 @@ SIMPLE
 
     residualControl
     {
-        p_rgh           1e-3;
-        U               1e-4;
-        h               1e-4;
+        p_rgh           1e-4;
+        U               1e-5;
+        h               1e-5;
 
         // possibly check turbulence fields
-        "(k|epsilon|omega|s)" 5e-3;
+        "(k|epsilon|omega|s)" 5e-4;
     }
 }
 
