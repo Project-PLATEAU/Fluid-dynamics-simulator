@@ -53,6 +53,7 @@ services:
       - db_network
       - api_network
     volumes:
+      - ../:/opt
       - ./api/var/:/var/
       - /mnt:/mnt
     ports:

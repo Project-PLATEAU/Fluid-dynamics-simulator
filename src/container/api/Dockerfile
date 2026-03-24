@@ -44,5 +44,8 @@ RUN python -m pip install pyproj czml sqlalchemy psycopg2 paramiko requests nump
 # デフォルトのPythonバージョンをPython 3.12に設定
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
 
-# コンテナ起動時に実行するコマンドを指定
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+# 作業ディレクトリを指定
+WORKDIR /opt/srcAPI
+
+# FastAPIアプリの自動起動コマンド
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--reload"]
